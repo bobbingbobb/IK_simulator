@@ -1,0 +1,147 @@
+import os, time
+import numpy as np
+import random as r
+import math as m
+
+ik_dict = {}
+
+def rotate_z(angle:float):
+    rz = np.array([[m.cos(angle), -m.sin(angle), 0.0, 0.0],\
+                   [m.sin(angle), m.cos(angle), 0.0, 0.0],\
+                   [0.0, 0.0, 1.0, 0.0],\
+                   [0.0, 0.0, 0.0, 1.0]])
+    return rz
+def rotate_y(angle:float):
+    ry = np.array([[m.cos(angle), 0.0, m.sin(angle), 0.0],\
+                   [0.0, 1.0, 0.0, 0.0],\
+                   [-m.sin(angle), 0.0, m.cos(angle), 0.0],\
+                   [0.0, 0.0, 0.0, 1.0]])
+    return ry
+def rotate_x(angle:float):
+    rx = np.array([[1.0, 0.0, 0.0, 0.0],\
+                   [0.0, m.cos(angle), -m.sin(angle), 0.0],\
+                   [0.0, m.sin(angle), m.cos(angle), 0.0],\
+                   [0.0, 0.0, 0.0, 1.0]])
+    return rx
+
+def fk_jo(joints:list):
+    # [x, y, z, angle of the joint]
+    jo = np.array([[    0.0,    0.0, 0.333,     0.0],\
+                   [    0.0,    0.0,   0.0, -m.pi/2],\
+                   [    0.0, -0.316,   0.0,  m.pi/2],\
+                   [ 0.0825,    0.0,   0.0,  m.pi/2],\
+                   [-0.0825,  0.384,   0.0, -m.pi/2],\
+                   [    0.0,    0.0,   0.0,  m.pi/2],\
+                   [  0.088,    0.0,   0.0,  m.pi/2]])
+    cam = np.array([ 0.0424, -0.0424, 0.14, m.pi/4])# angle: dep_img coord to last joint
+    gripper = np.array([ 0.0, 0.0, 0.107+0.0584+0.06, 0.0])
+    flange = np.array([ 0.0, 0.0, 0.107, 0.0])
+
+    fk_mat = np.eye(4)
+    trans_mat = np.eye(4)
+    #flange
+    fk_mat = np.dot(rotate_z(flange[3]), fk_mat)
+    for j in range(3):
+        trans_mat[j,3] = flange[j]
+    fk_mat = np.dot(trans_mat, fk_mat)
+    #joints
+    for i in range(6, -1, -1):
+        fk_mat = np.dot(rotate_z(joints[i]), fk_mat)
+        fk_mat = np.dot(rotate_x(jo[i, 3]), fk_mat)
+        for j in range(3):
+            trans_mat[j,3] = jo[i,j]
+        fk_mat = np.dot(trans_mat, fk_mat)
+
+    return fk_mat[:3,3].tolist()
+
+def fk_dh(joints:list, joint_num:int):
+    # dh: joint(theta), distance between axes(-1 a), movement on axis(d), angle(-1 alpha)
+    dh = np.array([[0.0,     0.0, 0.333,     0.0],\
+                   [0.0,     0.0,   0.0, -m.pi/2],\
+                   [0.0,     0.0, 0.316,  m.pi/2],\
+                   [0.0,  0.0825,   0.0,  m.pi/2],\
+                   [0.0, -0.0825, 0.384,  -m.pi/2],\
+                   [0.0,     0.0,   0.0,  m.pi/2],\
+                   [0.0,   0.088,   0.0,  m.pi/2]])
+
+    dh[:,0] = joints
+    mat = np.eye(4)
+    for i in range(joint_num):
+        dh_t = [[m.cos(dh[i,0])               , -m.sin(dh[i,0])               ,  0             ,  dh[i,1]               ],\
+        		[m.sin(dh[i,0])*m.cos(dh[i,3]),  m.cos(dh[i,0])*m.cos(dh[i,3]), -m.sin(dh[i,3]), -dh[i,2]*m.sin(dh[i,3])],\
+        		[m.sin(dh[i,0])*m.sin(dh[i,3]),  m.cos(dh[i,0])*m.sin(dh[i,3]),  m.cos(dh[i,3]),  dh[i,2]*m.cos(dh[i,3])],\
+        		[0                            ,  0                            ,  0             ,  1                     ]]
+        mat = np.dot(mat, dh_t)
+        # print([p[3] for p in mat[:3]])
+        # print(mat)
+    return [p[3] for p in mat[:3]]
+
+def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
+    dist_a = m.sqrt(sum([(i - j)**2 for i, j in zip(pos_a, pos_c)]))
+    dist_b = m.sqrt(sum([(i - j)**2 for i, j in zip(pos_b, pos_c)]))
+
+    prop_a = dist_a/(dist_a+dist_b)
+    print(prop_a)
+
+    tmp_joint = [i - (i - j)* prop_a for i, j in zip(joint_a, joint_b)]
+    tmp_pos = fk_dh(tmp_joint, 7)
+    print(tmp_pos)
+    diff = m.sqrt(sum([(i - j)**2 for i, j in zip(tmp_pos, pos_c)]))
+    print(diff)
+    return tmp_joint
+
+    # if abs(pre_diff - diff) <= 0.0000000001:
+    #     return tmp_joint
+    # else:
+    #     return interpolation_A(joint_a, tmp_joint, pos_a, tmp_pos, pos_c, diff)
+
+def approximation(nearest_joint, target_pos):
+    rad_offset = m.pi/180.0
+    tmp_joint = nearest_joint
+    diff = m.sqrt(sum([(p1 - p2)**2 for p1, p2 in zip(fk_dh(nearest_joint, 7), target_pos)]))
+    print(diff)
+
+    for i in range(len(tmp_joint)):
+        reverse = 0
+        while reverse < 4:
+            pre_diff = diff
+            tmp_pos = fk_dh(tmp_joint, 7)
+            diff = m.sqrt(sum([(p1 - p2)**2 for p1, p2 in zip(tmp_pos, target_pos)]))
+            print(diff)
+            if diff >= pre_diff:
+                rad_offset *= -1
+                reverse += 1
+
+            tmp_joint[i] += rad_offset
+        print('joint %s done' %(i+1))
+        if diff < 0.01: # 1cm
+            break
+
+    return tmp_joint
+
+def test(nearest_joint, target_pos):
+    for n in range(20):
+        nearest_joint[0] += m.pi/180.0
+        tmp_pos = fk_dh(nearest_joint, 7)
+        diff = m.sqrt(sum([(i - j)**2 for i, j in zip(tmp_pos, target_pos)]))
+        print(diff)
+
+if __name__ == '__main__':
+    #[ 0.5545 0  0.7315]
+    joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+    joint_b:list = [0.1, 0.1, 0.1, -1.5, -0.05, 2.1, 0.9]
+
+    pos_a = fk_dh(joint_a, 7)
+    pos_b = fk_dh(joint_b, 7)
+    # print(pos_a)
+    # print(pos_b)
+    pos_c = [(i+j)/2 for i, j in zip(pos_a, pos_b)]
+    # pos_c = pos_b
+
+    # joint_c = linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c)
+    # joint_c = approximation(joint_a, pos_c)
+    # joint_c = test(joint_a, pos_c)
+    # print(joint_c)
+    for i in range(7):
+        print(fk_dh(joint_a, i+1))
+    # print(pos_c)
