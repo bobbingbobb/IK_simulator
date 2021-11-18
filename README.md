@@ -1,15 +1,16 @@
 # IK Simulator
+ik simulator
 
 ## File Structure
 
-├─ data
-│  ├─ raw_data
-│  └─ table
-├─ scripts
-│  ├─ ik_simulator
-│  └─ others...
-├─ webots
-│  └─ ...
+├─ data  
+│  ├─ raw_data  
+│  └─ table  
+├─ scripts  
+│  ├─ ik_simulator  
+│  └─ others...  
+├─ webots  
+│  └─ ...  
 
 
 #### TODOs
