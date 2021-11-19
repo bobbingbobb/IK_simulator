@@ -1,11 +1,12 @@
+import os
 import numpy as np
 import math as m
 import datetime as d
 from collections import namedtuple
 
-DATA_FOLDER = '/data'
-RAW_DATA_FOLDER = DATA_FOLDER+'/raw_data'
-TABLE_FOLDER = DATA_FOLDER+'/table'
+DATA_FOLDER = '../data/'
+RAW_DATA_FOLDER = DATA_FOLDER+'raw_data/'
+TABLE_FOLDER = DATA_FOLDER+'table/'
 
 class Robot:
     def __init__(self):
@@ -60,7 +61,7 @@ class Gathering:
         self.robot = Robot()
         self.joints = robot.joints
         self.scale = 30 * m.pi/180
-        # self.filename = RAW_DATA_FOLDER+'/raw_data.npz'
+        # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
     def without_colliding_detect(self, scale=30, filename='raw_data'):
         scale = scale * m.pi/180
@@ -94,20 +95,37 @@ class Gathering:
         return filename
 
 class IKTable:
-    def __init__(self, raw_data = RAW_DATA_FOLDER+'/raw_data.npz'):
-        self.raw_data = self.__filename_alignment(raw_data)
+    def __init__(self, table_name, raw_data=None):
+        self.table_name = self.__name_alignment(table_name)
+        self.table = []
+
+        self.raw_data = None
         self.joints = []
         self.positions = []
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
 
-        self.load_data()
+        if os.path.exists(self.__tablename_alignment(self.table_name)):
+            self.load_table()
+        else:
+            if raw_data == None:
+                print('no such table.')
+            else:
+                print('creating table type with new raw data...')
+                self.raw_data = self.__name_alignment(raw_data)
+                self.load_data()
+                self.create_table()
 
-    def __filename_alignment(self, filename):
-        filename = filename.split('/')
-        filename = filename[-1].split('.')
-        filename = RAW_DATA_FOLDER+filename[0]+'.npz'
-        return filename
+    def __name_alignment(self, name):
+        name = str(name).split('/')
+        name = name[-1].split('.')
+        return name[0]
+
+    def __dataname_alignment(self, name):
+        return RAW_DATA_FOLDER+self.__name_alignment(name)+'.npz'
+
+    def __tablename_alignment(self, name):
+        return TABLE_FOLDER+self.__name_alignment(name)+'.npz'
 
     def __density(self, data, data_dim):
         def recur(list, dim):
@@ -125,45 +143,80 @@ class IKTable:
 
         return np.mean(np.array(recur(data, data_dim)))
 
+    def load_table(self):
+        table_info = np.load(self.__tablename_alignment(self.table_name), allow_pickle=True)
+        self.raw_data = str(table_info['raw_data'])
+        self.table = table_info['table']
+
+        print('table: ', self.table_name)
+        print('data: ', self.raw_data)
+        self.load_data()
+
+    def create_table(self):
+        start = d.datetime.now()
+        self.table_v1()
+        end = d.datetime.now()
+        print('done. duration: ', end-start)
+
+        self.load_table()
+
     def load_data(self):
-        raw_data = np.load(self.raw_data)
+        raw_data = np.load(self.__dataname_alignment(self.raw_data))
         self.joints = raw_data['joints']
         self.positions = raw_data['positions']
 
-    def switch_raw_data(self, raw_data='empty'):
+    def switch_raw_data(self, raw_data=None):
         if raw_data == 'empty':
-            print('raw_data needed.')
+            print('new raw_data needed.')
             return 0
 
-        self.raw_data = self.__filename_alignment(raw_data)
-        load_data()
+        self.raw_data = self.__name_alignment(raw_data)
+        self.load_data()
         print('switch to '+raw_data)
 
-    def table_1(self, rebuild = False):
+    def searching_area(self, target):
+        for i,v in enumerate(target):
+            target[i] = round(v, 4)
+
+        target_space = self.searching_table_v1(target)
+
+        return target_space
+
+    def table_v1(self):
         #20 cm cube
         #x: -855 ~ 855, 1710, 18/20 = 9
         #y: -855 ~ 855, 1710, 18/20 = 9
         #z: -360 ~ 1190, 1550, 16/20 = 8
-        table_name = TABLE_FOLDER+'table_1.npy'
-        if rebuild:
-            start = d.datetime.now()
-            grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-            for index, [x, y, z] in enumerate(self.positions):
-                grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
-            end = d.datetime.now()
-            print('done. duration: ', end-start)
-            print(self.__density(grid_data, 3))# avg sample in a 20cm cube
+        grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
+        for index, [x, y, z] in enumerate(self.positions):
+            grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
 
-            np.save(table_name, grid_data)
-        else:
-            grid_data = np.load(table_name)
+        print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
 
-        return (grid_data)
+        np.savez(self.__tablename_alignment(self.table_name), raw_data=self.raw_data, table=grid_data)
+
+    def searching_table_v1(self, target):
+        searching_space = self.table[int((target[0]+self.shift_x)/0.2)][int((target[1]+self.shift_y)/0.2)][int((target[2]+self.shift_z)/0.2)]
+
+        pos_jo = namedtuple('pos_jo', ['position', 'joint'])
+        target_space = []
+        for index in searching_space:
+            target_space.append(pos_jo(self.positions[index], self.joints[index]))
+
+        return target_space
 
 class IKSimulator:
     def __init__(self):
-        pass
+        self.iktable = IKTable('table1')
+
+    def find(self, target_position):
+        searching_area = self.iktable.searching_area(target_position)
+
+        return searching_area
 
 if __name__ == '__main__':
-    ik = IKTable()
-    ik.table_1()
+    # IKTable('table1', 'raw_data1')
+    # table1 = IKTable('table1')
+    ik_simulator = IKSimulator()
+    target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+    print(ik_simulator.find(target))
