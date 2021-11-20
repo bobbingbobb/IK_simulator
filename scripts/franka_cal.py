@@ -26,31 +26,38 @@ def rotate_x(angle:float):
 
 def fk_jo(joints:list):
     # [x, y, z, angle of the joint]
-    jo = np.array([[    0.0,    0.0, 0.333,     0.0],\
-                   [    0.0,    0.0,   0.0, -m.pi/2],\
-                   [    0.0, -0.316,   0.0,  m.pi/2],\
-                   [ 0.0825,    0.0,   0.0,  m.pi/2],\
-                   [-0.0825,  0.384,   0.0, -m.pi/2],\
-                   [    0.0,    0.0,   0.0,  m.pi/2],\
-                   [  0.088,    0.0,   0.0,  m.pi/2]])
-    cam = np.array([ 0.0424, -0.0424, 0.14, m.pi/4])# angle: dep_img coord to last joint
-    gripper = np.array([ 0.0, 0.0, 0.107+0.0584+0.06, 0.0])
-    flange = np.array([ 0.0, 0.0, 0.107, 0.0])
+    # jo = np.array([[    0.0,    0.0, 0.333,     0.0],\
+    #                [    0.0,    0.0,   0.0, -m.pi/2],\
+    #                [    0.0, -0.316,   0.0,  m.pi/2],\
+    #                [ 0.0825,    0.0,   0.0,  m.pi/2],\
+    #                [-0.0825,  0.384,   0.0, -m.pi/2],\
+    #                [    0.0,    0.0,   0.0,  m.pi/2],\
+    #                [  0.088,    0.0,   0.0,  m.pi/2]])
+    # cam = np.array([ 0.0424, -0.0424, 0.14, m.pi/4])# angle: dep_img coord to last joint
+    # gripper = np.array([ 0.0, 0.0, 0.107+0.0584+0.06, 0.0])
+    # flange = np.array([ 0.0, 0.0, 0.107, 0.0])
+
+    #show position of every joint
+    jo = np.array([[    0.0,    0.0,   0.14,     0.0],\
+                   [    0.0,    0.0,  0.193, -m.pi/2],\
+                   [    0.0, -0.193,    0.0,  m.pi/2],\
+                   [ 0.0825,    0.0,  0.123,  m.pi/2],\
+                   [-0.0825, 0.1245,    0.0, -m.pi/2],\
+                   [    0.0,    0.0, 0.2595,  m.pi/2],\
+                   [  0.088, -0.107,    0.0,  m.pi/2]])
+
 
     fk_mat = np.eye(4)
     trans_mat = np.eye(4)
-    #flange
-    fk_mat = np.dot(rotate_z(flange[3]), fk_mat)
-    for j in range(3):
-        trans_mat[j,3] = flange[j]
-    fk_mat = np.dot(trans_mat, fk_mat)
+
     #joints
-    for i in range(6, -1, -1):
-        fk_mat = np.dot(rotate_z(joints[i]), fk_mat)
-        fk_mat = np.dot(rotate_x(jo[i, 3]), fk_mat)
+    for i in range(7):
         for j in range(3):
             trans_mat[j,3] = jo[i,j]
-        fk_mat = np.dot(trans_mat, fk_mat)
+        fk_mat = np.dot(fk_mat, trans_mat)
+        fk_mat = np.dot(fk_mat, rotate_x(jo[i, 3]))
+        fk_mat = np.dot(fk_mat, rotate_z(joints[i]))
+        print(fk_mat[:3,3].tolist())
 
     return fk_mat[:3,3].tolist()
 
@@ -142,6 +149,9 @@ if __name__ == '__main__':
     # joint_c = approximation(joint_a, pos_c)
     # joint_c = test(joint_a, pos_c)
     # print(joint_c)
-    for i in range(7):
-        print(fk_dh(joint_a, i+1))
+
+    print(fk_jo(joint_a))
+
+    # for i in range(7):
+    #     print(fk_dh(joint_a, i+1))
     # print(pos_c)
