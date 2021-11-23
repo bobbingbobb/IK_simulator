@@ -1,2 +1,3 @@
-\data\raw_data\*
-\data\table\*
+data\raw_data\*
+data\table\*
+scripts\__pycache__
