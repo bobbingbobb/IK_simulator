@@ -10,6 +10,7 @@ TABLE_FOLDER = DATA_FOLDER+'table/'
 
 class Robot:
     def __init__(self):
+        self.joint_num = 7
         restrict = namedtuple('restrict', ['max', 'min'])
         self.joints = [restrict(2.8973, -2.8973), restrict(1.7628, -1.7628), restrict(2.8973, -2.8973), restrict(0.0698, -3.0718), restrict(2.8973, -2.8973), restrict(3.7525, -0.0175), restrict(2.8973, -2.8973)]
         self.dh = np.array([[0.0,     0.0, 0.333,     0.0],\
@@ -43,10 +44,9 @@ class Robot:
 
     def fk(self, joints:list):
         self.dh[:,0] = joints
-        joint_num = 7
 
         fk_mat = np.eye(4)
-        for i in range(joint_num):
+        for i in range(self.joint_num):
             dh_mat = [[m.cos(self.dh[i,0])                    , -m.sin(self.dh[i,0])                    ,  0                  ,  self.dh[i,1]                    ],\
             		  [m.sin(self.dh[i,0])*m.cos(self.dh[i,3]),  m.cos(self.dh[i,0])*m.cos(self.dh[i,3]), -m.sin(self.dh[i,3]), -self.dh[i,2]*m.sin(self.dh[i,3])],\
             		  [m.sin(self.dh[i,0])*m.sin(self.dh[i,3]),  m.cos(self.dh[i,0])*m.sin(self.dh[i,3]),  m.cos(self.dh[i,3]),  self.dh[i,2]*m.cos(self.dh[i,3])],\
@@ -56,14 +56,41 @@ class Robot:
 
         return fk_mat[:3,3].tolist()
 
+    def fk_jo(self, joints:list):
+        #show position of every joint
+        jo = np.array([[    0.0,    0.0,   0.14,     0.0],\
+                       [    0.0,    0.0,  0.193, -m.pi/2],\
+                       [    0.0, -0.193,    0.0,  m.pi/2],\
+                       [ 0.0825,    0.0,  0.123,  m.pi/2],\
+                       [-0.0825, 0.1245,    0.0, -m.pi/2],\
+                       [    0.0,    0.0, 0.2595,  m.pi/2],\
+                       [  0.088, -0.107,    0.0,  m.pi/2]])
+
+
+        fk_mat = np.eye(4)
+        trans_mat = np.eye(4)
+        pos = []
+
+        #joints
+        for i in range(self.joint_num):
+            for j in range(3):
+                trans_mat[j,3] = jo[i,j]
+            fk_mat = np.dot(fk_mat, trans_mat)
+            fk_mat = np.dot(fk_mat, self.__rotate_x(jo[i, 3]))
+            fk_mat = np.dot(fk_mat, self.__rotate_z(joints[i]))
+            pos.append(fk_mat[:3,3].tolist())
+            # print(fk_mat[:3,3].tolist())
+
+        return pos
+
 class Gathering:
     def __init__(self):
         self.robot = Robot()
-        self.joints = robot.joints
+        self.joints = self.robot.joints
         self.scale = 30 * m.pi/180
         # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
-    def without_colliding_detect(self, scale=30, filename='raw_data'):
+    def without_colliding_detect(self, filename='raw_data', scale=30, ):
         scale = scale * m.pi/180
         # self.filename = RAW_DATA_FOLDER+filename+'.npz'
         filename = RAW_DATA_FOLDER+filename+'.npz'
@@ -78,9 +105,11 @@ class Gathering:
                         for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
                             for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
                                 joints = [j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0]
-                                position = self.robot.fk(joints)
-                                for i,v in enumerate(position):
-                                    position[i] = round(v, 4)
+                                # position = self.robot.fk(joints)
+                                position = self.robot.fk_jo(joints)
+                                for i, j in enumerate(position):
+                                    for p, n in enumerate(j):
+                                        position[i][p] = round(n, 4)
 
                                 data_joints.append(joints)
                                 data_positions.append(position)
@@ -188,7 +217,7 @@ class IKTable:
         #y: -855 ~ 855, 1710, 18/20 = 9
         #z: -360 ~ 1190, 1550, 16/20 = 8
         grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-        for index, [x, y, z] in enumerate(self.positions):
+        for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
             grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
 
         print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
@@ -201,13 +230,13 @@ class IKTable:
         pos_jo = namedtuple('pos_jo', ['position', 'joint'])
         target_space = []
         for index in searching_space:
-            target_space.append(pos_jo(self.positions[index], self.joints[index]))
+            target_space.append(pos_jo(self.positions[index][6], self.joints[index]))
 
         return target_space
 
 class IKSimulator:
     def __init__(self):
-        self.iktable = IKTable('table1')
+        self.iktable = IKTable('table2')
 
     def find(self, target_position):
         searching_area = self.iktable.searching_area(target_position)
@@ -215,8 +244,10 @@ class IKSimulator:
         return searching_area
 
 if __name__ == '__main__':
-    # IKTable('table1', 'raw_data1')
-    # table1 = IKTable('table1')
+    # gather = Gathering()
+    # gather.without_colliding_detect('raw_data_7j_1')
+
+    table2 = IKTable('table2', 'raw_data_7j_1')
     ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     print(ik_simulator.find(target))

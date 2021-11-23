@@ -2,6 +2,9 @@ import os, time
 import numpy as np
 import random as r
 import math as m
+from collections import namedtuple
+
+from ik_simulator import IKTable
 
 ik_dict = {}
 
@@ -57,7 +60,7 @@ def fk_jo(joints:list):
         fk_mat = np.dot(fk_mat, trans_mat)
         fk_mat = np.dot(fk_mat, rotate_x(jo[i, 3]))
         fk_mat = np.dot(fk_mat, rotate_z(joints[i]))
-        print(fk_mat[:3,3].tolist())
+        # print(fk_mat[:3,3].tolist())
 
     return fk_mat[:3,3].tolist()
 
@@ -102,6 +105,49 @@ def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     # else:
     #     return interpolation_A(joint_a, tmp_joint, pos_a, tmp_pos, pos_c, diff)
 
+def dimension_portion(joint, target_pos):
+    iktable = IKTable('table1')
+
+    for i,v in enumerate(target_pos):
+        target_pos[i] = round(v, 4)
+
+    searching_space = iktable.table[int((target_pos[0]+0.855)/0.2)][int((target_pos[1]+0.855)/0.2)][int((target_pos[2]+0.36)/0.2)]
+    pos_jo = namedtuple('pos_jo', ['position', 'joint'])
+    target_space = []
+    for index in searching_space:
+        target_space.append(pos_jo(iktable.positions[index], iktable.joints[index]))
+
+    #threshold
+    # min = 10000000
+    # max = 0
+    # for j1 in target_space:
+    #     for j2 in target_space:
+    #         diff = m.sqrt(sum([(i - j)**2 for i, j in zip(j1.joint, j2.joint)]))
+    #         if not diff == 0:
+    #             min = diff if (min > diff) else min
+    #             max = diff if (max < diff) else max
+    # print(min)  #0.5
+    # print(max)  #10
+
+    #finding arm posture types
+    threshold = 1.5
+    posture = np.full(len(target_space), -1)
+    posture[0] = 0
+    for i_joint in range(1, len(target_space), 1):
+        for i_type in np.unique(posture):
+            if not i_type == -1:
+                diff = m.sqrt(sum([(i - j)**2 for i, j in zip(target_space[i_type].joint, target_space[i_joint].joint)]))
+                if diff < threshold:
+                    posture[i_joint] = i_type
+                    break
+        posture[i_joint] = i_joint if posture[i_joint] == -1 else posture[i_joint]
+
+    # print(np.unique(posture))
+    #take a posture
+    for jo in range(len(posture)):
+        if posture[jo] == 0:
+            print(target_space[jo].joint)
+
 def approximation(nearest_joint, target_pos):
     rad_offset = m.pi/180.0
     tmp_joint = nearest_joint
@@ -119,7 +165,7 @@ def approximation(nearest_joint, target_pos):
                 rad_offset *= -1
                 reverse += 1
 
-            tmp_joint[i] += rad_offset
+        tmp_joint[i] += rad_offset
         print('joint %s done' %(i+1))
         if diff < 0.01: # 1cm
             break
@@ -136,22 +182,18 @@ def test(nearest_joint, target_pos):
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+    pos_a = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+
     joint_b:list = [0.1, 0.1, 0.1, -1.5, -0.05, 2.1, 0.9]
 
-    pos_a = fk_dh(joint_a, 7)
-    pos_b = fk_dh(joint_b, 7)
+    # pos_a = fk_dh(joint_a, 7)
+    # pos_b = fk_dh(joint_b, 7)
     # print(pos_a)
     # print(pos_b)
-    pos_c = [(i+j)/2 for i, j in zip(pos_a, pos_b)]
+    # pos_c = [(i+j)/2 for i, j in zip(pos_a, pos_b)]
     # pos_c = pos_b
 
     # joint_c = linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c)
     # joint_c = approximation(joint_a, pos_c)
-    # joint_c = test(joint_a, pos_c)
-    # print(joint_c)
 
-    print(fk_jo(joint_a))
-
-    # for i in range(7):
-    #     print(fk_dh(joint_a, i+1))
-    # print(pos_c)
+    dimension_portion(joint_a, pos_a)
