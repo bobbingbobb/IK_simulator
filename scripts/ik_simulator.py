@@ -247,7 +247,7 @@ if __name__ == '__main__':
     # gather = Gathering()
     # gather.without_colliding_detect('raw_data_7j_1')
 
-    table2 = IKTable('table2', 'raw_data_7j_1')
+    # table2 = IKTable('table2', 'raw_data_7j_1')
     ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     print(ik_simulator.find(target))

@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import math as m
 from collections import namedtuple
 import os
 
@@ -52,7 +53,7 @@ class ppp():
 # k.a()
 # print(os.path.exists('data/raw_data.npz'))
 
-raw_data = np.load('data/raw_data1.npz')
+raw_data = np.load('../data/raw_data/raw_data_7j_1.npz')
 joints = raw_data['joints']
 positions = raw_data['positions']
 
@@ -60,13 +61,13 @@ positions = raw_data['positions']
 #x: -855 ~ 855, 1710, 18/20 = 9
 #y: -855 ~ 855, 1710, 18/20 = 9
 #z: -360 ~ 1190, 1550, 16/20 = 8
-shift_x, shift_y, shift_z = 0.855, 0.855, 0.36
-grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-for index, [x, y, z] in enumerate(positions):
-    # print(x, y, z)
-    grid_data[int((x+shift_x)/0.2)][int((y+shift_y)/0.2)][int((z+shift_z)/0.2)].append(index)
+# shift_x, shift_y, shift_z = 0.855, 0.855, 0.36
+# grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
+# for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(positions):
+#     # print(x, y, z)
+#     grid_data[int((x+shift_x)/0.2)][int((y+shift_y)/0.2)][int((z+shift_z)/0.2)].append(index)
 
-print(np.mean(np.array([len(k) for i in grid_data for j in i for k in j if len(k) != 0])))# avg sample in a 20cm cube
+# print(np.mean(np.array([len(k) for i in grid_data for j in i for k in j if len(k) != 0])))# avg sample in a 20cm cube
 # print(np.mean(np.array(grid_data).reshape((1, int(np.prod(np.array(grid_data).shape))))))
 # print(np.prod(np.array(grid_data).shape))
 
@@ -86,4 +87,7 @@ def recur(list, num):
 
     return result
 
-print(np.mean(np.array(recur(grid_data, 3))))
+# print(np.mean(np.array(recur(grid_data, 3))))
+
+print(m.sqrt((0.001) ** 2 * 3))
+print(list(range(7)))
