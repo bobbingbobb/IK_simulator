@@ -90,4 +90,4 @@ def recur(list, num):
 # print(np.mean(np.array(recur(grid_data, 3))))
 
 print(m.sqrt((0.001) ** 2 * 3))
-print(list(range(7)))
+print([(m.pi/180.0)*(0.5**i) for i in range(5)])
