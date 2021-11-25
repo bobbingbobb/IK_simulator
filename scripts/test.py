@@ -91,3 +91,6 @@ def recur(list, num):
 
 print(m.sqrt((0.001) ** 2 * 3))
 print([(m.pi/180.0)*(0.5**i) for i in range(5)])
+
+for i in range(5, -1, -1):
+    print([j for j in range(i, 6, 1)])

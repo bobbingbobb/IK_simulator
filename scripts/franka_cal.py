@@ -114,7 +114,7 @@ def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     #     return interpolation_A(joint_a, tmp_joint, pos_a, tmp_pos, pos_c, diff)
 
 def find_all_posture(joint, target_pos):
-    # start = d.datetime.now()
+    start = d.datetime.now()
 
     iktable = IKTable('table2')
 
@@ -153,6 +153,8 @@ def find_all_posture(joint, target_pos):
                     break
         find_posture[i_joint] = i_joint if find_posture[i_joint] == -1 else find_posture[i_joint]
 
+    print(np.sort([diff_cal(target_space[i].position[6], target_pos) for i in np.unique(find_posture)]))
+
     # end = d.datetime.now()
     # print(end-start)
     # print(np.unique(find_posture))
@@ -161,28 +163,36 @@ def find_all_posture(joint, target_pos):
     #     if find_posture[jo] == 0:
     #         print(target_space[jo].joint)
 
-    #moving joint:[5], [5,4], ..., [5,4,3,2,1,0], joint[6] does not affect position
+    #moving joint:[5,4], ..., [5,4,3,2,1,0], joint[6] does not affect position
+    n = 0.0
+    origin_diff = []
     time = []
     jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
     posture = []
     for i_type in np.unique(find_posture):
         tmp_joint = target_space[i_type].joint
-        for i in range(5, -1, -1):
-            moving_joint = [j for j in range(6)]
-            # print(moving_joint)
-            # tmp_joint, diff, t = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
-            tmp_joint, diff = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+        moving_joint = [j for j in range(6)]
 
-            if diff < 0.001:
-                break
+        for i in range(4, -1, -1):
+            moving_joint = [j for j in range(i, 6, 1)]
+            tmp_joint, diff, t = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+            # tmp_joint, diff = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
 
-        # posture.append(jo_diff(tmp_joint, diff))
-        # time.append(t)
+        posture.append(jo_diff(tmp_joint, diff))
+        time.append(t)
+
+        if diff > 0.005:#0.5cm
+            n += 1
+            origin_diff.append(diff_cal(target_space[i_type].position[6], target_pos))
+            # origin_diff.append([round(m.sqrt((a-b)**2), 4) for a,b in zip(target_space[i_type].position[6], target_pos)])
 
     print(target_pos)
     # print(fk_dh(tmp_joint))
-    print(np.mean(np.array([p.diff for p in posture])))
-    # print(np.mean(np.array(time)))
+    print('mean diff: ', np.mean(np.array([p.diff for p in posture])))
+    print(np.sort(origin_diff))
+    print('worst: ',max([p.diff for p in posture]))
+    print('worst%: ', n/len(posture))
+    print(np.mean(np.array(time)))
 
 
     end = d.datetime.now()
@@ -191,7 +201,7 @@ def find_all_posture(joint, target_pos):
 def approximation(nearest_joint, target_pos, moving_joint=[i for i in range(7)]):
     start = d.datetime.now()
 
-    rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(6)]  #[1, 0.5, 0.25, ...] degree
+    rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(3)]  #[1, 0.5, 0.25] degree
     diff = diff_cal(fk_dh(nearest_joint), target_pos)
     # print(diff)
 
@@ -212,14 +222,12 @@ def approximation(nearest_joint, target_pos, moving_joint=[i for i in range(7)])
 
             tmp_joint[i] += offset
             # print('joint %s with %s done' %(i+1, offset))
-            if diff < 0.001: # 0.1cm
-                print('break!')
-                break
+
     end = d.datetime.now()
     # print(end-start)
 
-    # return tmp_joint, pre_diff, end-start
-    return tmp_joint, pre_diff
+    return tmp_joint, pre_diff, end-start
+    # return tmp_joint, pre_diff
 
 def test(nearest_joint, target_pos):
     for n in range(20):
