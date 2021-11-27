@@ -236,6 +236,17 @@ def test(nearest_joint, target_pos):
         diff = diff_cal(tmp_pos, target_pos)
         print(diff)
 
+class kdtree:
+    def __init__(self, dimension, node, left, right):
+        self.dimension = dimension
+        self.node = node
+        self.left = left
+        self.right = right
+
+def get_tree():
+    pass
+
+
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
@@ -253,7 +264,8 @@ if __name__ == '__main__':
     # joint_c = linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c)
     # joint_c = approximation(joint_a, pos_c)
 
-    find_all_posture(joint_a, pos_a)
+    # find_all_posture(joint_a, pos_a)
 
+    print(fk_dh(joint_a))
     # iktable = IKTable('table2')
     # print(iktable.positions[0])

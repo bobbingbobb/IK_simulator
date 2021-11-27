@@ -234,6 +234,9 @@ class IKTable:
 
         return target_space
 
+    def kd_tree(self):
+        pass
+
 class IKSimulator:
     def __init__(self):
         self.iktable = IKTable('table2')
