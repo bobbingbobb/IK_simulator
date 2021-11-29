@@ -96,7 +96,10 @@ def recur(list, num):
 #     print([j for j in range(i, 6, 1)])
 
 a = [[1,2,3],[3,3,3],[1,2,3],[4,4,4]]
-c = [22,22,22]
+c = [22.2,.22,22.1]
 
 print(np.unique(a, return_index=True))
-print(list(str(c)))
+print([float(k) for k in str(c)[1:-1].split(',')])
+
+for i in a:
+    print(i)

@@ -83,7 +83,8 @@ class Robot:
 
         return pos
 
-class Gathering:
+
+class DataCollection:
     def __init__(self):
         self.robot = Robot()
         self.joints = self.robot.joints
@@ -129,9 +130,9 @@ class IKTable:
         self.table_name = self.__name_alignment(table_name)
         self.table = []
 
-        self.raw_data = None
-        self.joints = []    #chained
-        self.positions = [] #origin
+        # self.raw_data = None
+        self.joints = []    #list: origin joint data
+        self.pos_table = [] #dict: position to joint index
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
 
@@ -142,8 +143,7 @@ class IKTable:
                 print('no such table.')
             else:
                 print('creating table type with new raw data...')
-                self.raw_data = self.__name_alignment(raw_data)
-                self.load_data()
+                self.load_data(self.__name_alignment(raw_data))
                 self.create_table()
 
     def __name_alignment(self, name):
@@ -173,7 +173,10 @@ class IKTable:
 
         return np.mean(np.array(recur(data, data_dim)))
 
-    def chaining(self, positions):
+    def __str2trans(self, key_str):
+        return [float(k) for k in str(key_str)[1:-1].split(',')]
+
+    def __chaining(self, positions):
         pos_jo = defaultdict([])
 
         for index, p in enumerate(positions):
@@ -183,12 +186,12 @@ class IKTable:
 
     def load_table(self):
         table_info = np.load(self.__tablename_alignment(self.table_name), allow_pickle=True)
-        self.raw_data = str(table_info['raw_data'])
+        raw_data = str(table_info['raw_data'])
         self.table = table_info['table']
 
         print('table: ', self.table_name)
-        print('data: ', self.raw_data)
-        self.load_data()
+        print('data: ', raw_data)
+        self.load_data(raw_data)
 
     def create_table(self):
         start = d.datetime.now()
@@ -199,10 +202,10 @@ class IKTable:
 
         self.load_table()
 
-    def load_data(self):
-        raw_data = np.load(self.__dataname_alignment(self.raw_data))
+    def load_data(self, raw_dataname):
+        raw_data = np.load(self.__dataname_alignment(raw_dataname))
         self.joints = raw_data['joints']
-        self.positions = self.chaining(raw_data['positions'])
+        self.pos_table = self.__chaining(raw_data['positions'])
 
 
     def switch_raw_data(self, raw_data=None):
@@ -228,23 +231,20 @@ class IKTable:
         #y: -855 ~ 855, 1710, 18/20 = 9
         #z: -360 ~ 1190, 1550, 16/20 = 8
         grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-        # for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
-        for key, value in self.positions.items():
-            for [x, y, z] in value:
-                grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
+        for key, _ in self.pos_table.items():
+            x, y, z = self.__str2trans(key)
+            grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(key)
 
         print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
 
         np.savez(self.__tablename_alignment(self.table_name), raw_data=self.raw_data, table=grid_data)
 
-    def searching_table_v1(self, target):
-        searching_space = self.table[int((target[0]+self.shift_x)/0.2)][int((target[1]+self.shift_y)/0.2)][int((target[2]+self.shift_z)/0.2)]
+    def searching_table_v1(self, [x, y, z]):
+        searching_space = self.table[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)]
 
-        pos_jo = namedtuple('pos_jo', ['position', 'joint'])
         target_space = []
-        for position in searching_space:
-            for p in position:
-                target_space.append(pos_jo(position, self.joints[p]))
+        for key in searching_space:
+            target_space.extend(self.position[key])
 
         return target_space
 
@@ -253,6 +253,7 @@ class IKTable:
             return
         #排序?
         #中位數 -> index -> 分割+移除 -> 寫入node ->
+
 
 class IKSimulator:
     def __init__(self):
@@ -263,8 +264,9 @@ class IKSimulator:
 
         return searching_area
 
+
 if __name__ == '__main__':
-    # gather = Gathering()
+    # gather = DataCollection()
     # gather.without_colliding_detect('raw_data_7j_1')
 
     # table2 = IKTable('table2', 'raw_data_7j_1')
