@@ -236,16 +236,58 @@ def test(nearest_joint, target_pos):
         diff = diff_cal(tmp_pos, target_pos)
         print(diff)
 
-class kdtree:
-    def __init__(self, dimension, node, left, right):
+class Linked_list:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+
+class Node:
+    def __init__(self, dimension, split):
         self.dimension = dimension
-        self.node = node
-        self.left = left
-        self.right = right
+        self.range = (None, None)
+        self.split = 0
+        self.left = -1
+        self.right = -1
+
+    def __call__(self):
+        return self.split
 
 def get_tree():
     pass
 
+def sort():
+    data = np.load('../data/raw_data/raw_data_7j_1.npz')
+
+    position = data['positions']
+    s = d.datetime.now()
+    p = np.sort([i[6][0] for i in position])
+    m = d.datetime.now()
+    p = np.percentile([i[6][0] for i in position], 50)
+    p = np.percentile([i[6][0] for i in position[:int(len(position))]], 50)
+
+    e = d.datetime.now()
+
+    print(len(position))
+    print(len(np.unique(position)))
+
+    print(m-s)
+    print(e-m)
+
+def chaining():
+    # chained_positions = [[] for _ in range(len(np.unique([p for p in self.positions[6]])))]
+    kk = [1,2,3,3,2,2,1,1,1,3,3,40,4,4,30,30,59,59,234,2,9,9,6,6,5,2,3,1,101,293,48,28,23,23]
+    chained_positions = [[]]
+    for p in kk:
+        print(chained_positions)
+        for pos in chained_positions:
+            if pos == []:   #new
+                pos.append(p)
+                chained_positions.append([])
+                break
+            if p == pos[0]:  #matched
+                pos.append(p)
+                break
+    return chained_positions[:-1]
 
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
@@ -266,6 +308,9 @@ if __name__ == '__main__':
 
     # find_all_posture(joint_a, pos_a)
 
-    print(fk_dh(joint_a))
+    # print(fk_dh(joint_a))
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
+
+    # sort()
+    print(chaining())

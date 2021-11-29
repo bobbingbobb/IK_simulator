@@ -89,8 +89,14 @@ def recur(list, num):
 
 # print(np.mean(np.array(recur(grid_data, 3))))
 
-print(m.sqrt((0.001) ** 2 * 3))
-print([(m.pi/180.0)*(0.5**i) for i in range(5)])
+# print(m.sqrt((0.001) ** 2 * 3))
+# print([(m.pi/180.0)*(0.5**i) for i in range(5)])
+#
+# for i in range(5, -1, -1):
+#     print([j for j in range(i, 6, 1)])
 
-for i in range(5, -1, -1):
-    print([j for j in range(i, 6, 1)])
+a = [[1,2,3],[3,3,3],[1,2,3],[4,4,4]]
+c = [22,22,22]
+
+print(np.unique(a, return_index=True))
+print(list(str(c)))

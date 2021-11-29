@@ -2,7 +2,7 @@ import os
 import numpy as np
 import math as m
 import datetime as d
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 DATA_FOLDER = '../data/'
 RAW_DATA_FOLDER = DATA_FOLDER+'raw_data/'
@@ -123,14 +123,15 @@ class Gathering:
         print('done. duration: ', end-start)
         return filename
 
+
 class IKTable:
     def __init__(self, table_name, raw_data=None):
         self.table_name = self.__name_alignment(table_name)
         self.table = []
 
         self.raw_data = None
-        self.joints = []
-        self.positions = []
+        self.joints = []    #chained
+        self.positions = [] #origin
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
 
@@ -172,6 +173,14 @@ class IKTable:
 
         return np.mean(np.array(recur(data, data_dim)))
 
+    def chaining(self, positions):
+        pos_jo = defaultdict([])
+
+        for index, p in enumerate(positions):
+            pos_jo[str(p[6])].append(index)
+
+        return pos_jo
+
     def load_table(self):
         table_info = np.load(self.__tablename_alignment(self.table_name), allow_pickle=True)
         self.raw_data = str(table_info['raw_data'])
@@ -184,6 +193,7 @@ class IKTable:
     def create_table(self):
         start = d.datetime.now()
         self.table_v1()
+        self.kd_tree()
         end = d.datetime.now()
         print('done. duration: ', end-start)
 
@@ -192,7 +202,8 @@ class IKTable:
     def load_data(self):
         raw_data = np.load(self.__dataname_alignment(self.raw_data))
         self.joints = raw_data['joints']
-        self.positions = raw_data['positions']
+        self.positions = self.chaining(raw_data['positions'])
+
 
     def switch_raw_data(self, raw_data=None):
         if raw_data == 'empty':
@@ -217,8 +228,10 @@ class IKTable:
         #y: -855 ~ 855, 1710, 18/20 = 9
         #z: -360 ~ 1190, 1550, 16/20 = 8
         grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-        for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
-            grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
+        # for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
+        for key, value in self.positions.items():
+            for [x, y, z] in value:
+                grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
 
         print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
 
@@ -229,13 +242,17 @@ class IKTable:
 
         pos_jo = namedtuple('pos_jo', ['position', 'joint'])
         target_space = []
-        for index in searching_space:
-            target_space.append(pos_jo(self.positions[index][6], self.joints[index]))
+        for position in searching_space:
+            for p in position:
+                target_space.append(pos_jo(position, self.joints[p]))
 
         return target_space
 
-    def kd_tree(self):
-        pass
+    def kd_tree(self, x_base, y_base):
+        if len(x_base) == 1:
+            return
+        #排序?
+        #中位數 -> index -> 分割+移除 -> 寫入node ->
 
 class IKSimulator:
     def __init__(self):
