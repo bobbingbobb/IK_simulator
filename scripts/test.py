@@ -4,6 +4,8 @@ import math as m
 from collections import namedtuple
 import os
 
+from scipy.spatial import KDTree
+
 # list1 = np.array([[0.0, 0.0, 0.0]])
 # list2 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 #
@@ -95,11 +97,23 @@ def recur(list, num):
 # for i in range(5, -1, -1):
 #     print([j for j in range(i, 6, 1)])
 
-a = [[1,2,3],[3,3,3],[1,2,3],[4,4,4]]
+a = [[1,8,3],[3,3,3],[1,2,3],[4,4,4],[9,8,7],[3,3,3],[1,2,3],[5,5,5]]
 c = [22.2,.22,22.1]
 
-print(np.unique(a, return_index=True))
-print([float(k) for k in str(c)[1:-1].split(',')])
+# print(np.unique(a, return_index=True))
+# print([float(k) for k in str(c)[1:-1].split(',')])
+#
+# x, y, z = c
+# print(x)
+# for i in a:
+#     print(i)
 
-for i in a:
-    print(i)
+b = {'[2 , 3 , 4]':2, '[1 , 2 , 3]':3}
+for i, v in enumerate(a):
+    if v == i:
+        print('t')
+else:
+    print('f')
+
+tree = KDTree(a, leafsize=2, balanced_tree=True)
+print(tree.query_ball_point([3,3,2], 6))

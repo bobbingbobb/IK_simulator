@@ -4,6 +4,8 @@ import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
 
+from scipy.spatial import KDTree
+
 DATA_FOLDER = '../data/'
 RAW_DATA_FOLDER = DATA_FOLDER+'raw_data/'
 TABLE_FOLDER = DATA_FOLDER+'table/'
@@ -127,24 +129,18 @@ class DataCollection:
 
 class IKTable:
     def __init__(self, table_name, raw_data=None):
-        self.table_name = self.__name_alignment(table_name)
+        # self.table_name = self.__name_alignment(table_name)
         self.table = []
 
-        # self.raw_data = None
+        self.raw_data = None
         self.joints = []    #list: origin joint data
+        self.positions = []
         self.pos_table = [] #dict: position to joint index
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
 
-        if os.path.exists(self.__tablename_alignment(self.table_name)):
-            self.load_table()
-        else:
-            if raw_data == None:
-                print('no such table.')
-            else:
-                print('creating table type with new raw data...')
-                self.load_data(self.__name_alignment(raw_data))
-                self.create_table()
+        self.load_data()
+        self.kd_tree()
 
     def __name_alignment(self, name):
         name = str(name).split('/')
@@ -176,37 +172,19 @@ class IKTable:
     def __str2trans(self, key_str):
         return [float(k) for k in str(key_str)[1:-1].split(',')]
 
-    def __chaining(self, positions):
-        pos_jo = defaultdict([])
+    def load_data(self):
+        print('loading data...')
+        raw_info = np.load(self.__dataname_alignment(self.raw_data))
+        self.joints = raw_info['joints']
 
-        for index, p in enumerate(positions):
-            pos_jo[str(p[6])].append(index)
+        pos_jo = defaultdict(list)
+        for index, pos in enumerate(raw_info['positions']):
+            pos_jo[str(list(pos[6]))].append(index)
 
-        return pos_jo
+        self.pos_table = pos_jo
+        self.positions = [self.__str2trans(k) for k in pos_jo.keys()]
 
-    def load_table(self):
-        table_info = np.load(self.__tablename_alignment(self.table_name), allow_pickle=True)
-        raw_data = str(table_info['raw_data'])
-        self.table = table_info['table']
-
-        print('table: ', self.table_name)
-        print('data: ', raw_data)
-        self.load_data(raw_data)
-
-    def create_table(self):
-        start = d.datetime.now()
-        self.table_v1()
-        self.kd_tree()
-        end = d.datetime.now()
-        print('done. duration: ', end-start)
-
-        self.load_table()
-
-    def load_data(self, raw_dataname):
-        raw_data = np.load(self.__dataname_alignment(raw_dataname))
-        self.joints = raw_data['joints']
-        self.pos_table = self.__chaining(raw_data['positions'])
-
+        print('loading done.')
 
     def switch_raw_data(self, raw_data=None):
         if raw_data == 'empty':
@@ -215,49 +193,33 @@ class IKTable:
 
         self.raw_data = self.__name_alignment(raw_data)
         self.load_data()
+        self.kd_tree()
         print('switch to '+raw_data)
 
     def searching_area(self, target):
         for i,v in enumerate(target):
             target[i] = round(v, 4)
 
-        target_space = self.searching_table_v1(target)
+        target_space = self.query_kd_tree(target)
 
         return target_space
 
-    def table_v1(self):
-        #20 cm cube
-        #x: -855 ~ 855, 1710, 18/20 = 9
-        #y: -855 ~ 855, 1710, 18/20 = 9
-        #z: -360 ~ 1190, 1550, 16/20 = 8
-        grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-        for key, _ in self.pos_table.items():
-            x, y, z = self.__str2trans(key)
-            grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(key)
+    def kd_tree(self):
+        self.table = KDTree(self.positions, leafsize=2, balanced_tree=True)
 
-        print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
-
-        np.savez(self.__tablename_alignment(self.table_name), raw_data=self.raw_data, table=grid_data)
-
-    def searching_table_v1(self, [x, y, z]):
-        searching_space = self.table[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)]
+    def query_kd_tree(self, target):
+        searching_space = self.table.query_ball_point(target, 0.02)
 
         target_space = []
         for key in searching_space:
-            target_space.extend(self.position[key])
+            target_space.append(self.positions[key])
 
         return target_space
-
-    def kd_tree(self, x_base, y_base):
-        if len(x_base) == 1:
-            return
-        #排序?
-        #中位數 -> index -> 分割+移除 -> 寫入node ->
 
 
 class IKSimulator:
     def __init__(self):
-        self.iktable = IKTable('table2')
+        self.iktable = IKTable('table3')
 
     def find(self, target_position):
         searching_area = self.iktable.searching_area(target_position)
@@ -269,7 +231,7 @@ if __name__ == '__main__':
     # gather = DataCollection()
     # gather.without_colliding_detect('raw_data_7j_1')
 
-    # table2 = IKTable('table2', 'raw_data_7j_1')
+    # table2 = IKTable('table3', 'raw_data_7j_1')
     ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     print(ik_simulator.find(target))

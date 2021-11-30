@@ -3,7 +3,7 @@ import numpy as np
 import random as r
 import math as m
 import datetime as d
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from ik_simulator import IKTable
 
@@ -236,24 +236,46 @@ def test(nearest_joint, target_pos):
         diff = diff_cal(tmp_pos, target_pos)
         print(diff)
 
-class Linked_list:
-    def __init__(self, data):
-        self.data = data
-        self.next = None
+def str2trans(key_str):
+    return [float(k) for k in str(key_str)[1:-1].split(' ')]
 
-class Node:
-    def __init__(self, dimension, split):
-        self.dimension = dimension
-        self.range = (None, None)
-        self.split = 0
-        self.left = -1
-        self.right = -1
+def load_data(raw_dataname):
+    print('loading data...')
+    raw_data = np.load(raw_dataname)
+    joints = raw_data['joints']
 
-    def __call__(self):
-        return self.split
+    s = d.datetime.now()
+    pos_jo = defaultdict(list)
+    for index, pos in enumerate(raw_data['positions']):
+        pos_jo[str(list(pos[6]))].append(index)
+        # break
+    e = d.datetime.now()
+    print(e-s)
 
-def get_tree():
-    pass
+    pos_table = pos_jo
+    # print(pos_jo.keys())
+    positions1 = [[float(k) for k in str(a)[1:-1].split(',')] for a in pos_jo.keys()]
+    m = d.datetime.now()
+    print(m-e)
+
+    positions = []
+    pos_table = []
+    for jo_ind, pos in enumerate(raw_data['positions']):
+        print(jo_ind)
+        for p_ind, p in enumerate(positions):
+            # print(pos[6])
+            # print(p)
+            if (pos[6] == p).all():
+                pos_table[p_ind].append(jo_ind)
+        else:
+            positions.append(pos[6])
+            pos_table.append([])
+            pos_table[-1].append(jo_ind)
+
+    e = d.datetime.now()
+    print(positions1==positions)
+    print(m-s)
+    print(e-m)
 
 def sort():
     data = np.load('../data/raw_data/raw_data_7j_1.npz')
@@ -312,5 +334,7 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    # sort()
-    print(chaining())
+    k = np.load('../data/table/table3.npz')
+    a = k['table']
+
+    print(type(a))
