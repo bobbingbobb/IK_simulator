@@ -3,6 +3,7 @@ import numpy as np
 import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
+import copy as c
 
 from scipy.spatial import KDTree
 
@@ -44,7 +45,7 @@ class Robot:
                        [0.0, 0.0, 0.0, 1.0]])
         return rx
 
-    def fk(self, joints:list):
+    def fk_dh(self, joints:list):
         self.dh[:,0] = joints
 
         fk_mat = np.eye(4)
@@ -108,7 +109,7 @@ class DataCollection:
                         for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
                             for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
                                 joints = [j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0]
-                                # position = self.robot.fk(joints)
+                                # position = self.robot.fk_dh(joints)
                                 position = self.robot.fk_jo(joints)
                                 for i, j in enumerate(position):
                                     for p, n in enumerate(j):
@@ -128,14 +129,13 @@ class DataCollection:
 
 
 class IKTable:
-    def __init__(self, table_name, raw_data=None):
-        # self.table_name = self.__name_alignment(table_name)
+    def __init__(self, raw_data):
         self.table = []
 
-        self.raw_data = None
-        self.joints = []    #list: origin joint data
+        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.npz'
+        self.joints = []
         self.positions = []
-        self.pos_table = [] #dict: position to joint index
+        # self.pos_table = [] #dict: position to joint index    #no need
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
 
@@ -146,12 +146,6 @@ class IKTable:
         name = str(name).split('/')
         name = name[-1].split('.')
         return name[0]
-
-    def __dataname_alignment(self, name):
-        return RAW_DATA_FOLDER+self.__name_alignment(name)+'.npz'
-
-    def __tablename_alignment(self, name):
-        return TABLE_FOLDER+self.__name_alignment(name)+'.npz'
 
     def __density(self, data, data_dim):
         def recur(list, dim):
@@ -173,30 +167,39 @@ class IKTable:
         return [float(k) for k in str(key_str)[1:-1].split(',')]
 
     def load_data(self):
+        # s = d.datetime.now()
         print('loading data...')
-        raw_info = np.load(self.__dataname_alignment(self.raw_data))
-        self.joints = raw_info['joints']
+        raw_info = np.load(self.raw_data)
+        self.joints = raw_info['joints'].tolist()
+        self.positions = [p[6].tolist() for p in raw_info['positions']]
+        # print(self.positions[0])
+        # print(len(np.unique(self.positions, axis=0)))
 
-        pos_jo = defaultdict(list)
-        for index, pos in enumerate(raw_info['positions']):
-            pos_jo[str(list(pos[6]))].append(index)
+        # pos_jo = defaultdict(list)
+        # for index, pos in enumerate(raw_info['positions']):
+        #     pos_jo[str(list(pos[6]))].append(self.joints[index])
+        #
+        # self.pos_table = pos_jo
+        # self.positions = [self.__str2trans(k) for k in pos_jo.keys()]
 
-        self.pos_table = pos_jo
-        self.positions = [self.__str2trans(k) for k in pos_jo.keys()]
+        # print(type(self.joints))
+        # print(type(self.positions))
 
         print('loading done.')
+        # print(d.datetime.now()-s)
 
     def switch_raw_data(self, raw_data=None):
         if raw_data == 'empty':
             print('new raw_data needed.')
             return 0
 
-        self.raw_data = self.__name_alignment(raw_data)
+        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.npz'
         self.load_data()
         self.kd_tree()
         print('switch to '+raw_data)
 
     def searching_area(self, target):
+        # return a list of positions
         for i,v in enumerate(target):
             target[i] = round(v, 4)
 
@@ -208,24 +211,148 @@ class IKTable:
         self.table = KDTree(self.positions, leafsize=2, balanced_tree=True)
 
     def query_kd_tree(self, target):
-        searching_space = self.table.query_ball_point(target, 0.02)
+        # searching_space = self.table.query_ball_point(target, 0.02)
+        #
+        # target_space = []
+        # for key in searching_space:
+        #     target_space.append(self.positions[key])
 
-        target_space = []
-        for key in searching_space:
-            target_space.append(self.positions[key])
-
-        return target_space
+        # return target_space
+        return self.table.query_ball_point(target, 0.02)
 
 
 class IKSimulator:
     def __init__(self):
-        self.iktable = IKTable('table3')
+        self.iktable = IKTable('raw_data_7j_1')
+        self.robot = Robot()
+
+    def fk(self, joints):
+        return self.robot.fk_dh(joints)
+
+    def diff_cal(self, list_1, list_2):
+        if len(list_1) == len(list_2):
+            return m.sqrt(sum([(i - j)**2 for i, j in zip(list_1, list_2)]))
+        else:
+            print('length of two lists must be equal')
+            return 0
 
     def find(self, target_position):
         searching_area = self.iktable.searching_area(target_position)
 
         return searching_area
 
+    def index2pos_jo(self, indices):
+        pos_jo = namedtuple('pos_jo', ['position', 'joint'])
+        target_space = []
+        for index in indices:
+            target_space.append(pos_jo(self.iktable.positions[index], self.iktable.joints[index]))
+
+        return target_space
+
+    def get_different_postures(self, target_space):
+
+        #finding arm posture types
+        threshold = 1.5
+        nearby_postures = []
+        for i_joint, value in enumerate(target_space):
+            for i_type in nearby_postures:
+                diff = self.diff_cal(i_type.joint, value.joint)
+                if diff < threshold:
+                    # nearby_postures.append(value)
+                    break
+            else:
+                nearby_postures.append(value)
+
+        return nearby_postures
+
+    def find_all_posture(self, target_pos):
+        positions = self.iktable.searching_area(target_pos)
+        target_space = self.index2pos_jo(positions)
+        nearby_postures = self.get_different_postures(target_space)
+
+        start = d.datetime.now()
+
+        posture = self.pure_approx(nearby_postures, target_pos)
+
+        end = d.datetime.now()
+        print(' total time: ', end-start)
+
+        return posture
+
+    def approximation(self, imitating_joint, target_pos, moving_joint=[i for i in range(7)]):
+        start = d.datetime.now()
+
+        rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(3)]  #[1, 0.5, 0.25] degree
+        diff = self.diff_cal(self.fk(imitating_joint), target_pos)
+        # print(diff)
+
+        tmp_joint = imitating_joint
+
+        for i in moving_joint:
+            for offset in rad_offset:
+                reverse = 0
+                while reverse < 2:
+                    tmp_joint[i] += offset
+                    pre_diff = diff
+                    tmp_pos = self.fk(tmp_joint)
+                    diff = self.diff_cal(tmp_pos, target_pos)
+                    # print(tmp_pos, diff)
+                    if diff >= pre_diff:
+                        offset *= -1
+                        reverse += 1
+
+                tmp_joint[i] += offset
+                # print('joint %s with %s done' %(i+1, offset))
+
+        end = d.datetime.now()
+
+        return tmp_joint, pre_diff, end-start
+        # return tmp_joint, pre_diff
+
+    def pure_approx(self, nearby_postures, target_pos):
+        #moving joint:[5,4], ..., [5,4,3,2,1,0], joint[6] does not affect position
+        n = 0.0
+        movements = [[] for _ in range(7)]
+        origin_diff =  []
+        time = []
+        jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
+        posture = []
+        for p_type in nearby_postures:
+            tmp_joint = c.deepcopy(p_type.joint)
+            # moving_joint = [j for j in range(6)]
+
+            for i in range(4, -1, -1):
+                moving_joint = [j for j in range(i, 6, 1)]
+                tmp_joint, diff, t = self.approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+                # tmp_joint, diff = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+
+            posture.append(jo_diff(tmp_joint, diff))
+            time.append(t)
+
+            for i in range(7):
+                movements[i].append(abs(p_type.joint[i]-tmp_joint[i]))
+
+            if diff > 0.002:#0.2cm
+                n += 1
+                origin_diff.append(diff)
+                # origin_diff.append([round(m.sqrt((a-b)**2), 4) for a,b in zip(target_space[i_type].position[6], target_pos)])
+
+        print('     target: ', target_pos)
+        print('    posture: ', len(nearby_postures))
+        print('  mean diff: ', np.mean(np.array([p.diff for p in posture])))
+        print(' worst diff: ', max([p.diff for p in posture]))
+        print('     worst%: ', n/len(posture))
+        print('  worse num: ', n)
+        print('origin diff: ', np.sort(origin_diff))
+        print('  avg. time: ', np.mean(np.array(time)))
+        for i in range(7):
+            movements[i] = np.mean(movements[i])
+        print(movements)    #[0.00029, 0.004945, 0.01018, 0.01454, 0.3551745, 0.064868, 0.0]
+
+        return posture
+
+    def vector_portion(self, target_pos):
+        pass
 
 if __name__ == '__main__':
     # gather = DataCollection()
@@ -234,4 +361,5 @@ if __name__ == '__main__':
     # table2 = IKTable('table3', 'raw_data_7j_1')
     ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
-    print(ik_simulator.find(target))
+    ik_simulator.find_all_posture(target)
+    # print(len(ik_simulator.iktable.positions))

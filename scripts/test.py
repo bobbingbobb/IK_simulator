@@ -115,5 +115,5 @@ for i, v in enumerate(a):
 else:
     print('f')
 
-tree = KDTree(a, leafsize=2, balanced_tree=True)
-print(tree.query_ball_point([3,3,2], 6))
+# tree = KDTree(a, leafsize=2, balanced_tree=True)
+# print(tree.query_ball_point([3,3,2], 6))
