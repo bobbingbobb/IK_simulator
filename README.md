@@ -37,13 +37,15 @@ class IKTable
         searching table:  searching (nearby position) table.
         joints:           raw joints data.
         pos_table:        position-joints_chain corresponding table(end point based).
-    def __chaining:
+    def load_data:
         turns raw position data (end point only) into position-joints_chain corresponding table.
+    def kd_tree():
+        kd tree.
     def searching:
         find existing positions.
     def range_search:(not yet)
         find positions in range.
-    
+
     table_v1: build, search
     kd_tree: build, search
 
