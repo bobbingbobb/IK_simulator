@@ -39,12 +39,12 @@ class IKTable
         pos_table:        position-joints_chain corresponding table(end point based).
     def load_data:
         turns raw position data (end point only) into position-joints_chain corresponding table.
-    def kd_tree():
+    def kd_tree:
         kd tree.
     def searching:
         find existing positions.
-    def range_search:(not yet)
-        find positions in range.
+    def range_search:
+        find positions in range. (kd_tree.query_ball_point)
 
     table_v1: build, search
     kd_tree: build, search
@@ -52,8 +52,15 @@ class IKTable
 class IKSimulator
     description:
         work as IK.
-    functions:(not yet)
-        provide 10 postures, with specific rotation
+    def find:
+        find data around target.
+    def get_postures:
+        find all different postures(based on collected data).
+    def get_all_posture:
+        compute all postures on target.
+
+    pure approx: move all joints
+    vector portion: (not yet)
 
 ```
 
