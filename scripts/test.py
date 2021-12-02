@@ -98,7 +98,7 @@ def recur(list, num):
 #     print([j for j in range(i, 6, 1)])
 
 a = [[1,8,3],[3,3,3],[1,2,3],[4,4,4],[9,8,7],[3,3,3],[1,2,3],[5,5,5]]
-c = [22.2,.22,22.1]
+c = [22.2,.22,-22.1]
 
 # print(np.unique(a, return_index=True))
 # print([float(k) for k in str(c)[1:-1].split(',')])
@@ -114,6 +114,20 @@ for i, v in enumerate(a):
         print('t')
 else:
     print('f')
+
+a = [1,2,3]
+b = [3,4,5]
+
+# print(np.mean([1,2,3], axis=0))
+print(np.subtract(a,b))
+
+# a = [[1,8,3],[3,3,3],[1,2,3]]
+print(np.dot(a, np.linalg.inv(a)))
+# print(np.linalg.inv(a))
+
+
+print((np.array(c)>5).any())
+print(np.absolute(c))
 
 # tree = KDTree(a, leafsize=2, balanced_tree=True)
 # print(tree.query_ball_point([3,3,2], 6))

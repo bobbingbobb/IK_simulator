@@ -4,6 +4,7 @@ import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
 import copy as c
+import random as r
 
 from scipy.spatial import KDTree
 
@@ -13,6 +14,10 @@ TABLE_FOLDER = DATA_FOLDER+'table/'
 
 class Robot:
     def __init__(self):
+        #range
+        #x: -855 ~ 855, 1710
+        #y: -855 ~ 855, 1710
+        #z: -360 ~ 1190, 1550
         self.joint_num = 7
         restrict = namedtuple('restrict', ['max', 'min'])
         self.joints = [restrict(2.8973, -2.8973), restrict(1.7628, -1.7628), restrict(2.8973, -2.8973), restrict(0.0698, -3.0718), restrict(2.8973, -2.8973), restrict(3.7525, -0.0175), restrict(2.8973, -2.8973)]
@@ -94,8 +99,7 @@ class DataCollection:
         self.scale = 30 * m.pi/180
         # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
-    def without_colliding_detect(self, filename='raw_data', scale=30, ):
-        scale = scale * m.pi/180
+    def without_colliding_detect(self, filename='raw_data'):
         # self.filename = RAW_DATA_FOLDER+filename+'.npz'
         filename = RAW_DATA_FOLDER+filename+'.npz'
         start = d.datetime.now()
@@ -135,6 +139,7 @@ class IKTable:
         self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.npz'
         self.joints = []
         self.positions = []
+        self.all_posi = []
         # self.pos_table = [] #dict: position to joint index    #no need
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
@@ -172,6 +177,7 @@ class IKTable:
         raw_info = np.load(self.raw_data)
         self.joints = raw_info['joints'].tolist()
         self.positions = [p[6].tolist() for p in raw_info['positions']]
+        self.all_posi = raw_info['positions'].tolist()
         # print(self.positions[0])
         # print(len(np.unique(self.positions, axis=0)))
 
@@ -210,7 +216,7 @@ class IKTable:
     def kd_tree(self):
         self.table = KDTree(self.positions, leafsize=2, balanced_tree=True)
 
-    def query_kd_tree(self, target):
+    def query_kd_tree(self, target, range = 0.05):
         # searching_space = self.table.query_ball_point(target, 0.02)
         #
         # target_space = []
@@ -218,13 +224,22 @@ class IKTable:
         #     target_space.append(self.positions[key])
 
         # return target_space
-        return self.table.query_ball_point(target, 0.02)
+
+        result = self.table.query_ball_point(target, range)
+        if (len(result) < 2):
+            result = self.query_kd_tree(target, range+0.01)
+
+        return result
 
 
 class IKSimulator:
     def __init__(self):
         self.iktable = IKTable('raw_data_7j_1')
         self.robot = Robot()
+
+    def messenger(self, message):
+        for k, v in message.items():
+            print(k+'\t'+str(v))
 
     def fk(self, joints):
         return self.robot.fk_dh(joints)
@@ -265,19 +280,50 @@ class IKSimulator:
 
         return nearby_postures
 
+    def get_posts(self, indices):
+        ref_joint = [3,5,6]
+
+        threshold = 0.03
+        nearby_postures = []
+        for i_pos in indices:
+            posture = []
+            for i_type in nearby_postures:
+                for i_jo in ref_joint:
+                    posture.append(self.diff_cal(self.iktable.all_posi[i_pos][i_jo], self.iktable.all_posi[i_type][i_jo]))
+
+                if (np.array(posture) < threshold).all():
+                    break
+            else:
+                nearby_postures.append(i_pos)
+
+        print(len(indices), len(nearby_postures))
+
+        return nearby_postures
+
+
     def find_all_posture(self, target_pos):
         positions = self.iktable.searching_area(target_pos)
-        target_space = self.index2pos_jo(positions)
-        nearby_postures = self.get_different_postures(target_space)
+        # target_space = self.index2pos_jo(positions)
+        # nearby_postures = self.get_different_postures(target_space)
+
+        target_space = self.get_posts(positions)
+        nearby_postures = self.index2pos_jo(target_space)
+
 
         start = d.datetime.now()
 
-        posture = self.pure_approx(nearby_postures, target_pos)
+        # posture, message = self.pure_approx(nearby_postures, target_pos)
+        # posture, message = self.pure_approx(target_space, target_pos)
+        self.vector_portion(nearby_postures, target_pos)
+
+        # self.messenger(message)
 
         end = d.datetime.now()
         print(' total time: ', end-start)
 
-        return posture
+        return 0
+        # return posture
+        # return message
 
     def approximation(self, imitating_joint, target_pos, moving_joint=[i for i in range(7)]):
         start = d.datetime.now()
@@ -332,27 +378,69 @@ class IKSimulator:
             for i in range(7):
                 movements[i].append(abs(p_type.joint[i]-tmp_joint[i]))
 
-            if diff > 0.002:#0.2cm
+            if diff > 0.005:#0.5cm
                 n += 1
                 origin_diff.append(diff)
                 # origin_diff.append([round(m.sqrt((a-b)**2), 4) for a,b in zip(target_space[i_type].position[6], target_pos)])
 
-        print('     target: ', target_pos)
-        print('    posture: ', len(nearby_postures))
-        print('  mean diff: ', np.mean(np.array([p.diff for p in posture])))
-        print(' worst diff: ', max([p.diff for p in posture]))
-        print('     worst%: ', n/len(posture))
-        print('  worse num: ', n)
-        print('origin diff: ', np.sort(origin_diff))
-        print('  avg. time: ', np.mean(np.array(time)))
+        message = {}
+        # message['target:'] = target_pos
+        message['posture:'] = len(nearby_postures)
+        message['mean diff:'] = np.mean(np.array([p.diff for p in posture]))
+        message['worst diff:'] = max([p.diff for p in posture])
+        message['worst%:'] = n/len(posture)
+        message['worse num:'] = n
+        # message['origin diff:'] = np.sort(origin_diff)
+        message['avg. time:'] = np.mean(np.array(time))
         for i in range(7):
-            movements[i] = np.mean(movements[i])
-        print(movements)    #[0.00029, 0.004945, 0.01018, 0.01454, 0.3551745, 0.064868, 0.0]
+            movements[i] = np.mean(movements[i]).tolist()
+        message['movements'] = movements
 
-        return posture
+        return posture, message
 
-    def vector_portion(self, target_pos):
-        pass
+    def vector_portion(self, nearby_postures, target_pos):
+        moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
+
+        for p_type in nearby_postures:
+            diff = np.subtract(target_pos, p_type.position).tolist()
+            print(diff)
+            vectors = []
+            for jo in range(6):
+                j1 = c.deepcopy(p_type.joint)
+                j2 = c.deepcopy(p_type.joint)
+                j1[jo] += moves[jo]
+                j2[jo] -= moves[jo]
+
+                vectors.append([round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))])
+            break
+        print(vectors)
+
+def test():
+    ik_simulator = IKSimulator()
+
+    message = []
+    for i in range(50):
+        x = round(r.uniform(-0.855, 0.855), 4)
+        y = round(r.uniform(-0.855, 0.855), 4)
+        z = round(r.uniform(-0.36, 1.19), 4)
+        target = [x, y, z]
+
+        print(str(i+1)+': '+str(target))
+
+        message.append(ik_simulator.find_all_posture(target))
+
+    mes = defaultdict(list)
+    for m in message:
+        for k, v in m.items():
+            mes[k].append(v)
+
+    result = {}
+    # print(mes)
+    for k, v in mes.items():
+        result[k] = np.mean(v, axis=0)
+        # print(v)
+
+    ik_simulator.messenger(result)
 
 if __name__ == '__main__':
     # gather = DataCollection()
@@ -360,6 +448,9 @@ if __name__ == '__main__':
 
     # table2 = IKTable('table3', 'raw_data_7j_1')
     ik_simulator = IKSimulator()
+
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     ik_simulator.find_all_posture(target)
-    # print(len(ik_simulator.iktable.positions))
+
+
+    # test()
