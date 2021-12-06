@@ -314,7 +314,7 @@ class IKSimulator:
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # self.vector_portion(nearby_postures, target_pos)
 
-        self.messenger(message)
+        # self.messenger(message)
 
         end = d.datetime.now()
         print(' total time: ', end-start)
@@ -363,8 +363,9 @@ class IKSimulator:
         posture = []
         for p_type in nearby_postures:
             s = d.datetime.now()
-            tmp_joint, diff = self.pure_approx(p_type, target_pos)
+            # tmp_joint, diff = self.pure_approx(p_type, target_pos)
             # tmp_joint, diff = self.vector_portion_v1(p_type, target_pos)
+            tmp_joint, diff = self.vector_portion_v2(p_type, target_pos)
             e = d.datetime.now()
 
             posture.append(jo_diff(tmp_joint, diff))
@@ -376,7 +377,8 @@ class IKSimulator:
             if diff > 0.005:#0.5cm
                 n += 1
                 origin_diff.append(diff)
-                # origin_diff.append([round(m.sqrt((a-b)**2), 4) for a,b in zip(target_space[i_type].position[6], target_pos)])
+
+            break
 
         message = {}
         # message['target:'] = target_pos
@@ -410,9 +412,9 @@ class IKSimulator:
         vec_diff = np.subtract(target_pos, p_type.position).tolist()
         diff = self.diff_cal(target_pos, p_type.position)
         # vectors = []
-        iter = 0
-        while diff > threshold and iter < 20:
-            iter += 1
+        loop = 0
+        while diff > threshold and loop < 20:
+            loop += 1
             joint2move = 0
             max = 0
             for jo in range(6):
@@ -432,12 +434,52 @@ class IKSimulator:
 
         return tmp_joint, diff
 
+    def vector_portion_v2(self, p_type, target_pos):
+        # moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
+        moves = [(1 * m.pi/180)]*7  #0.017453292519943295
+        threshold = 0.001
 
-def test():
-    ik_simulator = IKSimulator()
+        tmp_joint = c.deepcopy(p_type.joint)
+        vec_diff = np.subtract(target_pos, p_type.position).tolist()
+        diff = self.diff_cal(target_pos, p_type.position)
+        vectors = []
+        loop = 0
+        joint2move = [[0,0] for _ in range(3)]
+        while diff > threshold and loop < 20:
+            loop += 1
+            for jo in range(6):
+                j1 = c.deepcopy(tmp_joint)
+                j2 = c.deepcopy(tmp_joint)
+                j1[jo] += moves[jo]
+                j2[jo] -= moves[jo]
+
+                vec = [round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))]
+                vectors.append(vec)
+
+                for i in range(3):
+                    prop = abs(vec[i])/np.sum(np.absolute(vec[:i]+vec[i+1:]))
+                    if prop > joint2move[i][1]:
+                        joint2move[i] = [jo, prop]
+
+            moving_mat = [vectors[dim] for dim, _ in joint2move]
+            print(moving_mat)
+            print(vectors)
+            print(target_pos)
+            # print(np.dot(np.linalg.inv(moving_mat), np.reshape(target_pos, (1,3))))
+
+
+
+            print(joint2move)
+            break
+
+            # tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=[joint2move])
+
+        return tmp_joint, diff
+
+def test(iter, ik_simulator):
 
     message = []
-    for i in range(50):
+    for i in range(iter):
         x = round(r.uniform(-0.855, 0.855), 4)
         y = round(r.uniform(-0.855, 0.855), 4)
         z = round(r.uniform(-0.36, 1.19), 4)
@@ -471,4 +513,4 @@ if __name__ == '__main__':
     ik_simulator.find_all_posture(target)
 
 
-    # test()
+    # test(20, ik_simulator)
