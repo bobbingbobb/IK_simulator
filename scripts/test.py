@@ -116,18 +116,32 @@ else:
     print('f')
 
 a = [1,2,3]
-b = [3,4,5]
+b = [-3,-4,-5]
+
+a1 = np.array([[1.0, 0.0, 0.0, a[0]],\
+               [0.0, 1.0, 0.0, a[1]],\
+               [0.0, 0.0, 1.0, a[2]],\
+               [0.0, 0.0, 0.0, 0.0]])
+b1 = np.array([[1.0, 0.0, 0.0, b[0]],\
+               [0.0, 1.0, 0.0, b[1]],\
+               [0.0, 0.0, 1.0, b[2]],\
+               [0.0, 0.0, 0.0, 0.0]])
+
+print(np.dot(a,b))
+print(np.dot(b,a))
 
 # print(np.mean([1,2,3], axis=0))
-print(np.subtract(a,b))
+# print(np.subtract(a,b))
 
 # a = [[1,8,3],[3,3,3],[1,2,3]]
-print(np.dot(a, np.linalg.inv(a)))
-# print(np.linalg.inv(a))
+a = [[1],[2],[3]]
 
 
 print((np.array(c)>5).any())
 print(np.absolute(c))
+
+moves = [(1 * m.pi/180)]*7
+print(moves)
 
 # tree = KDTree(a, leafsize=2, balanced_tree=True)
 # print(tree.query_ball_point([3,3,2], 6))

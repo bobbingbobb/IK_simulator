@@ -296,7 +296,7 @@ class IKSimulator:
             else:
                 nearby_postures.append(i_pos)
 
-        print(len(indices), len(nearby_postures))
+        # print(len(indices), len(nearby_postures))
 
         return nearby_postures
 
@@ -399,21 +399,43 @@ class IKSimulator:
         return posture, message
 
     def vector_portion(self, nearby_postures, target_pos):
-        moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
+        # moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
+        moves = [(1 * m.pi/180)]*7  #0.017453292519943295
+        threshold = 0.001
 
         for p_type in nearby_postures:
-            diff = np.subtract(target_pos, p_type.position).tolist()
-            print(diff)
-            vectors = []
-            for jo in range(6):
-                j1 = c.deepcopy(p_type.joint)
-                j2 = c.deepcopy(p_type.joint)
-                j1[jo] += moves[jo]
-                j2[jo] -= moves[jo]
+            tmp_joint = c.deepcopy(p_type.joint)
+            vec_diff = np.subtract(target_pos, p_type.position).tolist()
+            diff = self.diff_cal(target_pos, p_type.position)
+            # vectors = []
+            s = d.datetime.now()
+            iter = 0
+            while diff > threshold and iter < 20:
+                iter += 1
+                joint2move = 0
+                max = 0
+                for jo in range(6):
+                    j1 = c.deepcopy(tmp_joint)
+                    j2 = c.deepcopy(tmp_joint)
+                    j1[jo] += moves[jo]
+                    j2[jo] -= moves[jo]
 
-                vectors.append([round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))])
-            break
-        print(vectors)
+                    vec = [round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))]
+                    # vectors.append([round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))])
+                    dotp = abs(np.dot(np.subtract(target_pos, self.fk(tmp_joint)), vec))
+                    # print(dotp)
+                    if dotp > max:
+                        max = dotp
+                        joint2move = jo
+                # print(joint2move)
+                tmp_joint, diff, t = self.approximation(tmp_joint, target_pos, moving_joint=[joint2move])
+
+            e = d.datetime.now()
+
+            # break
+        print(e-s)
+        print(tmp_joint, diff)
+
 
 def test():
     ik_simulator = IKSimulator()
