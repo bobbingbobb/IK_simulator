@@ -311,19 +311,17 @@ class IKSimulator:
 
 
         start = d.datetime.now()
+        posture, message = self.posture_iter_machine(nearby_postures, target_pos)
+        # self.vector_portion(nearby_postures, target_pos)
 
-        # posture, message = self.pure_approx(nearby_postures, target_pos)
-        # posture, message = self.pure_approx(target_space, target_pos)
-        self.vector_portion(nearby_postures, target_pos)
-
-        # self.messenger(message)
+        self.messenger(message)
 
         end = d.datetime.now()
         print(' total time: ', end-start)
 
-        return 0
+        # return 0
         # return posture
-        # return message
+        return message
 
     def approximation(self, imitating_joint, target_pos, moving_joint=[i for i in range(7)]):
         start = d.datetime.now()
@@ -352,10 +350,10 @@ class IKSimulator:
 
         end = d.datetime.now()
 
-        return tmp_joint, pre_diff, end-start
-        # return tmp_joint, pre_diff
+        # return tmp_joint, pre_diff, end-start
+        return tmp_joint, pre_diff
 
-    def pure_approx(self, nearby_postures, target_pos):
+    def posture_iter_machine(self, nearby_postures, target_pos):
         #moving joint:[5,4], ..., [5,4,3,2,1,0], joint[6] does not affect position
         n = 0.0
         movements = [[] for _ in range(7)]
@@ -364,16 +362,13 @@ class IKSimulator:
         jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
         posture = []
         for p_type in nearby_postures:
-            tmp_joint = c.deepcopy(p_type.joint)
-            # moving_joint = [j for j in range(6)]
-
-            for i in range(4, -1, -1):
-                moving_joint = [j for j in range(i, 6, 1)]
-                tmp_joint, diff, t = self.approximation(tmp_joint, target_pos, moving_joint=moving_joint)
-                # tmp_joint, diff = approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+            s = d.datetime.now()
+            tmp_joint, diff = self.pure_approx(p_type, target_pos)
+            # tmp_joint, diff = self.vector_portion_v1(p_type, target_pos)
+            e = d.datetime.now()
 
             posture.append(jo_diff(tmp_joint, diff))
-            time.append(t)
+            time.append(e-s)
 
             for i in range(7):
                 movements[i].append(abs(p_type.joint[i]-tmp_joint[i]))
@@ -398,43 +393,44 @@ class IKSimulator:
 
         return posture, message
 
-    def vector_portion(self, nearby_postures, target_pos):
+    def pure_approx(self, p_type, target_pos):
+        tmp_joint = c.deepcopy(p_type.joint)
+        for i in range(4, -1, -1):
+            moving_joint = [j for j in range(i, 6, 1)]
+            tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=moving_joint)
+
+        return tmp_joint, diff
+
+    def vector_portion_v1(self, p_type, target_pos):
         # moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
         moves = [(1 * m.pi/180)]*7  #0.017453292519943295
         threshold = 0.001
 
-        for p_type in nearby_postures:
-            tmp_joint = c.deepcopy(p_type.joint)
-            vec_diff = np.subtract(target_pos, p_type.position).tolist()
-            diff = self.diff_cal(target_pos, p_type.position)
-            # vectors = []
-            s = d.datetime.now()
-            iter = 0
-            while diff > threshold and iter < 20:
-                iter += 1
-                joint2move = 0
-                max = 0
-                for jo in range(6):
-                    j1 = c.deepcopy(tmp_joint)
-                    j2 = c.deepcopy(tmp_joint)
-                    j1[jo] += moves[jo]
-                    j2[jo] -= moves[jo]
+        tmp_joint = c.deepcopy(p_type.joint)
+        vec_diff = np.subtract(target_pos, p_type.position).tolist()
+        diff = self.diff_cal(target_pos, p_type.position)
+        # vectors = []
+        iter = 0
+        while diff > threshold and iter < 20:
+            iter += 1
+            joint2move = 0
+            max = 0
+            for jo in range(6):
+                j1 = c.deepcopy(tmp_joint)
+                j2 = c.deepcopy(tmp_joint)
+                j1[jo] += moves[jo]
+                j2[jo] -= moves[jo]
 
-                    vec = [round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))]
-                    # vectors.append([round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))])
-                    dotp = abs(np.dot(np.subtract(target_pos, self.fk(tmp_joint)), vec))
-                    # print(dotp)
-                    if dotp > max:
-                        max = dotp
-                        joint2move = jo
-                # print(joint2move)
-                tmp_joint, diff, t = self.approximation(tmp_joint, target_pos, moving_joint=[joint2move])
+                vec = [round((a-b), 6) for a,b in zip(self.fk(j1),self.fk(j2))]
+                dotp = abs(np.dot(np.subtract(target_pos, self.fk(tmp_joint)), vec))
+                # print(dotp)
+                if dotp > max:
+                    max = dotp
+                    joint2move = jo
+            # print(joint2move)
+            tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=[joint2move])
 
-            e = d.datetime.now()
-
-            # break
-        print(e-s)
-        print(tmp_joint, diff)
+        return tmp_joint, diff
 
 
 def test():
