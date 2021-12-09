@@ -142,37 +142,40 @@ vec = [[0.004531, -0.001224, -0.001164], [0.001017, 0.018661, 0.0], [0.001464, 0
 # 5, 0, 3
 target = [0.5545, -0.0, 0.6245]
 
-a = np.dot(np.linalg.inv(vec), target)
-print(np.dot(vec, a))
+# a = np.dot(np.linalg.inv(vec), target)
+# print(np.dot(vec, a))
 
 t = []
-for i in range(20):
+for i in range(50):
     x = round(r.uniform(-0.855, 0.855), 4)
     y = round(r.uniform(-0.855, 0.855), 4)
     z = round(r.uniform(-0.36, 1.19), 4)
     t.append([x, y, z])
 print(t)
 
-# j = 0
-# s = d.datetime.now()
-# while j < 100000:
-#     j+=1
-#     # np.linalg.pinv(a)
-#     c = [i[0] for i in a]
-#     e = [i[2] for i in a]
-#
-# m = d.datetime.now()
-#
-# j = 0
-# while j < 100000:
-#     j+=1
-#     # np.linalg.inv(a)
-#     c=[]
-#     e=[]
-#     for i in a:
-#         c.append(i[0])
-#         e.append(i[2])
-# e = d.datetime.now()
-#
-# print(m-s)
-# print(e-m)
+
+j = 0
+s = d.datetime.now()
+while j < 100000:
+    j+=1
+    # np.linalg.pinv(a)
+    c = [i[0] for i in a]
+    e = [i[2] for i in a]
+
+m = d.datetime.now()
+
+j = 0
+while j < 100000:
+    j+=1
+    # np.linalg.inv(a)
+    c=[]
+    e=[]
+    for i in a:
+        c.append(i[0])
+        e.append(i[2])
+e = d.datetime.now()
+
+s = m-s
+e = e-m
+
+print(np.mean([s, e], axis=0))
