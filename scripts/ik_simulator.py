@@ -280,6 +280,9 @@ class IKSimulator:
 
         return nearby_postures
 
+    def posture_comparison(self, position):
+        pass
+
     def get_posts(self, indices):
         ref_joint = [3,5,6]
 
