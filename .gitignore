@@ -1,3 +1,20 @@
+
+# in project
 data\raw_data\*
 data\table\*
-scripts\__pycache__
+
+__pycache__
+
+# MacOS
+.DS_Store
+.DS_Store?
+
+# Packages
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
