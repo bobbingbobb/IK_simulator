@@ -281,14 +281,15 @@ class IKSimulator:
         return nearby_postures
 
     def posture_comparison(self, position):
-        
+
         nearby_postures = []
         for i_joint, value in enumerate(target_space):
             for i_type in nearby_postures:
-                diff = self.diff_cal(i_type.joint, value.joint)
-                if diff < threshold:
-                    # nearby_postures.append(value)
-                    break
+
+
+
+                
+                #test
             else:
                 nearby_postures.append(value)
 
