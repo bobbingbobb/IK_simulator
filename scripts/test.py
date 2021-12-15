@@ -181,5 +181,5 @@ e = e-m
 # print(np.mean([s, e], axis=0))
 # print(np.mean(np.array([]))
 
-# if not []:
-#     print('aa')
+if [0,0,0]:
+    print('aa')

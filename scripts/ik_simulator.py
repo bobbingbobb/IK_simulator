@@ -205,7 +205,7 @@ class IKTable:
         print('switch to '+raw_data)
 
     def searching_area(self, target):
-        # return a list of positions
+        # return a list of position indices
         for i,v in enumerate(target):
             target[i] = round(v, 4)
 
@@ -255,10 +255,13 @@ class IKSimulator:
             print('length of two lists must be equal')
             return 0
 
-    def find(self, target_position):
-        searching_area = self.iktable.searching_area(target_position)
+    def find(self, target_pos):
+        positions = self.iktable.searching_area(target_pos)
 
-        return searching_area
+        target_space = self.get_posts(positions)
+        nearby_postures = self.index2pos_jo(target_space)
+
+        return nearby_postures
 
     def index2pos_jo(self, indices):
         pos_jo = namedtuple('pos_jo', ['position', 'joint'])
@@ -421,8 +424,7 @@ class IKSimulator:
 
             # break
 
-        # print([p.diff for p in posture])
-        print(origin_diff)
+
         message = {}
         message['target'] = target_pos
         message['posture'] = len(posture)
@@ -557,7 +559,7 @@ def runner(ik_simulator, iter, filename):
         target = [x, y, z]
         print(str(i+1)+': '+str(target))
         result = ik_simulator.find_all_posture(target)
-        if not result:
+        if result:
             message.append(ik_simulator.find_all_posture(target))
             np.save('../data/result/'+filename, message)
 
@@ -578,7 +580,7 @@ def show_avg(ik_simulator, filename):
     gdiff = []
     bdiff = []
     for m in message:
-        if m['mean diff: '] > 0.05:
+        if m['mean_diff'] > 0.05:
         # if True:
             n += 1
             for k, v in m.items():
@@ -586,26 +588,26 @@ def show_avg(ik_simulator, filename):
 
             # print(m['target:'], m['posture: '],  m['mean diff: '], m['origin diff: '])
             # print(m['posture: '], m['origin diff: ']-m['mean diff: '])
-            gdiff.append(m['origin diff: ']-m['mean diff: '])
-        bdiff.append(m['origin diff: ']-m['mean diff: '])
+            gdiff.append(m['origin_diff']-m['mean_diff'])
+        bdiff.append(m['origin_diff']-m['mean_diff'])
 
-    # print(gdiff)
-    # print(bdiff)
-    # print(n)
-    # print(len(message))
+    print(gdiff)
+    print(bdiff)
+    print(n)
+    print(len(message))
 
     result = {}
     # print(mes)
     for k, v in mes.items():
-        if k == 'target:':
-        # if k == 'target':
+        # if k == 'target:':
+        if k == 'target':
             continue
-        if k == 'posture: ' or k == 'worse num: ' or k == 'worst diff: ' or k == 'avg. time: ' or k == 'total time: ':
-        # if k == 'posture' or k == 'worse_num' or k == 'worst_diff' or k == 'avg. time' or k == 'total time':
+        # if k == 'posture: ' or k == 'worse num: ' or k == 'worst diff: ' or k == 'avg. time: ' or k == 'total time: ':
+        if k == 'posture' or k == 'worse_num' or k == 'worst_diff' or k == 'avg. time' or k == 'total time':
             result[k] = np.mean(v, axis=0)
         else:
-            result[k] = np.average(v, axis=0, weights=mes['posture: '])
-            # result[k] = np.average(v, axis=0, weights=mes['posture'])
+            # result[k] = np.average(v, axis=0, weights=mes['posture: '])
+            result[k] = np.average(v, axis=0, weights=mes['posture'])
         # print(v)
 
     ik_simulator.messenger(result)
@@ -623,26 +625,23 @@ if __name__ == '__main__':
 
     # ik_simulator.find_all_posture(target)
 
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 500, 'result_pure')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
 
     # s = d.datetime.now()
     # runner(IKSimulator(algo='pure'), 100, '100_result_pure')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v1'), 100, '100_result_vp_v1')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 100, '100_result_vp_v2')
+    # runner(IKSimulator(algo='vp_v1'), 100, '100_result_vp_v1')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    # show_avg(ik_simulator, 'result_pure_1')
+    s = d.datetime.now()
+    runner(IKSimulator(algo='vp_v2'), 100, '100_result_vp_v2')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
+
+    # ik_simulator = IKSimulator()
+    # show_avg(ik_simulator, '100_result_pure')
 
     print('end')
