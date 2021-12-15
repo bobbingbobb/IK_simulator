@@ -134,8 +134,8 @@ a = [[1,8,3],[3,3,3],[1,2,3]]
 # print(np.absolute(c))
 
 
-# tree = KDTree(a, leafsize=2, balanced_tree=True)
-# print(tree.query_ball_point([3,3,2], 6))
+tree = KDTree(a, leafsize=2, balanced_tree=True)
+print(tree.query_ball_point([3,3,2], 0.0003))
 
 vectors = [[0.001017, 0.018661, 0.0], [0.006918, 0.005827, -0.013618], [0.002694, 0.015783, -0.003783], [0.001464, 0.002767, 0.013237], [-0.001235, -0.004304, -0.000281], [0.004531, -0.001224, -0.001164]]
 vec = [[0.004531, -0.001224, -0.001164], [0.001017, 0.018661, 0.0], [0.001464, 0.002767, 0.013237]]
@@ -151,7 +151,7 @@ for i in range(50):
     y = round(r.uniform(-0.855, 0.855), 4)
     z = round(r.uniform(-0.36, 1.19), 4)
     t.append([x, y, z])
-print(t)
+# print(t)
 
 
 j = 0
@@ -178,4 +178,8 @@ e = d.datetime.now()
 s = m-s
 e = e-m
 
-print(np.mean([s, e], axis=0))
+# print(np.mean([s, e], axis=0))
+# print(np.mean(np.array([]))
+
+# if not []:
+#     print('aa')

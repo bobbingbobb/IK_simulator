@@ -226,8 +226,11 @@ class IKTable:
         # return target_space
 
         result = self.table.query_ball_point(target, range)
-        if (len(result) < 2):
-            result = self.query_kd_tree(target, range+0.01)
+        # print(range)
+        # result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
+
+        # if (len(result) < 2):
+        #     result = self.table.query(target, k=2)
 
         return result
 
@@ -240,7 +243,7 @@ class IKSimulator:
 
     def messenger(self, message):
         for k, v in message.items():
-            print(k+'\t'+str(v))
+            print(k+':\t'+str(v))
 
     def fk(self, joints):
         return self.robot.fk_dh(joints)
@@ -318,23 +321,26 @@ class IKSimulator:
 
     def find_all_posture(self, target_pos):
         positions = self.iktable.searching_area(target_pos)
+        if len(positions) == 0:
+            return 0
         # target_space = self.index2pos_jo(positions)
         # nearby_postures = self.get_different_postures(target_space)
 
         target_space = self.get_posts(positions)
         nearby_postures = self.index2pos_jo(target_space)
+        # print(nearby_postures)
 
 
         start = d.datetime.now()
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # self.vector_portion(nearby_postures, target_pos)
 
-        # self.messenger(message)
+        self.messenger(message)
 
         end = d.datetime.now()
 
-        message['total time: '] = end-start
-        print(' total time: ', message['total time: '])
+        message['total time'] = end-start
+        print(' total time: ', message['total time'])
 
 
         # return 0
@@ -345,8 +351,8 @@ class IKSimulator:
         # 0.007915
         start = d.datetime.now()
 
-        # rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(3)]  #[1, 0.5, 0.25] degree
-        rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(7)]  #[1, 0.5, 0.25] degree
+        rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(3)]  #[1, 0.5, 0.25] degree
+        # rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(7)]  #[1, 0.5, 0.25] degree
         diff = self.diff_cal(self.fk(imitating_joint), target_pos)
         # print(diff)
 
@@ -383,6 +389,9 @@ class IKSimulator:
         for p_type in nearby_postures:
             s = d.datetime.now()
 
+            origin_d = self.diff_cal(p_type.position, target_pos)
+
+
             if self.algo == 'pure':
                 tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
             elif self.algo == 'vp_v1':
@@ -401,7 +410,7 @@ class IKSimulator:
             posture.append(jo_diff(tmp_joint, diff))
             time.append(e-s)
 
-            origin_diff.append(self.diff_cal(p_type.position, target_pos))
+            origin_diff.append(origin_d)
 
             for i in range(7):
                 movements[i].append(abs(p_type.joint[i]-tmp_joint[i]))
@@ -413,21 +422,22 @@ class IKSimulator:
             # break
 
         # print([p.diff for p in posture])
+        print(origin_diff)
         message = {}
-        message['target:'] = target_pos
-        message['posture: '] = len(posture)
-        message['origin diff: '] = np.mean(origin_diff)
-        message['mean diff: '] = np.mean(np.array([p.diff for p in posture]))
-        message['origin std: '] = np.std(np.array(origin_diff))
-        message['std error: '] = np.std(np.array([p.diff for p in posture]))
-        message['worst diff: '] = max([p.diff for p in posture])
-        message['worst%: '] = n/len(posture)
-        message['worse num: '] = n
+        message['target'] = target_pos
+        message['posture'] = len(posture)
+        message['origin_diff'] = np.mean(origin_diff)
+        message['mean_diff'] = np.mean(np.array([p.diff for p in posture]))
+        message['origin_std'] = np.std(np.array(origin_diff))
+        message['std_error'] = np.std(np.array([p.diff for p in posture]))
+        message['worst_diff'] = max([p.diff for p in posture])
+        message['worst%'] = n/len(posture)
+        message['worse_num'] = n
         # message['origin diff:'] = np.sort(origin_diff)
-        message['avg. time: '] = np.mean(np.array(time))
+        message['avg. time'] = np.mean(np.array(time))
         for i in range(7):
             movements[i] = np.mean(movements[i]).tolist()
-        message['movements: '] = movements
+        message['movements'] = movements
 
         return posture, message
 
@@ -540,18 +550,20 @@ def runner(ik_simulator, iter, filename):
     t50 = [[0.5758, -0.4885, 1.0271], [-0.6085, -0.4255, 0.5083], [0.2788, -0.095, 0.4679], [0.2401, 0.0485, 0.4424], [-0.5991, 0.0507, 0.076], [-0.7214, 0.8085, 1.0062], [0.6651, 0.2353, 0.1987], [0.5085, -0.7104, -0.0782], [0.1461, -0.5669, 0.7866], [0.3165, 0.7707, 0.2065], [0.2235, -0.2836, 0.5669], [-0.5145, 0.1317, -0.2905], [0.7966, -0.4236, 0.8411], [-0.3434, -0.1719, 0.942], [0.1089, 0.2281, 0.3716], [-0.7805, 0.017, 0.1633], [-0.2938, 0.6114, -0.1254], [0.6441, -0.465, 0.3824], [0.5869, 0.5077, 0.6117], [-0.7016, 0.7046, 0.0695], [0.6497, -0.6365, 0.1269], [-0.0412, -0.462, 0.3256], [0.3443, 0.2157, -0.2519], [-0.476, 0.2943, 0.1508], [-0.3097, -0.6039, 0.9085], [-0.5675, -0.1751, 1.1225], [-0.3002, -0.5436, 0.9165], [-0.0303, -0.1176, 0.5681], [0.0569, 0.7381, 0.4034], [0.0173, -0.4492, 0.2811], [0.5773, -0.6733, 0.3621], [0.1824, -0.2039, 0.6849], [0.2546, -0.6338, 0.0493], [0.1626, -0.5477, 0.326], [-0.7549, 0.1028, 0.6731], [0.0792, -0.631, 0.2127], [-0.5684, -0.7224, -0.303], [0.4818, -0.2907, -0.0176], [0.124, -0.2767, -0.3508], [0.7752, 0.018, 0.315], [-0.5902, 0.3012, 1.1607], [-0.8282, -0.4573, 0.9724], [-0.4213, -0.2136, 0.0478], [-0.4584, 0.7187, -0.2936], [0.7528, -0.0771, 0.5969], [-0.0336, -0.7186, 0.5271], [-0.7806, 0.6753, 0.0032], [-0.5677, -0.2493, 0.0197], [-0.5725, 0.3716, -0.1632], [-0.4644, -0.0062, 0.7572]]
 
     message = []
-    # for i in range(iter):
-    #     x = round(r.uniform(-0.855, 0.855), 4)
-    #     y = round(r.uniform(-0.855, 0.855), 4)
-    #     z = round(r.uniform(-0.36, 1.19), 4)
-    #     target = [x, y, z]
+    for i in range(iter):
+        x = round(r.uniform(-0.855, 0.855), 4)
+        y = round(r.uniform(-0.855, 0.855), 4)
+        z = round(r.uniform(-0.36, 1.19), 4)
+        target = [x, y, z]
+        print(str(i+1)+': '+str(target))
+        result = ik_simulator.find_all_posture(target)
+        if not result:
+            message.append(ik_simulator.find_all_posture(target))
+            np.save('../data/result/'+filename, message)
+
+    # for i, target in enumerate(t20):
     #     print(str(i+1)+': '+str(target))
     #     message.append(ik_simulator.find_all_posture(target))
-    #     np.save('../data/result/'+filename, message)
-
-    for i, target in enumerate(t20):
-        print(str(i+1)+': '+str(target))
-        message.append(ik_simulator.find_all_posture(target))
 
     np.save('../data/result/'+filename, message)
     print('done.')
@@ -563,35 +575,52 @@ def show_avg(ik_simulator, filename):
 
     mes = defaultdict(list)
     n = 0
+    gdiff = []
+    bdiff = []
     for m in message:
-        for k, v in m.items():
-            mes[k].append(v)
-
-        if m['mean diff: '] <= 0.002:
-            print(m['mean diff: '])
+        if m['mean diff: '] > 0.05:
+        # if True:
             n += 1
-    print(n)
-    print(len(message))
+            for k, v in m.items():
+                mes[k].append(v)
+
+            # print(m['target:'], m['posture: '],  m['mean diff: '], m['origin diff: '])
+            # print(m['posture: '], m['origin diff: ']-m['mean diff: '])
+            gdiff.append(m['origin diff: ']-m['mean diff: '])
+        bdiff.append(m['origin diff: ']-m['mean diff: '])
+
+    # print(gdiff)
+    # print(bdiff)
+    # print(n)
+    # print(len(message))
 
     result = {}
     # print(mes)
     for k, v in mes.items():
+        if k == 'target:':
+        # if k == 'target':
+            continue
         if k == 'posture: ' or k == 'worse num: ' or k == 'worst diff: ' or k == 'avg. time: ' or k == 'total time: ':
+        # if k == 'posture' or k == 'worse_num' or k == 'worst_diff' or k == 'avg. time' or k == 'total time':
             result[k] = np.mean(v, axis=0)
         else:
             result[k] = np.average(v, axis=0, weights=mes['posture: '])
+            # result[k] = np.average(v, axis=0, weights=mes['posture'])
         # print(v)
 
-    # ik_simulator.messenger(result)
+    ik_simulator.messenger(result)
 
 if __name__ == '__main__':
     print('start')
     # gather = DataCollection()
     # gather.without_colliding_detect('raw_data_7j_1')
 
-    # table2 = IKTable('table3', 'raw_data_7j_1')
-    ik_simulator = IKSimulator()
-    target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+    # table = IKTable('raw_data_7j_1')
+    # ik_simulator = IKSimulator()
+    # target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+    # target = [-0.8449, -0.114, 0.975]
+    # print(table.searching_area(target))
+
     # ik_simulator.find_all_posture(target)
 
     # s = d.datetime.now()
@@ -600,20 +629,20 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 500, 'result_pure')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
-    #
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v1'), 500, 'result_vp_v1')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
-    #
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 500, 'result_vp_v2')
+    # runner(IKSimulator(algo='pure'), 100, '100_result_pure')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    show_avg(ik_simulator, 'result_pure_v1')
+    s = d.datetime.now()
+    runner(IKSimulator(algo='vp_v1'), 100, '100_result_vp_v1')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
+
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 100, '100_result_vp_v2')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+
+    # show_avg(ik_simulator, 'result_pure_1')
 
     print('end')
