@@ -183,3 +183,16 @@ e = e-m
 
 if [0,0,0]:
     print('aa')
+
+from ik_simulator import IKTable, IKSimulator
+
+# table = IKTable('raw_data_7j_1')
+
+iks = IKSimulator()
+for _ in range(50):
+    x = round(r.uniform(-0.855, 0.855), 4)
+    y = round(r.uniform(-0.855, 0.855), 4)
+    z = round(r.uniform(-0.36, 1.19), 4)
+    target = [x, y, z]
+    # print(table.query_kd_tree(target))
+    print(iks.find(target))

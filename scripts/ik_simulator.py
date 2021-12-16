@@ -217,17 +217,12 @@ class IKTable:
         self.table = KDTree(self.positions, leafsize=2, balanced_tree=True)
 
     def query_kd_tree(self, target, range = 0.05):
-        # searching_space = self.table.query_ball_point(target, 0.02)
-        #
-        # target_space = []
-        # for key in searching_space:
-        #     target_space.append(self.positions[key])
 
-        # return target_space
-
-        result = self.table.query_ball_point(target, range)
+        # result = self.table.query_ball_point(target, range)
         # print(range)
-        # result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
+
+        result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
+        result = np.setdiff1d(result, len(self.positions))
 
         # if (len(result) < 2):
         #     result = self.table.query(target, k=2)
@@ -310,6 +305,7 @@ class IKSimulator:
             posture = []
             for i_type in nearby_postures:
                 for i_jo in ref_joint:
+                    # print(i_pos, i_type, i_jo)
                     posture.append(self.diff_cal(self.iktable.all_posi[i_pos][i_jo], self.iktable.all_posi[i_type][i_jo]))
 
                 if (np.array(posture) < threshold).all():
@@ -338,7 +334,7 @@ class IKSimulator:
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # self.vector_portion(nearby_postures, target_pos)
 
-        self.messenger(message)
+        # self.messenger(message)
 
         end = d.datetime.now()
 
@@ -405,8 +401,8 @@ class IKSimulator:
             else:
                 tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
 
-            for i in range(50):
-                tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
+            # for i in range(50):
+            #     tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
 
             e = d.datetime.now()
 
@@ -580,33 +576,37 @@ def show_avg(ik_simulator, filename):
     gdiff = []
     bdiff = []
     for m in message:
-        if m['mean_diff'] > 0.05:
-        # if True:
+        improvement = m['origin_diff']-m['mean_diff']
+        # if m['origin_diff'] >= 0.05:
+        # if m['worst_diff'] < 0.03:
+        if True:
             n += 1
             for k, v in m.items():
                 mes[k].append(v)
 
-            # print(m['target:'], m['posture: '],  m['mean diff: '], m['origin diff: '])
-            # print(m['posture: '], m['origin diff: ']-m['mean diff: '])
-            gdiff.append(m['origin_diff']-m['mean_diff'])
-        bdiff.append(m['origin_diff']-m['mean_diff'])
+        #     gdiff.append(improvement)
+        # bdiff.append(improvement)
 
-    print(gdiff)
-    print(bdiff)
+    # print(gdiff)
+    # print(bdiff)
     print(n)
     print(len(message))
 
     result = {}
     # print(mes)
     for k, v in mes.items():
-        # if k == 'target:':
         if k == 'target':
             continue
-        # if k == 'posture: ' or k == 'worse num: ' or k == 'worst diff: ' or k == 'avg. time: ' or k == 'total time: ':
-        if k == 'posture' or k == 'worse_num' or k == 'worst_diff' or k == 'avg. time' or k == 'total time':
+        elif k == 'worst_diff':
+            result[k] = np.max(v)
+        # elif k == 'posture' or k == 'worse_num' or k == 'avg. time' or k == 'total time':
+        #     result[k] = np.mean(v, axis=0)
+        elif k == 'posture' :
+            result['pos_min'] = np.min(v)
+            result[k] = np.mean(v, axis=0)
+        elif k == 'worse_num' or k == 'avg. time' or k == 'total time':
             result[k] = np.mean(v, axis=0)
         else:
-            # result[k] = np.average(v, axis=0, weights=mes['posture: '])
             result[k] = np.average(v, axis=0, weights=mes['posture'])
         # print(v)
 
@@ -619,7 +619,7 @@ if __name__ == '__main__':
 
     # table = IKTable('raw_data_7j_1')
     # ik_simulator = IKSimulator()
-    # target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+    target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
     # print(table.searching_area(target))
 
@@ -627,21 +627,34 @@ if __name__ == '__main__':
 
 
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 100, '100_result_pure')
+    # runner(IKSimulator(algo='pure'), 300, '300_20near_result_pure')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
-
+    #
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v1'), 100, '100_result_vp_v1')
+    # runner(IKSimulator(algo='vp_v1'), 300, '300_20near_result_vp_v1')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 100, '100_result_vp_v2')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
 
-    # ik_simulator = IKSimulator()
-    # show_avg(ik_simulator, '100_result_pure')
+    ik_simulator = IKSimulator()
+    # show_avg(ik_simulator, '300_drop_result_pure')
+    # show_avg(ik_simulator, '300_drop_result_vp_v1')
+    # show_avg(ik_simulator, '300_drop_result_vp_v2')
+
+    show_avg(ik_simulator, '3000_20near_result_vp_v2')
+
+    # show_avg(ik_simulator, '300_20near_result_pure')
+    # show_avg(ik_simulator, '300_20near_result_vp_v1')
+    # show_avg(ik_simulator, '300_20near_result_vp_v2')
+
+    # show_avg(ik_simulator, '30_20near_result_pure')
+    # show_avg(ik_simulator, '30_20near_result_vp_v1')
+    # show_avg(ik_simulator, '30_20near_result_vp_v2')
 
     print('end')
