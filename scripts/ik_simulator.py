@@ -93,10 +93,10 @@ class Robot:
 
 
 class DataCollection:
-    def __init__(self):
+    def __init__(self, scale=30):
         self.robot = Robot()
         self.joints = self.robot.joints
-        self.scale = 30 * m.pi/180
+        self.scale = scale * m.pi/180
         # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
     def without_colliding_detect(self, filename='raw_data'):
@@ -232,7 +232,7 @@ class IKTable:
 
 class IKSimulator:
     def __init__(self, algo='pure'):
-        self.iktable = IKTable('raw_data_7j_1')
+        self.iktable = IKTable('raw_data_7j_20')
         self.robot = Robot()
         self.algo = algo
 
@@ -612,12 +612,16 @@ def show_avg(ik_simulator, filename):
 
     ik_simulator.messenger(result)
 
+def gather(scale, name):
+    gather = DataCollection(scale=scale)
+    gather.without_colliding_detect(name)
+
 if __name__ == '__main__':
     print('start')
-    # gather = DataCollection()
-    # gather.without_colliding_detect('raw_data_7j_1')
 
-    # table = IKTable('raw_data_7j_1')
+    # gather(20, 'raw_data_7j_20')
+
+    # table = IKTable('raw_data_7j_30')
     # ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
@@ -635,14 +639,14 @@ if __name__ == '__main__':
     # runner(IKSimulator(algo='vp_v1'), 300, '300_20near_result_vp_v1')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
-    #
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
+
+    s = d.datetime.now()
+    runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
 
 
-    ik_simulator = IKSimulator()
+    # ik_simulator = IKSimulator()
     # show_avg(ik_simulator, '300_drop_result_pure')
     # show_avg(ik_simulator, '300_drop_result_vp_v1')
     # show_avg(ik_simulator, '300_drop_result_vp_v2')
