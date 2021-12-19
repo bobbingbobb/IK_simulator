@@ -62,7 +62,7 @@ class Robot:
             fk_mat = np.dot(fk_mat, dh_mat)
             # print(fk_mat[:3,3])
 
-        return fk_mat[:3,3].tolist()
+        return fk_mat[:3,3]
 
     def fk_jo(self, joints:list):
         #show position of every joint
@@ -86,7 +86,7 @@ class Robot:
             fk_mat = np.dot(fk_mat, trans_mat)
             fk_mat = np.dot(fk_mat, self.__rotate_x(jo[i, 3]))
             fk_mat = np.dot(fk_mat, self.__rotate_z(joints[i]))
-            pos.append(fk_mat[:3,3].tolist())
+            pos = np.append(pos, fk_mat[:3,3], axis=0)
             # print(fk_mat[:3,3].tolist())
 
         return pos
@@ -172,12 +172,14 @@ class IKTable:
         return [float(k) for k in str(key_str)[1:-1].split(',')]
 
     def load_data(self):
-        # s = d.datetime.now()
+        s = d.datetime.now()
         print('loading data...')
         raw_info = np.load(self.raw_data)
-        self.joints = raw_info['joints'].tolist()
-        self.positions = [p[6].tolist() for p in raw_info['positions']]
-        self.all_posi = raw_info['positions'].tolist()
+        self.joints = raw_info['joints']
+        self.positions = [p[6] for p in raw_info['positions']]
+        self.all_posi = raw_info['positions']
+        print(len(self.all_posi))
+
         # print(self.positions[0])
         # print(len(np.unique(self.positions, axis=0)))
 
@@ -191,8 +193,7 @@ class IKTable:
         # print(type(self.joints))
         # print(type(self.positions))
 
-        print('loading done.')
-        # print(d.datetime.now()-s)
+        print('loading done. duration: ', d.datetime.now()-s)
 
     def switch_raw_data(self, raw_data=None):
         if raw_data == 'empty':
@@ -434,7 +435,7 @@ class IKSimulator:
         # message['origin diff:'] = np.sort(origin_diff)
         message['avg. time'] = np.mean(np.array(time))
         for i in range(7):
-            movements[i] = np.mean(movements[i]).tolist()
+            movements[i] = np.mean(movements[i])
         message['movements'] = movements
 
         return posture, message
@@ -556,7 +557,7 @@ def runner(ik_simulator, iter, filename):
         print(str(i+1)+': '+str(target))
         result = ik_simulator.find_all_posture(target)
         if result:
-            message.append(ik_simulator.find_all_posture(target))
+            message.append(result)
             np.save('../data/result/'+filename, message)
 
     # for i, target in enumerate(t20):
@@ -631,7 +632,7 @@ if __name__ == '__main__':
 
 
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 300, '300_20near_result_pure')
+    # runner(IKSimulator(algo='pure'), 300, 'test')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
     #
@@ -640,18 +641,18 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
 
-    # ik_simulator = IKSimulator()
+    ik_simulator = IKSimulator()
     # show_avg(ik_simulator, '300_drop_result_pure')
     # show_avg(ik_simulator, '300_drop_result_vp_v1')
     # show_avg(ik_simulator, '300_drop_result_vp_v2')
 
-    show_avg(ik_simulator, '3000_20near_result_vp_v2')
+    show_avg(ik_simulator, 'test')
 
     # show_avg(ik_simulator, '300_20near_result_pure')
     # show_avg(ik_simulator, '300_20near_result_vp_v1')
