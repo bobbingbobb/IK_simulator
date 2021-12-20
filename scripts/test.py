@@ -8,6 +8,8 @@ import random as r
 
 from scipy.spatial import KDTree
 
+import h5py
+
 # list1 = np.array([[0.0, 0.0, 0.0]])
 # list2 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 #
@@ -56,10 +58,6 @@ class ppp():
 # k = ppp()
 # k.a()
 # print(os.path.exists('data/raw_data.npz'))
-
-raw_data = np.load('../data/raw_data/raw_data_7j_1.npz')
-joints = raw_data['joints']
-positions = raw_data['positions']
 
 #20 cm cube
 #x: -855 ~ 855, 1710, 18/20 = 9
@@ -162,7 +160,7 @@ while j < 100000:
     c = [i[0] for i in a]
     e = [i[2] for i in a]
 
-m = d.datetime.now()
+mm = d.datetime.now()
 
 j = 0
 while j < 100000:
@@ -175,8 +173,8 @@ while j < 100000:
         e.append(i[2])
 e = d.datetime.now()
 
-s = m-s
-e = e-m
+s = mm-s
+e = e-mm
 
 # print(np.mean([s, e], axis=0))
 # print(np.mean(np.array([]))
@@ -184,15 +182,42 @@ e = e-m
 if [0,0,0]:
     print('aa')
 
-from ik_simulator import IKTable, IKSimulator
+# from ik_simulator import IKTable, IKSimulator
+#
+# # table = IKTable('raw_data_7j_1')
+#
+# iks = IKSimulator()
+# for _ in range(50):
+#     x = round(r.uniform(-0.855, 0.855), 4)
+#     y = round(r.uniform(-0.855, 0.855), 4)
+#     z = round(r.uniform(-0.36, 1.19), 4)
+#     target = [x, y, z]
+#     # print(table.query_kd_tree(target))
+#     print(iks.find(target))
 
-# table = IKTable('raw_data_7j_1')
+print(m.floor(2.6))
 
-iks = IKSimulator()
-for _ in range(50):
-    x = round(r.uniform(-0.855, 0.855), 4)
-    y = round(r.uniform(-0.855, 0.855), 4)
-    z = round(r.uniform(-0.36, 1.19), 4)
-    target = [x, y, z]
-    # print(table.query_kd_tree(target))
-    print(iks.find(target))
+f = h5py.File('test.hdf5', 'a')
+
+    # def table_v1(self):
+    #     #20 cm cube
+    #     #x: -855 ~ 855, 1710, 18/20 = 9
+    #     #y: -855 ~ 855, 1710, 18/20 = 9
+    #     #z: -360 ~ 1190, 1550, 16/20 = 8
+    #     grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
+    #     for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
+    #         grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
+    #
+    #     print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
+    #
+    #     np.savez(self.__tablename_alignment(self.table_name), raw_data=self.raw_data, table=grid_data)
+    #
+    # def searching_table_v1(self, target):
+    #     searching_space = self.table[int((target[0]+self.shift_x)/0.2)][int((target[1]+self.shift_y)/0.2)][int((target[2]+self.shift_z)/0.2)]
+    #
+    #     pos_jo = namedtuple('pos_jo', ['position', 'joint'])
+    #     target_space = []
+    #     for index in searching_space:
+    #         target_space.append(pos_jo(self.positions[index][6], self.joints[index]))
+    #
+    #     return target_space
