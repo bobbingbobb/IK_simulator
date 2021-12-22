@@ -52,7 +52,7 @@ class IKTable:
         return np.mean(np.array(recur(data, data_dim)))
 
     def __str2trans(self, key_str):
-        return [float(k) for k in str(key_str)[1:-1].split(',')]
+        return [float(k) for k in str(key_str)[1:-1].split(' ')]
 
     def load_data(self):
         s = d.datetime.now()
@@ -125,7 +125,8 @@ class IKSimulator:
             print(k+':\t'+str(v))
 
     def fk(self, joints):
-        return self.robot.fk_dh(joints)
+        pos, _ = self.robot.fk_dh(joints)
+        return pos[6]
 
     def diff_cal(self, list_1, list_2):
         if len(list_1) == len(list_2):

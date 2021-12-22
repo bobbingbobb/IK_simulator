@@ -13,6 +13,21 @@ ik simulator
 │  └─ ...  
 ```
 
+## raw data
+h5py
+```
+franka_data
+├─ end_posture[8,8,9]
+│  └─ pose ('[0.0 0.0 0.0]')
+│     ├─ joints ('[0.0 0.0 0.0 0.0 0.0 0.0 0.0]'), split by |
+│     ├─ ee_vector ('[0.0 0.0 0.0]'), split by |
+│     └─ corresponding (index), split by |
+├─ joints_position[]
+│  └─ 7joints position[,7]  
+#  ├─ ee_vector[]
+#  │  └─  ee_vector ('[0.0 0.0 0.0]')
+```
+
 ## Classes
 ```
 class Robot:
