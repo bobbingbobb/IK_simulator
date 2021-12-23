@@ -109,19 +109,24 @@ class DataCollection:
         filename = RAW_DATA_FOLDER+filename+'.hdf5'
         start = d.datetime.now()
 
-        with h5py.File(filename, 'w') as f:
+        with h5py.File(filename, 'a') as f:
             h5_data = f.create_group('franka_data')
             h5_data.attrs['scale'] = self.scale
             h5_data.attrs['shift'] = (self.shift_x, self.shift_y, self.shift_z)
 
             size = [int((reach.max-reach.min)/self.diff)+1 for reach in self.robot.reach]
-            print(size)
-            pos_info = [[[['' for _ in range(3)] for _ in range(size[2])] for _ in range(size[1])] for _ in range(size[0])]
+            # dt = np.dtype([("pos_ee", np.float32, [3,]),\
+            #                ("joint", np.float32, [7,]),\
+            #                ("vec_ee", np.float32, [3,]),\
+            #                ("index", np.uint32)])
+            dt = np.dtype([("pos", np.float32, [7,3]),\
+                           ("joint", np.float32, [7]),\
+                           ("vec_ee", np.float32, [3])])
 
-            index = 0
-            data_end_pos = []
-            data_joints = []
-            data_vec_ee = []
+            pos_info = h5_data.create_dataset("pos_info", shape=size, dtype=h5py.vlen_dtype(dt))
+
+            # index = 0
+            # data_joints = []
             for j1 in range(int(self.joints[0].min*10), int(self.joints[0].max*10), int(self.scale*10)):
                 for j2 in range(int(self.joints[1].min*10), int(self.joints[1].max*10), int(self.scale*10)):
                     for j3 in range(int(self.joints[2].min*10), int(self.joints[2].max*10), int(self.scale*10)):
@@ -139,32 +144,23 @@ class DataCollection:
                                             position[i][p] = round(n, 4)
 
                                     # storing pos info
-                                    data_end_pos.append(position[6])
-                                    tmp_pos_data = [str(position[6]), str(joints), str(index)]
-                                    print(tmp_pos_data)
+                                    # tmp_info = np.array([(position[6], joints, vec_ee, index)], dtype=dt)
+                                    tmp_info = np.array([(position, joints, vec_ee)], dtype=dt)
 
-                                    print(int((position[6][0]+self.shift_x)/self.diff))
-                                    print(int((position[6][1]+self.shift_y)/self.diff))
-                                    print(int((position[6][2]+self.shift_z)/self.diff))
-                                    print(pos_info[31][16][20])
+                                    x = int((position[6][0]+self.shift_x)/self.diff)
+                                    y = int((position[6][1]+self.shift_y)/self.diff)
+                                    z = int((position[6][2]+self.shift_z)/self.diff)
 
-                                    for tmp, info in zip(tmp_pos_data, pos_info[int((position[6][0]+self.shift_x)/self.diff)]\
-                                                                               [int((position[6][1]+self.shift_y)/self.diff)]\
-                                                                               [int((position[6][2]+self.shift_z)/self.diff)]):
-                                        info = info + '|' + tmp
+                                    # print(x,y,z)
+                                    pos_info[x, y, z] = np.append(pos_info[x, y, z], tmp_info)
 
-                                    data_joints.append(joints)
-                                    data_vec_ee.append(vec_ee)
+                                    # data_joints.append(joints)
 
-            pos_info = np.asarray(pos_info)
-            data_joints = np.asarray(data_joints)
-            data_vec_ee = np.asarray(data_vec_ee)
+            # data_joints = np.asarray(data_joints)
 
             # np.savez(filename, joints=data_joints, positions=data_positions)
 
-            h5_data.create_dataset("pos_info", data=pos_info)
-            h5_data.create_dataset("joints", data=data_joints)
-            h5_data.create_dataset("vec_ee", data=data_vec_ee)
+            # h5_data.create_dataset("joints", data=data_joints)
 
 
 
@@ -174,5 +170,5 @@ class DataCollection:
         return filename
 
 if __name__ == '__main__':
-    dd = DataCollection(scale=100)
-    print(dd.without_colliding_detect('test'))
+    dd = DataCollection(scale=20)
+    print(dd.without_colliding_detect('raw_data_7j_20'))

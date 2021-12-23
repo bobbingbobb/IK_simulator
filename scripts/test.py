@@ -8,6 +8,8 @@ import random as r
 
 from scipy.spatial import KDTree
 
+from constants import *
+
 import h5py
 
 # list1 = np.array([[0.0, 0.0, 0.0]])
@@ -183,23 +185,56 @@ print(m.floor(2.6))
 
 # print(robot.fk_dh(work_joints))
 
-with h5py.File('test.hdf5', 'r') as f:
+print(np.random.randn(1, 4, 2))
 
 
+# with h5py.File('test.hdf5', 'w') as f:
+#     dt = np.dtype([\
+#         ("pos", np.float32, [3,]),\
+#         ("joint", np.float32, [7,]),\
+#         ("ee", np.float32, [3,]),\
+#         ("index", np.float32)])
+#     # strst = h5py.vlen_dtype(dt)
+#     # dt = np.dtype('float32', shape=[3,3])
+#     strst = h5py.vlen_dtype(dt)
+#     # dt = h5py.vlen_dtype(np.dtype('int32'))
+#
+#     pos_info = f.create_dataset("pos_info", shape=(2,3,4,), maxshape=(2,3,4), dtype=strst)
+#     # pos_info = f.create_dataset("pos_info", shape=(1,4 ), dtype='i8')
+#     # pos_info[0] = [1,2,3,4]
+#     # print(pos_info)
+#
+#     pos_info.attrs['scale'] = 0
+#
+#
+#     v1 = np.array([([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [2.0, 0.0, 0.0], 3.0)], dtype=dt)
+#     v2 = np.array([([0.0, 2.0, 0.0], [1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0], [2.0, 0.0, 0.0], 3.0)], dtype=dt)
+#     # v2 = np.array([['[0.1 0.0 0.0]','1'], ['[1.1 0.0 0.0 0.0 0.0 0.0 0.0]','1'], ['[2.1 0.0 0.0]','1'], ['[3.1]','1']], dtype=dt)
+#     # c1 = np.array([0.0, 0.0, 0.0])
+#     # c2 = np.array([0.1, 0.0, 0.0])
+#     # c3 = np.array([0.2, 0.0, 0.0])
+#     #
+#     # v1 = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=dt)
+#     # v2 = np.array([[0.1, 0.0, 0.0], [2.1, 0.0, 0.0], [3.1, 0.0, 0.0]], dtype=dt)
+#
+#     # v1 =  [[np.array(['[0.0, 0.0, 0.0]'])],\
+#     #         [np.array(['[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]'])],\
+#     #         [np.array(['[0.0, 0.0, 0.0]'])],\
+#     #         [np.array(['[0.0]'])]]
+#     # print(len(pos_info[0,0,0]))
+#     pos_info[0,0,0] = np.append(pos_info[0,0,0], v1)
+#     # pos_info[0,0,1] = v2
+#
+#     print(pos_info[0,0,0])
+#     pos_info[0,0,0] = np.append(pos_info[0,0,0], v2)
+#
+#     print(pos_info[0,0,0])
+#     print(pos_info[0,0,1])
 
-with h5py.File('test.hdf5', 'w') as f:
-    cc = [9,9,8]
-    data = f.create_group('franka_data')
-    data.attrs['scale'] = 0
-    reach = data.create_dataset("reachable_area", cc)
-
-    print(reach[0,0,0])
-
-    reach[0,0,0] = 123
-
-    print(f)
-    print(reach)
-    print(reach[0][0][0])
+with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
+    f = f['franka_data']
+    print(f.attrs['scale'])
+    print(f['pos_info'][14,6,22]['vec_ee'])
 
     # def table_v1(self):
     #     #20 cm cube
