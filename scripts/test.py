@@ -234,13 +234,17 @@ p2 = [ 0.5539, -0.0049,  0.6228]
 j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
 p2a, v2ee = robot.fk_jo(j2)
 
-print(v1ee)
-print(v2ee)
+v1ee/=np.linalg.norm(v1ee)
+v2ee/=np.linalg.norm(v2ee)
+# print(v1ee)
+# print(v2ee)
+print(np.dot(v1ee, v2ee))
 
 print(np.linalg.norm(p1a[3]-p2a[3]))
 print(np.linalg.norm(p1a[5]-p2a[5]))
 j2_ = np.append(j1[:3], j2[3:])
 p2a_, v2ee_ = robot.fk_jo(j2_)
-print(v2ee_)
+# v2ee_/=np.linalg.norm(v2ee_)
+# print(v2ee_)
 
 print(np.linalg.norm(p1a[5]-p2a_[5]))
