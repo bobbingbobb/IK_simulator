@@ -16,10 +16,13 @@ class IKTable:
     def __init__(self, raw_data):
         self.table = []
 
-        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.npz'
+        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.hdf5'
         self.joints = []
-        self.positions = []
         self.all_posi = []
+        self.vec_ee = []
+
+        self.positions = []
+
         # self.pos_table = [] #dict: position to joint index    #no need
 
         self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
@@ -57,24 +60,18 @@ class IKTable:
     def load_data(self):
         s = d.datetime.now()
         print('loading data...')
-        raw_info = np.load(self.raw_data)
-        self.joints = raw_info['joints']
-        self.positions = [p[6] for p in raw_info['positions']]
-        self.all_posi = raw_info['positions']
-        print(len(self.all_posi))
 
-        # print(self.positions[0])
-        # print(len(np.unique(self.positions, axis=0)))
+        with h5py.File(self.raw_data, 'r') as f:
+            f = f['franka_data']
+            self.shift_x, self.shift_y, self.shift_z = f.attrs['shift']
+            self.pos_info = f['pos_info']
+            self.positions = [p['pos'][6] for p in self.pos_info]
 
-        # pos_jo = defaultdict(list)
-        # for index, pos in enumerate(raw_info['positions']):
-        #     pos_jo[str(list(pos[6]))].append(self.joints[index])
-        #
-        # self.pos_table = pos_jo
-        # self.positions = [self.__str2trans(k) for k in pos_jo.keys()]
-
-        # print(type(self.joints))
-        # print(type(self.positions))
+        # raw_info = np.load(self.raw_data)
+        # self.joints = raw_info['joints']
+        # self.positions = [p[6] for p in raw_info['positions']]
+        # self.all_posi = raw_info['positions']
+        # print(len(self.all_posi))
 
         print('loading done. duration: ', d.datetime.now()-s)
 
@@ -83,7 +80,7 @@ class IKTable:
             print('new raw_data needed.')
             return 0
 
-        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.npz'
+        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.hdf5'
         self.load_data()
         self.kd_tree()
         print('switch to '+raw_data)

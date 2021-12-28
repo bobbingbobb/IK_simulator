@@ -233,8 +233,10 @@ print(np.random.randn(1, 4, 2))
 
 with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
     f = f['franka_data']
-    print(f.attrs['scale'])
-    print(f['pos_info'][14,6,22]['vec_ee'])
+    print(f.attrs['shift'])
+    # print(f['pos_info'][14,6,22]['vec_ee'])
+    # print(f['pos_info'][:]['pos'][6])
+    print(f['pos_info'][:])
 
     # def table_v1(self):
     #     #20 cm cube
