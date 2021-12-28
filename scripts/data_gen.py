@@ -57,7 +57,10 @@ class Robot:
             fk_mat = np.dot(fk_mat, dh_mat)
             # print(fk_mat[:3,3])
 
-        return fk_mat[:3,3]
+        vec_z = [0.0, 0.0, 1.0, 0.0]
+        vec_ee = np.dot(fk_mat, vec_z)
+
+        return fk_mat[:3,3], vec_ee[:3]
 
     def fk_jo(self, joints:list):
         #show position of every joint
@@ -81,10 +84,14 @@ class Robot:
             fk_mat = np.dot(fk_mat, trans_mat)
             fk_mat = np.dot(fk_mat, self.__rotate_x(jo[i, 3]))
             fk_mat = np.dot(fk_mat, self.__rotate_z(joints[i]))
-            pos = np.append(pos, fk_mat[:3,3], axis=0)
+            # pos = np.append(pos, fk_mat[:3,3], axis=0)
+            pos.append(fk_mat[:3,3])
             # print(fk_mat[:3,3].tolist())
 
-        return pos
+        vec_z = [0.0, 0.0, 1.0, 0.0]
+        vec_ee = np.dot(fk_mat, vec_z)
+
+        return np.array(pos), vec_ee[:3]
 
 
 class DataCollection:

@@ -506,10 +506,10 @@ if __name__ == '__main__':
     # gather(20, 'raw_data_7j_20')
 
     # table = IKTable('raw_data_7j_30')
-    # ik_simulator = IKSimulator()
+    ik_simulator = IKSimulator()
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
-    # print(table.searching_area(target))
+    print(ik_simulator.find(target))
 
     # ik_simulator.find_all_posture(target)
 
@@ -530,7 +530,7 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
 
-    ik_simulator = IKSimulator()
+    # ik_simulator = IKSimulator()
     # show_avg(ik_simulator, '300_drop_result_pure')
     # show_avg(ik_simulator, '300_drop_result_vp_v1')
     # show_avg(ik_simulator, '300_drop_result_vp_v2')
