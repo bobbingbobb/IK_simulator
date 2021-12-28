@@ -231,12 +231,12 @@ print(np.random.randn(1, 4, 2))
 #     print(pos_info[0,0,0])
 #     print(pos_info[0,0,1])
 
-with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
-    f = f['franka_data']
-    print(f.attrs['shift'])
-    # print(f['pos_info'][14,6,22]['vec_ee'])
-    # print(f['pos_info'][:]['pos'][6])
-    print(f['pos_info'][:])
+# with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
+#     f = f['franka_data']
+#     print(f.attrs['shift'])
+#     # print(f['pos_info'][14,6,22]['vec_ee'])
+#     # print(f['pos_info'][:]['pos'][6])
+#     print(f['pos_info'][:])
 
     # def table_v1(self):
     #     #20 cm cube
@@ -260,3 +260,27 @@ with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
     #         target_space.append(pos_jo(self.positions[index][6], self.joints[index]))
     #
     #     return target_space
+
+robot = Robot()
+
+p1 = [ 0.5602, -0.001 ,  0.6294]
+j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
+p1a, v1ee = robot.fk_jo(j1)
+p2 = [ 0.5539, -0.0049,  0.6228]
+j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
+p2a, v2ee = robot.fk_jo(j2)
+
+v1ee/=np.linalg.norm(v1ee)
+v2ee/=np.linalg.norm(v2ee)
+# print(v1ee)
+# print(v2ee)
+print(np.dot(v1ee, v2ee))
+
+print(np.linalg.norm(p1a[3]-p2a[3]))
+print(np.linalg.norm(p1a[5]-p2a[5]))
+j2_ = np.append(j1[:3], j2[3:])
+p2a_, v2ee_ = robot.fk_jo(j2_)
+# v2ee_/=np.linalg.norm(v2ee_)
+# print(v2ee_)
+
+print(np.linalg.norm(p1a[5]-p2a_[5]))
