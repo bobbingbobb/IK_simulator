@@ -9,6 +9,7 @@ import random as r
 from scipy.spatial import KDTree
 
 from data_gen import Robot
+from ik_simulator import IKSimulator
 
 import h5py
 
@@ -199,7 +200,6 @@ if [0,0,0]:
 
 print(m.floor(2.6))
 
-f = h5py.File('test.hdf5', 'a')
 
     # def table_v1(self):
     #     #20 cm cube
@@ -224,27 +224,83 @@ f = h5py.File('test.hdf5', 'a')
     #
     #     return target_space
 
+def posture_comparison(pj, robot):
+    thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
+    thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
+
+    nearby_postures = []
+    for i_pos in pj:
+        for ind, i_type in enumerate(nearby_postures):
+            _, vecp_ee = robot.fk_dh(i_pos[1])
+            _, vect_ee = robot.fk_dh(i_type[0][1])
+            vecp_ee/=np.linalg.norm(vecp_ee)
+            vect_ee/=np.linalg.norm(vect_ee)
+            # print(vecp_ee)
+            # print(vect_ee)
+            # print(np.dot(vecp_ee, vect_ee))
+            # print(i_pos.position)
+            # print(i_type[0].position)
+            # print(i_pos.position[3])
+            # print(i_type[0].position[3])
+
+            if np.dot(vecp_ee, vect_ee) > 0.9 and np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
+                nearby_postures[ind].append(i_pos)
+        else:
+            nearby_postures.append([i_pos])
+
+        print(i_pos[0][6])
+
+    # print(len(indices), len(nearby_postures))
+
+    return nearby_postures
 
 robot = Robot()
 
-p1 = [ 0.5602, -0.001 ,  0.6294]
-j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
-p1a, v1ee = robot.fk_jo(j1)
-p2 = [ 0.5539, -0.0049,  0.6228]
-j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
-p2a, v2ee = robot.fk_jo(j2)
+iks = IKSimulator()
+target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+pj = iks.find(target)
+print(len(pj))
+pc = posture_comparison(pj[:1000], robot)
+print(len(c))
 
-v1ee/=np.linalg.norm(v1ee)
-v2ee/=np.linalg.norm(v2ee)
-# print(v1ee)
-# print(v2ee)
-print(np.dot(v1ee, v2ee))
+js = []
+for i,v in enumerate(pc):
+    if (len(v)>7):
+        print(i)
+        js.append([j[1] for j in v])
+print(js)
 
-print(np.linalg.norm(p1a[3]-p2a[3]))
-print(np.linalg.norm(p1a[5]-p2a[5]))
-j2_ = np.append(j1[:3], j2[3:])
-p2a_, v2ee_ = robot.fk_jo(j2_)
-# v2ee_/=np.linalg.norm(v2ee_)
-# print(v2ee_)
+np.save('js', js, allow_pickle=True)
+np.save('example', pc, allow_pickle=True)
 
-print(np.linalg.norm(p1a[5]-p2a_[5]))
+ex = np.load('example.npy', allow_pickle=True)
+print(ex[12])
+for i,v in enumerate(ex):
+    if (len(v)>2):
+        print(i)
+
+# print(posture_comparison(k[0], robot))
+
+# p1 = [ 0.5602, -0.001 ,  0.6294]
+# j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
+# p1a, v1ee = robot.fk_jo(j1)
+# p2 = [ 0.5539, -0.0049,  0.6228]
+# j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
+# p2a, v2ee = robot.fk_jo(j2)
+#
+# v1ee/=np.linalg.norm(v1ee)
+# v2ee/=np.linalg.norm(v2ee)
+# # print(v1ee)
+# # print(v2ee)
+# print(np.dot(v1ee, v2ee))
+#
+# print(np.linalg.norm(p1a[3]-p2a[3]))
+# print(np.linalg.norm(p1a[5]-p2a[5]))
+# j2_ = np.append(j1[:3], j2[3:])
+# p2a_, v2ee_ = robot.fk_jo(j2_)
+# # v2ee_/=np.linalg.norm(v2ee_)
+# # print(v2ee_)
+#
+# print(np.linalg.norm(p1a[5]-p2a_[5]))
+# print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
+# print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range

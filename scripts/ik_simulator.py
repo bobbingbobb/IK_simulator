@@ -102,11 +102,11 @@ class IKTable:
 
     def query_kd_tree(self, target, range = 0.05):
 
-        # result = self.table.query_ball_point(target, range)
+        result = self.table.query_ball_point(target, range)
         # print(range)
 
-        result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
-        result = np.setdiff1d(result, len(self.positions))
+        # result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
+        # result = np.setdiff1d(result, len(self.positions))
 
         # if (len(result) < 2):
         #     result = self.table.query(target, k=2)
@@ -125,6 +125,7 @@ class IKSimulator:
             print(k+':\t'+str(v))
 
     def fk(self, joints):
+        # pos, vec_ee = self.robot.fk_dh(joints)
         return self.robot.fk_dh(joints)
 
     def diff_cal(self, list_1, list_2):
@@ -137,8 +138,8 @@ class IKSimulator:
     def find(self, target_pos):
         positions = self.iktable.searching_area(target_pos)
 
-        target_space = self.get_posts(positions)
-        nearby_postures = self.index2pos_jo(target_space)
+        # target_space = self.get_posts(positions)
+        nearby_postures = self.index2pos_jo(positions)
 
         return nearby_postures
 
@@ -146,7 +147,8 @@ class IKSimulator:
         pos_jo = namedtuple('pos_jo', ['position', 'joint'])
         target_space = []
         for index in indices:
-            target_space.append(pos_jo(self.iktable.positions[index], self.iktable.joints[index]))
+            # target_space.append(pos_jo(self.iktable.positions[index], self.iktable.joints[index]))
+            target_space.append([self.iktable.all_posi[index], self.iktable.joints[index]])
 
         return target_space
 

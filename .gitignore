@@ -18,4 +18,7 @@ __pycache__
 *.rar
 *.tar
 *.zip
+
 *.hdf5
+*.npy
+*.pnz
