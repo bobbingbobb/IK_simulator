@@ -233,8 +233,6 @@ def posture_comparison(pj, robot):
         for ind, i_type in enumerate(nearby_postures):
             _, vecp_ee = robot.fk_dh(i_pos[1])
             _, vect_ee = robot.fk_dh(i_type[0][1])
-            vecp_ee/=np.linalg.norm(vecp_ee)
-            vect_ee/=np.linalg.norm(vect_ee)
             # print(vecp_ee)
             # print(vect_ee)
             # print(np.dot(vecp_ee, vect_ee))
@@ -254,30 +252,83 @@ def posture_comparison(pj, robot):
 
     return nearby_postures
 
+def pc_eeonly(pj, robot, scale, nearby_postures):
+    # thres_3 = np.linalg.norm([0.316, 0.0825])#j1 - j3 range
+    # thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+    # nearby_postures = []
+    vecp_ee = [-0.3552042, -0.28940691, 0.88886085]
+
+    pos = []
+    for i_pos in pj:
+        _, vect_ee = robot.fk_dh(i_pos[1])
+        if np.dot(vecp_ee, vect_ee) > scale:
+           pos.append(i_pos)
+
+    scale += 0.05
+    nearby_postures.append(pos)
+
+    if len(pos) > 1:
+        nearby_postures = pc_eeonly(pos, robot, scale, nearby_postures)
+
+    return nearby_postures
+
+def pc_disonly(pj, robot, scale, nearby_postures):
+    thres_3 = np.linalg.norm([0.316, 0.0825])#j1 - j3 range
+    thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+    pos = []
+    for i_pos in pj:
+        if np.linalg.norm(pj[3][0][3]-i_pos[0][3]) < thres_3/scale and \
+           np.linalg.norm(pj[3][0][5]-i_pos[0][5]) < thres_5/scale:
+           pos.append(i_pos)
+
+    scale /= 2.0
+    nearby_postures.append(pos)
+
+    if len(pos) > 1:
+        nearby_postures = pc_eeonly(pos, robot, scale, nearby_postures)
+
+    return nearby_postures
+
+
+np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 robot = Robot()
 
 iks = IKSimulator()
 target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
 pj = iks.find(target)
+# _, vecp_ee = robot.fk_dh(pj[3][1])
+# print(vecp_ee)
 print(len(pj))
-pc = posture_comparison(pj[:1000], robot)
-print(len(c))
+pc = pc_eeonly(pj, robot, 0.6, [])
+np.save('example_eeonly', np.array(pc, dtype=object), allow_pickle=True)
+pc = pc_disonly(pj, robot, 8.0, [])
+np.save('example_disonly', np.array(pc, dtype=object), allow_pickle=True)
 
-js = []
-for i,v in enumerate(pc):
-    if (len(v)>7):
-        print(i)
-        js.append([j[1] for j in v])
-print(js)
+# k = np.load('example_eeonly.npy', allow_pickle=True)
+# print(k)
+# k = np.load('example_disonly.npy', allow_pickle=True)
+# print(k)
 
-np.save('js', js, allow_pickle=True)
-np.save('example', pc, allow_pickle=True)
+# pc = posture_comparison(pj[:1000], robot)
+# print(len(pc))
 
-ex = np.load('example.npy', allow_pickle=True)
-print(ex[12])
-for i,v in enumerate(ex):
-    if (len(v)>2):
-        print(i)
+# js = []
+# for i,v in enumerate(pc):
+#     if (len(v)>7):
+#         print(i)
+#         js.append([j[1] for j in v])
+# print(js)
+#
+# np.save('js', js, allow_pickle=True)
+# np.save('example', pc, allow_pickle=True)
+
+# ex = np.load('example.npy', allow_pickle=True)
+# print(ex[12])
+# for i,v in enumerate(ex):
+#     if (len(v)>2):
+#         print(i)
 
 # print(posture_comparison(k[0], robot))
 

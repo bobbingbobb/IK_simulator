@@ -3,7 +3,7 @@
 data\raw_data\*
 data\table\*
 
-__pycache__
+__pycache__\*
 
 # MacOS
 .DS_Store
@@ -21,4 +21,5 @@ __pycache__
 
 *.hdf5
 *.npy
-*.pnz
+*.npz
+*.pyc
