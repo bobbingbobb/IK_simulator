@@ -167,7 +167,7 @@ def main():
     grip = 0.04
     origin_joints:list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
-    work_joints:list = [0.0, 1.5, 0.0, -2.5, 0.0, 1.57079632679, 0.785398163397]
+    # work_joints:list = [0.0, 1.5, 0.0, -2.5, 0.0, 1.57079632679, 0.785398163397]
     # work_joints:list = [0.2, 0.3, 0.0, -2.0, -0.4, 2.2, 0.785398163397]
     # work_joints:list = [1.1, -0.5, 0.1, -2.1, -1.3, 2.1, 0.7]
     max_joints:list = [3, 3, 3, 3, 3, 3, 3]
@@ -187,13 +187,23 @@ def main():
     # ball_trans = ball_solid.getField('translation')
     # ball_trans.setSFVec3f([0.7, 1, 0])
 
+    j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
+    j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
+
     franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
     count = 0
     while supervisor.step(timestep) != -1:
         print('setting pose')
-        # count += 1
-        # if count == 30:
-        #     break
+        franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
+
+        count += 1
+        if count == 100:
+            if work_joints == j1:
+                work_joints = j2
+            else:
+                work_joints = j1
+            count = 0
+
     print(franka.get_joint_pos(motors, psensor))
     # print(are_colliding(trans_field, trans_field))
     print(trans_field)

@@ -7,6 +7,7 @@ import datetime as d
 import random as r
 
 from scipy.spatial import KDTree
+from data_gen import Robot
 
 from constants import *
 
@@ -284,3 +285,5 @@ p2a_, v2ee_ = robot.fk_jo(j2_)
 # print(v2ee_)
 
 print(np.linalg.norm(p1a[5]-p2a_[5]))
+print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
+print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
