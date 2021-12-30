@@ -224,6 +224,20 @@ print(m.floor(2.6))
     #
     #     return target_space
 
+
+def rotationMatrixToEulerAngles(R):
+    sy = m.sqrt(R[0,0] ** 2 +  R[1,0] ** 2)
+    singular = sy < 1e-6
+    if  not singular :
+        x = m.atan2(R[2,1] , R[2,2])
+        y = m.atan2(-R[2,0], sy)
+        z = m.atan2(R[1,0], R[0,0])
+    else :
+        x = m.atan2(-R[1,2], R[1,1])
+        y = m.atan2(-R[2,0], sy)
+        z = 0
+    return np.array([x, y, z])
+
 def posture_comparison(pj, robot):
     thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
     thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
@@ -294,22 +308,44 @@ def pc_disonly(pj, robot, scale, nearby_postures):
 
 np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 robot = Robot()
+work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+fk_mat, vee = robot.fk_dh([-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ])
+print(rotationMatrixToEulerAngles(fk_mat))
+print(vee)
 
-iks = IKSimulator()
-target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
-pj = iks.find(target)
-# _, vecp_ee = robot.fk_dh(pj[3][1])
-# print(vecp_ee)
-print(len(pj))
-pc = pc_eeonly(pj, robot, 0.6, [])
-np.save('example_eeonly', np.array(pc, dtype=object), allow_pickle=True)
-pc = pc_disonly(pj, robot, 8.0, [])
-np.save('example_disonly', np.array(pc, dtype=object), allow_pickle=True)
+test = [[[ 0.    ,  0.    ,  0.14  ],
+       [ 0.    ,  0.    ,  0.333 ],
+       [ 0.0147, -0.0124,  0.525 ],
+       [ 0.106 , -0.0119,  0.6417],
+       [ 0.2546,  0.0028,  0.6396],
+       [ 0.4669,  0.0341,  0.4937],
+       [ 0.5107, -0.0153,  0.6155]], [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]]
+
+# iks = IKSimulator()
+# target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+# pj = iks.find(target)
+# print(pj[3])
+# # _, vecp_ee = robot.fk_dh(pj[3][1])
+# # print(vecp_ee)
+# print(len(pj))
+# pc = pc_eeonly(pj, robot, 0.6, [])
+# np.save('example_eeonly', np.array(pc, dtype=object), allow_pickle=True)
+# pc = pc_disonly(pj, robot, 8.0, [])
+# np.save('example_disonly', np.array(pc, dtype=object), allow_pickle=True)
 
 # k = np.load('example_eeonly.npy', allow_pickle=True)
-# print(k)
+# print([len(kk) for kk in k])
 # k = np.load('example_disonly.npy', allow_pickle=True)
-# print(k)
+# print([len(kk) for kk in k])
+
+
+
+# jo_list = [j[1] for j in k[-2]]
+# vec_ee = [-0.3552042, -0.28940691, 0.88886085]
+# for j in jo_list:
+#     _, vee = robot.fk_dh(j)
+#     print(vee, np.dot(vec_ee, vee))
+
 
 # pc = posture_comparison(pj[:1000], robot)
 # print(len(pc))
@@ -323,6 +359,9 @@ np.save('example_disonly', np.array(pc, dtype=object), allow_pickle=True)
 #
 # np.save('js', js, allow_pickle=True)
 # np.save('example', pc, allow_pickle=True)
+
+js = np.load('example.npy', allow_pickle=True)
+print(np.mean([len(j) for j in js]))
 
 # ex = np.load('example.npy', allow_pickle=True)
 # print(ex[12])

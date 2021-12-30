@@ -61,6 +61,7 @@ class Robot:
         vec_ee = np.dot(fk_mat, vec_z)[:3]
         vec_ee /= np.linalg.norm(vec_ee)
 
+        return fk_mat, vec_ee
         return fk_mat[:3,3], vec_ee
 
     def fk_jo(self, joints:list):
