@@ -1,9 +1,9 @@
 
 # in project
-data\raw_data\*
-data\table\*
-
-*\__pycache__\
+data/raw_data/*
+data/table/*
+*.data
+*.index
 
 # MacOS
 .DS_Store
@@ -22,4 +22,6 @@ data\table\*
 *.hdf5
 *.npy
 *.npz
-*.pyc
+*.pyc[cod]
+
+__pycache__/

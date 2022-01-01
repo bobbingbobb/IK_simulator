@@ -155,36 +155,6 @@ for i in range(50):
 # print(t)
 
 
-j = 0
-s = d.datetime.now()
-while j < 100000:
-    j+=1
-    # np.linalg.pinv(a)
-    c = [i[0] for i in a]
-    e = [i[2] for i in a]
-
-mm = d.datetime.now()
-
-j = 0
-while j < 100000:
-    j+=1
-    # np.linalg.inv(a)
-    c=[]
-    e=[]
-    for i in a:
-        c.append(i[0])
-        e.append(i[2])
-e = d.datetime.now()
-
-s = mm-s
-e = e-mm
-
-# print(np.mean([s, e], axis=0))
-# print(np.mean(np.array([]))
-
-if [0,0,0]:
-    print('aa')
-
 # from ik_simulator import IKTable, IKSimulator
 #
 # # table = IKTable('raw_data_7j_1')
@@ -360,8 +330,8 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # np.save('js', js, allow_pickle=True)
 # np.save('example', pc, allow_pickle=True)
 
-js = np.load('example.npy', allow_pickle=True)
-print(np.mean([len(j) for j in js]))
+# js = np.load('example.npy', allow_pickle=True)
+# print(np.mean([len(j) for j in js]))
 
 # ex = np.load('example.npy', allow_pickle=True)
 # print(ex[12])
@@ -394,3 +364,18 @@ print(np.mean([len(j) for j in js]))
 # print(np.linalg.norm(p1a[5]-p2a_[5]))
 # print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
 # print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+from rtree import index
+p = index.Property()
+p.dimension = 3
+p.dat_extension = 'data'
+p.idx_extension = 'index'
+idx = index.Index('rtree', properties=p)
+
+idx.insert(1, (0.6, 0 ,0.3))
+idx.insert(2, (0.5, 0 ,0.3))
+idx.insert(3, (0.4, 0 ,0.3))
+idx.insert(4, (0.3, 0 ,0.3))
+idx.insert(5, (0.2, 0 ,0.3))
+
+print(list(idx.nearest((0.4, 0 ,0.3), 3)))
