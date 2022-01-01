@@ -161,8 +161,11 @@ def main():
     global timestep
     timestep = int(supervisor.getBasicTimeStep())
 
+    # print(supervisor.getFromDevice())
 
     motors, psensor = franka.get_motor_config(supervisor, timestep, verbose=False)
+    # motors, psensor = franka.get_motor_config(supervisor.getFromDef('franka'), timestep, verbose=False)
+    # motors_ex, psensor_ex = franka.get_motor_config(supervisor.getFromDef('franka_ex'), timestep, verbose=False)
 
     grip = 0.04
     origin_joints:list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -187,22 +190,32 @@ def main():
     # ball_trans = ball_solid.getField('translation')
     # ball_trans.setSFVec3f([0.7, 1, 0])
 
-    j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
-    j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
+    jo_load = np.load('../../../scripts/js.npy', allow_pickle=True)
+    jo_list = jo_load[4]
+    # jo_load = np.load('../../../scripts/example_eeonly.npy', allow_pickle=True)
+    # jo_load = np.load('../../../scripts/example_disonly.npy', allow_pickle=True)
+    # jo_list = [j[1] for j in jo_load[-2]]
+    print(jo_list)
 
-    franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
+    work_joints = [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]
+
+    # if supervisor.step(timestep) != -1:
+    #     franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
     count = 0
+    jc = 0
+
     while supervisor.step(timestep) != -1:
-        print('setting pose')
-        franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
+        print(jc)
+        print(jo_list[jc])
 
         count += 1
-        if count == 100:
-            if work_joints == j1:
-                work_joints = j2
-            else:
-                work_joints = j1
+        if count == 50:
+            # break
             count = 0
+            franka.set_joint_pos(motors, psensor, [*jo_list[jc], grip, grip])
+            jc += 1
+            if jc == len(jo_list):
+                break
 
     print(franka.get_joint_pos(motors, psensor))
     # print(are_colliding(trans_field, trans_field))

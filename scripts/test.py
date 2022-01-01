@@ -8,6 +8,7 @@ import random as r
 
 from scipy.spatial import KDTree
 from data_gen import Robot
+from ik_simulator import IKSimulator
 
 from constants import *
 
@@ -154,8 +155,6 @@ for i in range(50):
     t.append([x, y, z])
 # print(t)
 
-if [0,0,0]:
-    print('aa')
 
 # from ik_simulator import IKTable, IKSimulator
 #
@@ -263,6 +262,18 @@ print(np.random.randn(1, 4, 2))
     #     return target_space
 
 robot = Robot()
+work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+fk_mat, vee = robot.fk_dh([-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ])
+print(rotationMatrixToEulerAngles(fk_mat))
+print(vee)
+
+test = [[[ 0.    ,  0.    ,  0.14  ],
+       [ 0.    ,  0.    ,  0.333 ],
+       [ 0.0147, -0.0124,  0.525 ],
+       [ 0.106 , -0.0119,  0.6417],
+       [ 0.2546,  0.0028,  0.6396],
+       [ 0.4669,  0.0341,  0.4937],
+       [ 0.5107, -0.0153,  0.6155]], [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]]
 
 p1 = [ 0.5602, -0.001 ,  0.6294]
 j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
