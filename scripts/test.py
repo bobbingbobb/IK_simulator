@@ -261,6 +261,90 @@ print(np.random.randn(1, 4, 2))
     #
     #     return target_space
 
+
+
+def rotationMatrixToEulerAngles(R):
+    sy = m.sqrt(R[0,0] ** 2 +  R[1,0] ** 2)
+    singular = sy < 1e-6
+    if  not singular :
+        x = m.atan2(R[2,1] , R[2,2])
+        y = m.atan2(-R[2,0], sy)
+        z = m.atan2(R[1,0], R[0,0])
+    else :
+        x = m.atan2(-R[1,2], R[1,1])
+        y = m.atan2(-R[2,0], sy)
+        z = 0
+    return np.array([x, y, z])
+
+def posture_comparison(pj, robot):
+    thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
+    thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
+
+    nearby_postures = []
+    for i_pos in pj:
+        for ind, i_type in enumerate(nearby_postures):
+            _, vecp_ee = robot.fk_dh(i_pos[1])
+            _, vect_ee = robot.fk_dh(i_type[0][1])
+            # print(vecp_ee)
+            # print(vect_ee)
+            # print(np.dot(vecp_ee, vect_ee))
+            # print(i_pos.position)
+            # print(i_type[0].position)
+            # print(i_pos.position[3])
+            # print(i_type[0].position[3])
+
+            if np.dot(vecp_ee, vect_ee) > 0.9 and np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
+                nearby_postures[ind].append(i_pos)
+        else:
+            nearby_postures.append([i_pos])
+
+        print(i_pos[0][6])
+
+    # print(len(indices), len(nearby_postures))
+
+    return nearby_postures
+
+def pc_eeonly(pj, robot, scale, nearby_postures):
+    # thres_3 = np.linalg.norm([0.316, 0.0825])#j1 - j3 range
+    # thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+    # nearby_postures = []
+    vecp_ee = [-0.3552042, -0.28940691, 0.88886085]
+
+    pos = []
+    for i_pos in pj:
+        _, vect_ee = robot.fk_dh(i_pos[1])
+        if np.dot(vecp_ee, vect_ee) > scale:
+           pos.append(i_pos)
+
+    scale += 0.05
+    nearby_postures.append(pos)
+
+    if len(pos) > 1:
+        nearby_postures = pc_eeonly(pos, robot, scale, nearby_postures)
+
+    return nearby_postures
+
+def pc_disonly(pj, robot, scale, nearby_postures):
+    thres_3 = np.linalg.norm([0.316, 0.0825])#j1 - j3 range
+    thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+    pos = []
+    for i_pos in pj:
+        if np.linalg.norm(pj[3][0][3]-i_pos[0][3]) < thres_3/scale and \
+           np.linalg.norm(pj[3][0][5]-i_pos[0][5]) < thres_5/scale:
+           pos.append(i_pos)
+
+    scale /= 2.0
+    nearby_postures.append(pos)
+
+    if len(pos) > 1:
+        nearby_postures = pc_eeonly(pos, robot, scale, nearby_postures)
+
+    return nearby_postures
+
+
+np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 robot = Robot()
 work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
 fk_mat, vee = robot.fk_dh([-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ])
@@ -275,26 +359,91 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
        [ 0.4669,  0.0341,  0.4937],
        [ 0.5107, -0.0153,  0.6155]], [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]]
 
-p1 = [ 0.5602, -0.001 ,  0.6294]
-j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
-p1a, v1ee = robot.fk_jo(j1)
-p2 = [ 0.5539, -0.0049,  0.6228]
-j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
-p2a, v2ee = robot.fk_jo(j2)
+# iks = IKSimulator()
+# target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+# pj = iks.find(target)
+# print(pj[3])
+# # _, vecp_ee = robot.fk_dh(pj[3][1])
+# # print(vecp_ee)
+# print(len(pj))
+# pc = pc_eeonly(pj, robot, 0.6, [])
+# np.save('example_eeonly', np.array(pc, dtype=object), allow_pickle=True)
+# pc = pc_disonly(pj, robot, 8.0, [])
+# np.save('example_disonly', np.array(pc, dtype=object), allow_pickle=True)
 
-v1ee/=np.linalg.norm(v1ee)
-v2ee/=np.linalg.norm(v2ee)
-# print(v1ee)
-# print(v2ee)
-print(np.dot(v1ee, v2ee))
+# k = np.load('example_eeonly.npy', allow_pickle=True)
+# print([len(kk) for kk in k])
+# k = np.load('example_disonly.npy', allow_pickle=True)
+# print([len(kk) for kk in k])
 
-print(np.linalg.norm(p1a[3]-p2a[3]))
-print(np.linalg.norm(p1a[5]-p2a[5]))
-j2_ = np.append(j1[:3], j2[3:])
-p2a_, v2ee_ = robot.fk_jo(j2_)
-# v2ee_/=np.linalg.norm(v2ee_)
-# print(v2ee_)
 
-print(np.linalg.norm(p1a[5]-p2a_[5]))
-print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
-print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+# jo_list = [j[1] for j in k[-2]]
+# vec_ee = [-0.3552042, -0.28940691, 0.88886085]
+# for j in jo_list:
+#     _, vee = robot.fk_dh(j)
+#     print(vee, np.dot(vec_ee, vee))
+
+
+# pc = posture_comparison(pj[:1000], robot)
+# print(len(pc))
+
+# js = []
+# for i,v in enumerate(pc):
+#     if (len(v)>7):
+#         print(i)
+#         js.append([j[1] for j in v])
+# print(js)
+#
+# np.save('js', js, allow_pickle=True)
+# np.save('example', pc, allow_pickle=True)
+
+# js = np.load('example.npy', allow_pickle=True)
+# print(np.mean([len(j) for j in js]))
+
+# ex = np.load('example.npy', allow_pickle=True)
+# print(ex[12])
+# for i,v in enumerate(ex):
+#     if (len(v)>2):
+#         print(i)
+
+# print(posture_comparison(k[0], robot))
+
+# p1 = [ 0.5602, -0.001 ,  0.6294]
+# j1 = [-2.8, -1.7,  0.8, -1.2, -1.3,  0.6,  0. ]
+# p1a, v1ee = robot.fk_jo(j1)
+# p2 = [ 0.5539, -0.0049,  0.6228]
+# j2 = [-2.8, -0.8,  2.6, -0.9, -1.9,  0. ,  0. ]
+# p2a, v2ee = robot.fk_jo(j2)
+#
+# v1ee/=np.linalg.norm(v1ee)
+# v2ee/=np.linalg.norm(v2ee)
+# # print(v1ee)
+# # print(v2ee)
+# print(np.dot(v1ee, v2ee))
+#
+# print(np.linalg.norm(p1a[3]-p2a[3]))
+# print(np.linalg.norm(p1a[5]-p2a[5]))
+# j2_ = np.append(j1[:3], j2[3:])
+# p2a_, v2ee_ = robot.fk_jo(j2_)
+# # v2ee_/=np.linalg.norm(v2ee_)
+# # print(v2ee_)
+#
+# print(np.linalg.norm(p1a[5]-p2a_[5]))
+# print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
+# print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
+
+from rtree import index
+p = index.Property()
+p.dimension = 3
+p.dat_extension = 'data'
+p.idx_extension = 'index'
+idx = index.Index('rtree', properties=p)
+
+idx.insert(1, (0.6, 0 ,0.3))
+idx.insert(2, (0.5, 0 ,0.3))
+idx.insert(3, (0.4, 0 ,0.3))
+idx.insert(4, (0.3, 0 ,0.3))
+idx.insert(5, (0.2, 0 ,0.3))
+
+print(list(idx.nearest((0.4, 0 ,0.3), 3)))
