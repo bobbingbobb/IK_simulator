@@ -112,12 +112,12 @@ c = [22.2,.22,-22.1]
 # for i in a:
 #     print(i)
 
-b = {'[2 , 3 , 4]':2, '[1 , 2 , 3]':3}
-for i, v in enumerate(a):
-    if v == i:
-        print('t')
-else:
-    print('f')
+# b = {'[2 , 3 , 4]':2, '[1 , 2 , 3]':3}
+# for i, v in enumerate(a):
+#     if v == i:
+#         print('t')
+# else:
+#     print('f')
 
 a = [1,2,3]
 b = [-3,-4,-5]
@@ -137,7 +137,7 @@ a = [[1,8,3],[3,3,3],[1,2,3]]
 
 
 tree = KDTree(a, leafsize=2, balanced_tree=True)
-print(tree.query_ball_point([3,3,2], 0.0003))
+# print(tree.query_ball_point([3,3,2], 0.0003))
 
 vectors = [[0.001017, 0.018661, 0.0], [0.006918, 0.005827, -0.013618], [0.002694, 0.015783, -0.003783], [0.001464, 0.002767, 0.013237], [-0.001235, -0.004304, -0.000281], [0.004531, -0.001224, -0.001164]]
 vec = [[0.004531, -0.001224, -0.001164], [0.001017, 0.018661, 0.0], [0.001464, 0.002767, 0.013237]]
@@ -146,14 +146,6 @@ target = [0.5545, -0.0, 0.6245]
 
 # a = np.dot(np.linalg.inv(vec), target)
 # print(np.dot(vec, a))
-
-t = []
-for i in range(50):
-    x = round(r.uniform(-0.855, 0.855), 4)
-    y = round(r.uniform(-0.855, 0.855), 4)
-    z = round(r.uniform(-0.36, 1.19), 4)
-    t.append([x, y, z])
-# print(t)
 
 
 # from ik_simulator import IKTable, IKSimulator
@@ -169,23 +161,9 @@ for i in range(50):
 #     # print(table.query_kd_tree(target))
 #     print(iks.find(target))
 
-# raw_info = np.load('../data/raw_data/raw_data_7j_20.npz')
-# print(raw_info['positions'][0][6])
-# print(raw_info['joints'][0])
-# positions = [p[6] for p in raw_info['positions']]
-# print(len(positions))
-# print(len(np.unique(positions, axis=0)))
 
 
-print(m.floor(2.6))
-
-# from data_gen import Robot
-# work_joints = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
-# robot = Robot()
-
-# print(robot.fk_dh(work_joints))
-
-print(np.random.randn(1, 4, 2))
+# print(np.random.randn(1, 4, 2))
 
 
 # with h5py.File('test.hdf5', 'w') as f:
@@ -231,35 +209,12 @@ print(np.random.randn(1, 4, 2))
 #     print(pos_info[0,0,0])
 #     print(pos_info[0,0,1])
 
-# with h5py.File(RAW_DATA_FOLDER+'test.hdf5', 'r') as f:
-#     f = f['franka_data']
-#     print(f.attrs['shift'])
-#     # print(f['pos_info'][14,6,22]['vec_ee'])
-#     # print(f['pos_info'][:]['pos'][6])
-#     print(f['pos_info'][:])
 
-    # def table_v1(self):
-    #     #20 cm cube
+
+
     #     #x: -855 ~ 855, 1710, 18/20 = 9
     #     #y: -855 ~ 855, 1710, 18/20 = 9
     #     #z: -360 ~ 1190, 1550, 16/20 = 8
-    #     grid_data = [[[[] for k in range(8)] for j in range(9)] for i in range(9)]
-    #     for index, [_, _, _, _, _, _, [x, y, z]] in enumerate(self.positions):
-    #         grid_data[int((x+self.shift_x)/0.2)][int((y+self.shift_y)/0.2)][int((z+self.shift_z)/0.2)].append(index)
-    #
-    #     print('Density: ', self.__density(grid_data, 3))# avg sample in a 20cm cube
-    #
-    #     np.savez(self.__tablename_alignment(self.table_name), raw_data=self.raw_data, table=grid_data)
-    #
-    # def searching_table_v1(self, target):
-    #     searching_space = self.table[int((target[0]+self.shift_x)/0.2)][int((target[1]+self.shift_y)/0.2)][int((target[2]+self.shift_z)/0.2)]
-    #
-    #     pos_jo = namedtuple('pos_jo', ['position', 'joint'])
-    #     target_space = []
-    #     for index in searching_space:
-    #         target_space.append(pos_jo(self.positions[index][6], self.joints[index]))
-    #
-    #     return target_space
 
 
 
@@ -347,9 +302,9 @@ def pc_disonly(pj, robot, scale, nearby_postures):
 np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
 robot = Robot()
 work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
-fk_mat, vee = robot.fk_dh([-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ])
-print(rotationMatrixToEulerAngles(fk_mat))
-print(vee)
+# fk_mat, vee = robot.fk_dh([-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ])
+# print(rotationMatrixToEulerAngles(fk_mat))
+# print(vee)
 
 test = [[[ 0.    ,  0.    ,  0.14  ],
        [ 0.    ,  0.    ,  0.333 ],
@@ -440,10 +395,26 @@ p.dat_extension = 'data'
 p.idx_extension = 'index'
 idx = index.Index('rtree', properties=p)
 
-idx.insert(1, (0.6, 0 ,0.3))
-idx.insert(2, (0.5, 0 ,0.3))
-idx.insert(3, (0.4, 0 ,0.3))
-idx.insert(4, (0.3, 0 ,0.3))
-idx.insert(5, (0.2, 0 ,0.3))
 
-print(list(idx.nearest((0.4, 0 ,0.3), 3)))
+with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
+    f = f['franka_data']
+    # print(f.attrs['shift'])
+    # print(f['pos_info'][14,6,22]['vec_ee'])
+    # print(f['pos_info'][:]['pos'][6])
+    pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+    print(pos_ind[0])
+
+
+    # for i in range(len(pos_ind)):
+    #     idx.insert(i, (pos_ind[i].tolist()))
+
+    print(list(idx.nearest(pos_ind[0].tolist(), 3)))
+    print(list(idx.intersection(pos_ind[10].tolist())))
+
+# idx.insert(1, (0.6, 0 ,0.3))
+# idx.insert(2, (0.5, 0 ,0.3))
+# idx.insert(3, (0.4, 0 ,0.3))
+# idx.insert(4, (0.3, 0 ,0.3))
+# idx.insert(5, (0.2, 0 ,0.3))
+
+# print(list(idx.nearest((0.4, 0 ,0.3), 3)))
