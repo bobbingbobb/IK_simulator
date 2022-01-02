@@ -398,11 +398,12 @@ idx = index.Index('rtree', properties=p)
 
 with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
     f = f['franka_data']
-    # print(f.attrs['shift'])
+    print(f.attrs['shift'])
     # print(f['pos_info'][14,6,22]['vec_ee'])
     # print(f['pos_info'][:]['pos'][6])
-    pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
-    print(pos_ind[0])
+    # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+    # print(pos_ind[0])
+    print(f['pos_info'][20].tolist())
 
 
     # for i in range(len(pos_ind)):
