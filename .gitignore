@@ -4,6 +4,8 @@ data/raw_data/*
 data/table/*
 *.data
 *.index
+*.dat
+*.idx
 
 # MacOS
 .DS_Store

@@ -148,21 +148,6 @@ target = [0.5545, -0.0, 0.6245]
 # print(np.dot(vec, a))
 
 
-# from ik_simulator import IKTable, IKSimulator
-#
-# # table = IKTable('raw_data_7j_1')
-#
-# iks = IKSimulator()
-# for _ in range(50):
-#     x = round(r.uniform(-0.855, 0.855), 4)
-#     y = round(r.uniform(-0.855, 0.855), 4)
-#     z = round(r.uniform(-0.36, 1.19), 4)
-#     target = [x, y, z]
-#     # print(table.query_kd_tree(target))
-#     print(iks.find(target))
-
-
-
 # print(np.random.randn(1, 4, 2))
 
 
@@ -391,26 +376,53 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 from rtree import index
 p = index.Property()
 p.dimension = 3
-p.dat_extension = 'data'
-p.idx_extension = 'index'
+# p.dat_extension = 'data'
+# p.idx_extension = 'index'
+# p.index_capacity = 1000
 idx = index.Index('rtree', properties=p)
 
 
-with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
-    f = f['franka_data']
-    print(f.attrs['shift'])
-    # print(f['pos_info'][14,6,22]['vec_ee'])
-    # print(f['pos_info'][:]['pos'][6])
-    # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
-    # print(pos_ind[0])
-    print(f['pos_info'][20].tolist())
+# test_pos = []
+# for i in range(500):
+#     x = round(r.uniform(-0.855, 0.855), 4)
+#     y = round(r.uniform(-0.855, 0.855), 4)
+#     z = round(r.uniform(-0.36, 1.19), 4)
+#
+#     test_pos.append([x, y, z])
+#     # idx.insert(i, test_pos[-1])
+print('start')
+st = d.datetime.now()
+# for i, p in enumerate(test_pos):
+#     idx.insert(i, p)
+
+print(idx.properties)
+
+print(d.datetime.now() - st)
+
+# print(np.genfromtxt('rtree_big.data'))
+
+# k = np.load('rtree.dat', allow_pickle=True)
+# print(k)
+
+print(list(idx.nearest((0.5, 0, 0.6), 30, objects=True)))
+# print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
 
 
-    # for i in range(len(pos_ind)):
-    #     idx.insert(i, (pos_ind[i].tolist()))
 
-    print(list(idx.nearest(pos_ind[0].tolist(), 3)))
-    print(list(idx.intersection(pos_ind[10].tolist())))
+# with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
+#     f = f['franka_data']
+#     # print(f.attrs['shift'])
+#     # print(f['pos_info'][14,6,22]['vec_ee'])
+#     # print(f['pos_info'][:]['pos'][6])
+#     pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+#     print(pos_ind[0])
+#
+#
+#     # for i in range(len(pos_ind)):
+#     #     idx.insert(i, (pos_ind[i].tolist()))
+#
+#     print(list(idx.nearest(pos_ind[0].tolist(), 3)))
+#     print(list(idx.intersection(pos_ind[10].tolist())))
 
 # idx.insert(1, (0.6, 0 ,0.3))
 # idx.insert(2, (0.5, 0 ,0.3))
