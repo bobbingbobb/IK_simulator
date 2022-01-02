@@ -501,6 +501,7 @@ def gather(scale, name):
 
 if __name__ == '__main__':
     print('start')
+    start = d.datetime.now()
 
     # gather(20, 'raw_data_7j_20')
 
@@ -543,5 +544,7 @@ if __name__ == '__main__':
     # show_avg(ik_simulator, '30_20near_result_pure')
     # show_avg(ik_simulator, '30_20near_result_vp_v1')
     # show_avg(ik_simulator, '30_20near_result_vp_v2')
+
+    print('duration: ', d.datetime.now()-start)
 
     print('end')

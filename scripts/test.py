@@ -376,10 +376,7 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 from rtree import index
 p = index.Property()
 p.dimension = 3
-# p.dat_extension = 'data'
-# p.idx_extension = 'index'
-# p.index_capacity = 1000
-idx = index.Index('rtree', properties=p)
+idx = index.Index('iksimu_rtree', properties=p)
 
 
 # test_pos = []
@@ -389,40 +386,41 @@ idx = index.Index('rtree', properties=p)
 #     z = round(r.uniform(-0.36, 1.19), 4)
 #
 #     test_pos.append([x, y, z])
-#     # idx.insert(i, test_pos[-1])
+#     idx.insert(i, test_pos[-1], obj=test_pos)
 print('start')
+target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+
 st = d.datetime.now()
-# for i, p in enumerate(test_pos):
-#     idx.insert(i, p)
+# print(idx.properties)
 
-print(idx.properties)
-
+# print([it.object for it in idx.nearest(target, 100, objects=True)])
+print(len([it.object for it in idx.intersection([t+offset for offset in (-0.025, 0.025) for t in target], objects=True)]))
+# print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
+# print(list(idx.nearest((0.5, 0, 0.6), 30)))
+# print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
 print(d.datetime.now() - st)
 
-# print(np.genfromtxt('rtree_big.data'))
+idx.close()
 
-# k = np.load('rtree.dat', allow_pickle=True)
-# print(k)
-
-print(list(idx.nearest((0.5, 0, 0.6), 30, objects=True)))
-# print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
-
-
+# k = np.load(RAW_DATA_FOLDER+'raw_data_7j_30')
+# print(len(k))
 
 # with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
 #     f = f['franka_data']
 #     # print(f.attrs['shift'])
 #     # print(f['pos_info'][14,6,22]['vec_ee'])
 #     # print(f['pos_info'][:]['pos'][6])
-#     pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
-#     print(pos_ind[0])
-#
-#
-#     # for i in range(len(pos_ind)):
-#     #     idx.insert(i, (pos_ind[i].tolist()))
-#
-#     print(list(idx.nearest(pos_ind[0].tolist(), 3)))
-#     print(list(idx.intersection(pos_ind[10].tolist())))
+#     xr, yr, zr = f['pos_info'].shape
+#     print(xr, yr, zr)
+#     # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+#     # print(pos_ind[0])
+
+
+    # for i in range(len(pos_ind)):
+    #     idx.insert(i, (pos_ind[i].tolist()))
+
+    # print(list(idx.nearest(pos_ind[0].tolist(), 3)))
+    # print(list(idx.intersection(pos_ind[10].tolist())))
 
 # idx.insert(1, (0.6, 0 ,0.3))
 # idx.insert(2, (0.5, 0 ,0.3))
