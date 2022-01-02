@@ -394,7 +394,7 @@ st = d.datetime.now()
 # print(idx.properties)
 
 # print([it.object for it in idx.nearest(target, 100, objects=True)])
-print(len([it.object for it in idx.intersection([t+offset for offset in (-0.025, 0.025) for t in target], objects=True)]))
+print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
 # print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
 # print(list(idx.nearest((0.5, 0, 0.6), 30)))
 # print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))

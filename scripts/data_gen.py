@@ -1,18 +1,24 @@
-import os, h5py
+import os
 import numpy as np
 import math as m
 import datetime as d
 from collections import namedtuple
+from rtree import index
+
 
 from constants import *
 
 
 class Robot:
     def __init__(self):
+        '''
+        robot specification.
+
         #range
         #x: -855 ~ 855, 1710
         #y: -855 ~ 855, 1710
         #z: -360 ~ 1190, 1550
+        '''
         self.joint_num = 7
         restrict = namedtuple('restrict', ['max', 'min'])
         self.reach = [restrict(0.855, -0.855), restrict(0.855, -0.855), restrict(1.19, -0.36)]
@@ -47,6 +53,15 @@ class Robot:
         return rx
 
     def fk_dh(self, joints:list):
+        '''
+        fk matrix with given dh.
+
+        return:
+            pos: end position
+            vec_ee: end effector vector, presenting the facing of the end effector
+                #todo: extend to customized ee offset
+                #todo: fitting the euler angle presentation
+        '''
         self.dh[:,0] = joints
 
         fk_mat = np.eye(4)
@@ -64,6 +79,15 @@ class Robot:
         return fk_mat[:3,3], vec_ee[:3]
 
     def fk_jo(self, joints:list):
+        '''
+        fk matrix with given specification of each joint.
+
+        return:
+            pos: positions of each joints
+            vec_ee: end effector vector, presenting the facing of the end effector
+                #todo: extend to customized ee offset
+                #todo: fitting the euler angle presentation
+        '''
         #show position of every joint
         jo = np.array([[    0.0,    0.0,   0.14,     0.0],\
                        [    0.0,    0.0,  0.193, -m.pi/2],\
@@ -97,78 +121,55 @@ class Robot:
 
 class DataCollection:
     def __init__(self, scale=30):
+        '''
+        collecting robot infomation.
+        '''
         self.robot = Robot()
         self.joints = self.robot.joints
         self.diff = 0.05
         self.scale = scale * m.pi/180
-        self.shift_x, self.shift_y, self.shift_z = (-1*reach.min for reach in self.robot.reach)
+        # self.shift_x, self.shift_y, self.shift_z = (-1*reach.min for reach in self.robot.reach)
         # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
     def without_colliding_detect(self, filename='raw_data'):
-        # self.filename = RAW_DATA_FOLDER+filename+'.npz'
-        filename = RAW_DATA_FOLDER+filename+'.hdf5'
+        filename = RAW_DATA_FOLDER+filename
         start = d.datetime.now()
 
-        with h5py.File(filename, 'a') as f:
-            h5_data = f.create_group('franka_data')
-            h5_data.attrs['scale'] = self.scale
-            h5_data.attrs['shift'] = (self.shift_x, self.shift_y, self.shift_z)
+        id = 0
 
-            size = [int((reach.max-reach.min)/self.diff)+1 for reach in self.robot.reach]
-            # dt = np.dtype([("pos_ee", np.float32, [3,]),\
-            #                ("joint", np.float32, [7,]),\
-            #                ("vec_ee", np.float32, [3,]),\
-            #                ("index", np.uint32)])
-            dt = np.dtype([("pos", np.float32, [7,3]),\
-                           ("joint", np.float32, [7]),\
-                           ("vec_ee", np.float32, [3])])
+        # rtree preparing
+        p = index.Property()
+        p.dimension = 3
+        idx = index.Index(filename, properties=p)
 
-            pos_info = h5_data.create_dataset("pos_info", shape=size, dtype=h5py.vlen_dtype(dt))
+        for j1 in range(int(self.joints[0].min*10), int(self.joints[0].max*10), int(self.scale*10)):
+            for j2 in range(int(self.joints[1].min*10), int(self.joints[1].max*10), int(self.scale*10)):
+                for j3 in range(int(self.joints[2].min*10), int(self.joints[2].max*10), int(self.scale*10)):
+                    for j4 in range(int(self.joints[3].min*10), int(self.joints[3].max*10), int(self.scale*10)):
+                        for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
+                            for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
+                                joints = np.array([j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0])
 
-            # index = 0
-            # data_joints = []
-            for j1 in range(int(self.joints[0].min*10), int(self.joints[0].max*10), int(self.scale*10)):
-                for j2 in range(int(self.joints[1].min*10), int(self.joints[1].max*10), int(self.scale*10)):
-                    for j3 in range(int(self.joints[2].min*10), int(self.joints[2].max*10), int(self.scale*10)):
-                        for j4 in range(int(self.joints[3].min*10), int(self.joints[3].max*10), int(self.scale*10)):
-                            for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
-                                for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
-                                    joints = np.array([j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0])
+                                # cal fk
+                                position, vec_ee = self.robot.fk_jo(joints)
+                                # print(position)
+                                for i, j in enumerate(position):
+                                    # print(j)
+                                    for p, n in enumerate(j):
+                                        position[i][p] = round(n, 4)
 
-                                    # cal fk
-                                    position, vec_ee = self.robot.fk_jo(joints)
-                                    # print(position)
-                                    for i, j in enumerate(position):
-                                        # print(j)
-                                        for p, n in enumerate(j):
-                                            position[i][p] = round(n, 4)
+                                # storing pos info
+                                pos_info = (position, joints, vec_ee)
+                                idx.insert(id, position[6].tolist(), obj=pos_info)
 
-                                    # storing pos info
-                                    # tmp_info = np.array([(position[6], joints, vec_ee, index)], dtype=dt)
-                                    tmp_info = np.array([(position, joints, vec_ee)], dtype=dt)
+                                id += 1
 
-                                    x = int((position[6][0]+self.shift_x)/self.diff)
-                                    y = int((position[6][1]+self.shift_y)/self.diff)
-                                    z = int((position[6][2]+self.shift_z)/self.diff)
-
-                                    # print(x,y,z)
-                                    pos_info[x, y, z] = np.append(pos_info[x, y, z], tmp_info)
-
-                                    # data_joints.append(joints)
-
-            # data_joints = np.asarray(data_joints)
-
-            # np.savez(filename, joints=data_joints, positions=data_positions)
-
-            # h5_data.create_dataset("joints", data=data_joints)
-
-
-
+        idx.close()
 
         end = d.datetime.now()
         print('done. duration: ', end-start)
         return filename
 
 if __name__ == '__main__':
-    dd = DataCollection(scale=30)
-    print(dd.without_colliding_detect('raw_data_7j_30'))
+    dc = DataCollection(scale=30)
+    print(dc.without_colliding_detect('raw_data_7j_30'))

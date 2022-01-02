@@ -108,7 +108,7 @@ class DataCollection:
         # self.filename = RAW_DATA_FOLDER+'raw_data.npz'
 
     def without_colliding_detect(self, filename='raw_data'):
-        # filename = RAW_DATA_FOLDER+filename+'.hdf5'
+        filename = RAW_DATA_FOLDER+filename
         start = d.datetime.now()
 
         # global pos_info
@@ -118,7 +118,7 @@ class DataCollection:
         #
         p = index.Property()
         p.dimension = 3
-        idx = index.Index('iksimu_rtree', properties=p)
+        idx = index.Index(filename, properties=p)
 
         # index = 0
         # data_joints = []
@@ -143,8 +143,6 @@ class DataCollection:
                                 idx.insert(id, position[6].tolist(), obj=obj)
 
                                 id += 1
-
-
 
         idx.close()
 

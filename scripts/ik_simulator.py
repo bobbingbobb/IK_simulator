@@ -1,91 +1,24 @@
-import os, h5py
+import os
 import numpy as np
 import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
 import copy as c
 import random as r
+from rtree import index
 
-from scipy.spatial import KDTree
+# from scipy.spatial import KDTree
 
 from constants import *
+from utilities import *
 from data_gen import Robot, DataCollection
 
 
 class IKTable:
-    def __init__(self, raw_data):
-        self.table = []
+    def __init__(self, filename='iksimu_rtree'):
+        self.table = index.Index(RAW_DATA_FOLDER+name_alignment(filename), properties=p)
 
-        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.hdf5'
-        self.joints = []
-        self.all_posi = []
-        self.vec_ee = []
-
-        self.positions = []
-
-        # self.pos_table = [] #dict: position to joint index    #no need
-
-        self.shift_x, self.shift_y, self.shift_z = 0.855, 0.855, 0.36
-
-        self.load_data()
-        s = d.datetime.now()
-        self.kd_tree()
-        print(d.datetime.now()-s)
-
-
-    def __name_alignment(self, name):
-        name = str(name).split('/')
-        name = name[-1].split('.')
-        return name[0]
-
-    def __density(self, data, data_dim):
-        def recur(list, dim):
-            result = []
-            dim -= 1
-            for element in list:
-                # print(len(element))
-                if not dim == 0:
-                    result += recur(element, dim)
-                else:
-                    if not len(element) == 0:
-                        result += [len(element)]
-
-            return result
-
-        return np.mean(np.array(recur(data, data_dim)))
-
-    def __str2trans(self, key_str):
-        return [float(k) for k in str(key_str)[1:-1].split(' ')]
-
-    def load_data(self):
-        s = d.datetime.now()
-        print('loading data...')
-
-        with h5py.File(self.raw_data, 'r') as f:
-            f = f['franka_data']
-            self.shift_x, self.shift_y, self.shift_z = f.attrs['shift']
-            self.pos_info = f['pos_info']
-            self.positions = [p['pos'][6] for p in self.pos_info]
-
-        # raw_info = np.load(self.raw_data)
-        # self.joints = raw_info['joints']
-        # self.positions = [p[6] for p in raw_info['positions']]
-        # self.all_posi = raw_info['positions']
-        # print(len(self.all_posi))
-
-        print('loading done. duration: ', d.datetime.now()-s)
-
-    def switch_raw_data(self, raw_data=None):
-        if raw_data == 'empty':
-            print('new raw_data needed.')
-            return 0
-
-        self.raw_data = RAW_DATA_FOLDER+self.__name_alignment(raw_data)+'.hdf5'
-        self.load_data()
-        self.kd_tree()
-        print('switch to '+raw_data)
-
-    def searching_area(self, target):
+    def query_neighbor(self, target):
         # return a list of position indices
         for i,v in enumerate(target):
             target[i] = round(v, 4)
@@ -94,46 +27,31 @@ class IKTable:
 
         return target_space
 
-    def kd_tree(self):
-        self.table = KDTree(self.positions, leafsize=2, balanced_tree=True)
-
-    def query_kd_tree(self, target, range = 0.05):
-
-        result = self.table.query_ball_point(target, range)
-        # print(range)
-
-        # result = self.table.query(target, k=20, distance_upper_bound=0.05)[1]
-        # result = np.setdiff1d(result, len(self.positions))
-
-        # if (len(result) < 2):
-        #     result = self.table.query(target, k=2)
+    def rtree_query(self, target, range = 0.05):
+        result = [it.object for it in idx.nearest(target, 100, objects=True)]
+        # result = [it.object for it in idx.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
         return result
+
+    def insert(self, target):
+        pass
+
+    def delete(self, target):
+        pass
 
 
 class IKSimulator:
     def __init__(self, algo='pure'):
-        self.iktable = IKTable('raw_data_7j_20')
+        self.iktable = IKTable()
         self.robot = Robot()
         self.algo = algo
 
-    def messenger(self, message):
-        for k, v in message.items():
-            print(k+':\t'+str(v))
-
     def fk(self, joints):
-        # pos, vec_ee = self.robot.fk_dh(joints)
-        return self.robot.fk_dh(joints)
-
-    def diff_cal(self, list_1, list_2):
-        if len(list_1) == len(list_2):
-            return m.sqrt(sum([(i - j)**2 for i, j in zip(list_1, list_2)]))
-        else:
-            print('length of two lists must be equal')
-            return 0
+        pos, vec_ee = self.robot.fk_dh(joints)
+        return pos
 
     def find(self, target_pos):
-        positions = self.iktable.searching_area(target_pos)
+        positions = self.iktable.query_neighbor(target_pos)
 
         # target_space = self.get_posts(positions)
         nearby_postures = self.index2pos_jo(positions)
@@ -156,7 +74,7 @@ class IKSimulator:
         nearby_postures = []
         for i_joint, value in enumerate(target_space):
             for i_type in nearby_postures:
-                diff = self.diff_cal(i_type.joint, value.joint)
+                diff = np.linalg.norm(i_type.joint - value.joint)
                 if diff < threshold:
                     # nearby_postures.append(value)
                     break
@@ -189,7 +107,7 @@ class IKSimulator:
             for i_type in nearby_postures:
                 for i_jo in ref_joint:
                     # print(i_pos, i_type, i_jo)
-                    posture.append(self.diff_cal(self.iktable.all_posi[i_pos][i_jo], self.iktable.all_posi[i_type][i_jo]))
+                    posture.append(np.linalg.norm(self.iktable.all_posi[i_pos][i_jo] - self.iktable.all_posi[i_type][i_jo]))
 
                 if (np.array(posture) < threshold).all():
                     break
@@ -235,7 +153,7 @@ class IKSimulator:
 
         rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(3)]  #[1, 0.5, 0.25] degree
         # rad_offset = [(m.pi/180.0)*(0.5**i) for i in range(7)]  #[1, 0.5, 0.25] degree
-        diff = self.diff_cal(self.fk(imitating_joint), target_pos)
+        diff = np.linalg.norm(self.fk(imitating_joint) - target_pos)
         # print(diff)
 
         tmp_joint = imitating_joint
@@ -247,7 +165,7 @@ class IKSimulator:
                     tmp_joint[i] += offset
                     pre_diff = diff
                     tmp_pos = self.fk(tmp_joint)
-                    diff = self.diff_cal(tmp_pos, target_pos)
+                    diff = np.linalg.norm(tmp_pos - target_pos)
                     # print(tmp_pos, diff)
                     if diff >= pre_diff:
                         offset *= -1
@@ -271,7 +189,7 @@ class IKSimulator:
         for p_type in nearby_postures:
             s = d.datetime.now()
 
-            origin_d = self.diff_cal(p_type.position, target_pos)
+            origin_d = np.linalg.norm(p_type.position - target_pos)
 
 
             if self.algo == 'pure':
@@ -340,7 +258,7 @@ class IKSimulator:
         threshold = 0.001
 
         tmp_joint = c.deepcopy(p_type.joint)
-        diff = self.diff_cal(p_type.position, target_pos)
+        diff = np.linalg.norm(p_type.position - target_pos)
         # vectors = []
         loop = 0
         while diff > threshold and loop < 20:
@@ -372,7 +290,7 @@ class IKSimulator:
 
         tmp_joint = c.deepcopy(p_type.joint)
         pre_diff = 1
-        diff = self.diff_cal(target_pos, p_type.position)
+        diff = np.linalg.norm(target_pos - p_type.position)
         # print(diff)
         # tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=[0])
 
@@ -409,7 +327,7 @@ class IKSimulator:
                 tmp_joint[i] += p * moves[i]
 
             # pre_diff = diff
-            diff = self.diff_cal(self.fk(tmp_joint), target_pos)
+            diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
             if diff > pre_diff:
                 jmp += 1
                 for i, p in moving_prop:
