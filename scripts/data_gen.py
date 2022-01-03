@@ -5,9 +5,8 @@ import datetime as d
 from collections import namedtuple
 from rtree import index
 
-
 from constants import *
-
+from utilities import *
 
 class Robot:
     def __init__(self):
@@ -151,18 +150,13 @@ class DataCollection:
                     for j4 in range(int(self.joints[3].min*10), int(self.joints[3].max*10), int(self.scale*10)):
                         for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
                             for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
-                                joints = np.array([j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0])
+                                joint = np.array([j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0])
 
                                 # cal fk
-                                position, vec_ee = self.robot.fk_jo(joints)
-                                # print(position)
-                                for i, j in enumerate(position):
-                                    # print(j)
-                                    for p, n in enumerate(j):
-                                        position[i][p] = round(n, 4)
+                                position, vec_ee = self.robot.fk_jo(joint)
 
                                 # storing pos info
-                                pos_info = (position, joints, vec_ee)
+                                pos_info = (pos_alignment(position), joint, vec_ee)
                                 idx.insert(id, position[6].tolist(), obj=pos_info)
 
                                 id += 1

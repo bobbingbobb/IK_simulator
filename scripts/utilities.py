@@ -1,4 +1,5 @@
 import numpy as np
+from collections import defaultdict
 
 from constants import *
 
@@ -25,6 +26,13 @@ def density(data, data_dim):
         return result
 
     return np.mean(np.array(recur(data, data_dim)))
+
+def pos_alignment(position):
+    for i, j in enumerate(position):
+        for p, n in enumerate(j):
+            position[i][p] = round(n, 4)
+
+    return position
 
 def show_avg(filename):
     message = np.load(RESULT_FOLDER+filename+'.npy', allow_pickle=True)

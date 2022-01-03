@@ -2,7 +2,6 @@ import os
 import numpy as np
 import math as m
 import datetime as d
-from collections import defaultdict
 import random as r
 
 # from scipy.spatial import KDTree
@@ -51,8 +50,8 @@ if __name__ == '__main__':
     # target = [-0.8449, -0.114, 0.975]
 
     # ik_simulator = IKSimulator(algo='vp_v2')
-    # print(ik_simulator.find(target)[0][0][6])
     # messenger(ik_simulator.find_all_posture(target))
+    # print(ik_simulator.find(target)[0][0][6])
 
 
     # s = d.datetime.now()
@@ -65,26 +64,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 300, '300_003r_result_vp_v2')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 300, '300_003r_result_vp_v2')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
 
-    # ik_simulator = IKSimulator()
-    # show_avg('300_drop_result_pure')
-    # show_avg('300_drop_result_vp_v1')
-    # show_avg('300_drop_result_vp_v2')
-
-    # show_avg('raw_data_7j_30/300_drop_result_vp_v2')
-
-    # show_avg('300_20near_result_pure')
-    # show_avg('300_20near_result_vp_v1')
-    # show_avg('300_20near_result_vp_v2')
-
-    # show_avg('30_20near_result_pure')
-    # show_avg('30_20near_result_vp_v1')
-    # show_avg('30_20near_result_vp_v2')
+    ik_simulator = IKSimulator()
+    show_avg('300_003r_result_vp_v2')
 
     print('duration: ', d.datetime.now()-start)
 

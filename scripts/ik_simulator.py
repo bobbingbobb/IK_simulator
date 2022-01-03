@@ -7,8 +7,6 @@ import copy as c
 import random as r
 from rtree import index
 
-# from scipy.spatial import KDTree
-
 from constants import *
 from utilities import *
 from data_gen import Robot, DataCollection
@@ -34,17 +32,21 @@ class IKTable:
         return target_space
 
     def rtree_query(self, target):
+        # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
         range=0.03
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
-        if not result:
-            result = [item.object for item in self.table.nearest(c.deepcopy(target), 100, objects=True)]
+        if len(result) > 100:
+            print('dense!')
+            return result[:200]
+        elif len(result) < 30:
+            print('sparse!')
+            result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
 
         return result
 
-    def insert(self, position, joints, vec_ee):
-        pos_info = (position, joints, vec_ee)
-        self.table.insert(self.table.get_size(), position[6].tolist(), obj=pos_info)
+    def insert(self, pos_info):
+        self.table.insert(0, pos_info[0][6].tolist(), obj=pos_info)
 
     def delete(self, target):
         pass
@@ -56,9 +58,11 @@ class IKSimulator:
         self.robot = Robot()
         self.algo = algo
 
-    def fk(self, joints):
-        pos, vec_ee = self.robot.fk_dh(joints)
-        return pos
+    def fk(self, joints, insert=False):
+        if insert:
+            return self.robot.fk_jo(joints)
+
+        return self.robot.fk_dh(joints)[0]
 
     def find(self, target_pos):
         pos_info = self.iktable.query_neighbor(target_pos)
@@ -140,10 +144,30 @@ class IKSimulator:
         # return [np[0] for np in nearby_postures]
         return nearby_postures
 
+    def pos_info_extension(self, nearby_postures):
+        new_pos = []
+        while len(new_pos) < 50:
+            print(len(new_pos))
+            joint1 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
+            joint2 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
+
+            for j1, j2 in zip(joint1, joint2):
+                if abs(j1-j2) > 3*m.pi/180:
+                    avg_joint = [(j1 + j2)/2.0 for j1, j2 in zip(joint1, joint2)]
+
+                    position, vec_ee = self.fk(avg_joint, insert=True)
+                    pos_info = (pos_alignment(position), avg_joint, vec_ee)
+                    self.iktable.insert(c.deepcopy(pos_info))
+                    new_pos.append(pos_info)
+                    break
+        nearby_postures.extend(new_pos)
+
+        return nearby_postures
+
     def find_all_posture(self, target_pos):
         nearby_postures = self.find(target_pos)
-        if nearby_postures == 0:
-            return 0
+        if len(nearby_postures) < 21:
+            nearby_postures = self.pos_info_extension(nearby_postures)
 
         start = d.datetime.now()
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
@@ -159,7 +183,7 @@ class IKSimulator:
         # return posture
         return message
 
-    def posture_iter_machine(self, nearby_postures, target_pos):
+    def posture_iter_machine(self, nearby_postures, target_pos, insert=False):
         n = 0.0
         movements = [[] for _ in range(7)]
         origin_diff =  []

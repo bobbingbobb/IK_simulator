@@ -197,7 +197,9 @@ def main():
     # jo_list = [j[1] for j in jo_load[-2]]
     print(jo_list)
 
-    work_joints = [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]
+    # work_joints = [-0.7,  0.1,  0.8, -2.1, -2.8,  0.6,  0. ]
+
+    # jo_list = [work_joints, [w+(2*m.pi/180) for w in work_joints]]
 
     # if supervisor.step(timestep) != -1:
     #     franka.set_joint_pos(motors, psensor, [*work_joints, grip, grip])
@@ -209,7 +211,7 @@ def main():
         print(jo_list[jc])
 
         count += 1
-        if count == 50:
+        if count == 100:
             # break
             count = 0
             franka.set_joint_pos(motors, psensor, [*jo_list[jc], grip, grip])
@@ -217,9 +219,9 @@ def main():
             if jc == len(jo_list):
                 break
 
-    print(franka.get_joint_pos(motors, psensor))
+    # print(franka.get_joint_pos(motors, psensor))
     # print(are_colliding(trans_field, trans_field))
-    print(trans_field)
+    # print(trans_field)
 
     # print("ready")
     #
