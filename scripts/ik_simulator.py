@@ -36,7 +36,9 @@ class IKTable:
     def rtree_query(self, target):
         range=0.03
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
-        # result = [item.object for item in self.table.nearest(c.deepcopy(target), 100, objects=True)]
+
+        if not result:
+            result = [item.object for item in self.table.nearest(c.deepcopy(target), 100, objects=True)]
 
         return result
 
@@ -60,6 +62,8 @@ class IKSimulator:
 
     def find(self, target_pos):
         pos_info = self.iktable.query_neighbor(target_pos)
+        if len(pos_info) == 0:
+            return 0
         nearby_postures = self.posture_comparison(pos_info)
 
         return nearby_postures
@@ -138,6 +142,8 @@ class IKSimulator:
 
     def find_all_posture(self, target_pos):
         nearby_postures = self.find(target_pos)
+        if nearby_postures == 0:
+            return 0
 
         start = d.datetime.now()
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
