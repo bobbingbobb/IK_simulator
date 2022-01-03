@@ -29,6 +29,10 @@ class IKTable:
 
         target_space = self.rtree_query(target)
 
+        # for ind, ts in enumerate(target_space):
+        #     if np.linalg.norm(ts[0][6]-target_space) > 0.06:
+        #         print(target_space.pop(ind)[1])
+
         return target_space
 
     def rtree_query(self, target):
@@ -38,8 +42,8 @@ class IKTable:
 
         if len(result) > 100:
             print('dense!')
-            return result[:200]
-        elif len(result) < 30:
+            return result[:100]
+        elif len(result) < 20:
             print('sparse!')
             result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
 
@@ -65,12 +69,7 @@ class IKSimulator:
         return self.robot.fk_dh(joints)[0]
 
     def find(self, target_pos):
-        pos_info = self.iktable.query_neighbor(target_pos)
-        if len(pos_info) == 0:
-            return 0
-        nearby_postures = self.posture_comparison(pos_info)
-
-        return nearby_postures
+        return self.iktable.query_neighbor(target_pos)
 
     # abandoned
     def index2pos_jo(self, indices):
@@ -146,8 +145,9 @@ class IKSimulator:
 
     def pos_info_extension(self, nearby_postures):
         new_pos = []
-        while len(new_pos) < 50:
-            print(len(new_pos))
+        count = 0
+        while len(new_pos) < 50 and count < 20:
+            # print(len(new_pos))
             joint1 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
             joint2 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
 
@@ -159,17 +159,29 @@ class IKSimulator:
                     pos_info = (pos_alignment(position), avg_joint, vec_ee)
                     self.iktable.insert(c.deepcopy(pos_info))
                     new_pos.append(pos_info)
+                    count = 0
                     break
+            count += 1
         nearby_postures.extend(new_pos)
 
         return nearby_postures
 
     def find_all_posture(self, target_pos):
+        start = d.datetime.now()
+
         nearby_postures = self.find(target_pos)
         if len(nearby_postures) < 21:
+            # if len(nearby_postures) == 0:
+            #     return target_pos
             nearby_postures = self.pos_info_extension(nearby_postures)
 
-        start = d.datetime.now()
+        # pop out those positions that are too far away
+        for ind, p in enumerate(nearby_postures):
+            if np.linalg.norm(p[0][6] - target_pos) > 0.06:
+                print(nearby_postures.pop(ind)[1])
+
+        nearby_postures = self.posture_comparison(nearby_postures)
+
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 

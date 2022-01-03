@@ -64,14 +64,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 300, '300_003r_result_vp_v2')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
+    s = d.datetime.now()
+    runner(IKSimulator(algo='vp_v2'), 500, '500_006limit_result_vp_v2')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
 
 
-    ik_simulator = IKSimulator()
-    show_avg('300_003r_result_vp_v2')
+    # ik_simulator = IKSimulator()
+    # show_avg('500_006limit_result_vp_v2')
 
     print('duration: ', d.datetime.now()-start)
 
