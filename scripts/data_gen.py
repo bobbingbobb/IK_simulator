@@ -133,6 +133,9 @@ class DataCollection:
 
     def without_colliding_detect(self, filename='raw_data'):
         filename = RAW_DATA_FOLDER+filename
+        if os.path.exists(filename+'idx'):
+            print('dataset exists.')
+            return 0
         start = d.datetime.now()
 
         id = 0
@@ -171,5 +174,5 @@ class DataCollection:
         return filename
 
 if __name__ == '__main__':
-    dc = DataCollection(scale=30)
-    print(dc.without_colliding_detect('raw_data_7j_30'))
+    dc = DataCollection(scale=20)
+    print(dc.without_colliding_detect('raw_data_7j_20'))

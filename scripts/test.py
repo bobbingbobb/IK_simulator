@@ -376,26 +376,35 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 from rtree import index
 p = index.Property()
 p.dimension = 3
-idx = index.Index('iksimu_rtree', properties=p)
+idx = index.Index('rtree', properties=index.Property(dimension = 3))
+# idx = index.Index('rtree')
 
 
 # test_pos = []
-# for i in range(500):
+# for i in range(5):
 #     x = round(r.uniform(-0.855, 0.855), 4)
 #     y = round(r.uniform(-0.855, 0.855), 4)
 #     z = round(r.uniform(-0.36, 1.19), 4)
 #
 #     test_pos.append([x, y, z])
-#     idx.insert(i, test_pos[-1], obj=test_pos)
+#     print(test_pos[-1])
+#     # idx.insert(i, [x, y, z], obj=[x, y, z])
 print('start')
 target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
 
 st = d.datetime.now()
-# print(idx.properties)
+print(idx.properties)
+print(idx.get_size())
+# idx.delete(0, [-0.6937, -0.2616, 0.6251])
+# idx.insert(0, [-0.6937, -0.2616, 0.6251], obj=[-0.6937, -0.2616, 0.6251])
+# print(idx.get_bounds)
 
-# print([it.object for it in idx.nearest(target, 100, objects=True)])
-print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
+print([it.object for it in idx.nearest(target, 1, objects=True)])
+print(idx.nearest(target, 1, objects=True))
+# print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
 # print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
+# print([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)]) #all
+print(list(idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19)))) #all
 # print(list(idx.nearest((0.5, 0, 0.6), 30)))
 # print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
 print(d.datetime.now() - st)

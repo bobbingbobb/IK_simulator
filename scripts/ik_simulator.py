@@ -15,26 +15,34 @@ from data_gen import Robot, DataCollection
 
 
 class IKTable:
-    def __init__(self, filename='iksimu_rtree'):
+    def __init__(self, filename='raw_data_7j_20'):
+        print('loading...')
+        start = d.datetime.now()
+
+        p = index.Property(dimension=3)
         self.table = index.Index(RAW_DATA_FOLDER+name_alignment(filename), properties=p)
+
+        print('loaded. duration: ', d.datetime.now()-start)
 
     def query_neighbor(self, target):
         # return a list of position indices
         for i,v in enumerate(target):
             target[i] = round(v, 4)
 
-        target_space = self.query_kd_tree(target)
+        target_space = self.rtree_query(target)
 
         return target_space
 
-    def rtree_query(self, target, range = 0.05):
-        result = [it.object for it in idx.nearest(target, 100, objects=True)]
-        # result = [it.object for it in idx.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
+    def rtree_query(self, target):
+        range=0.03
+        result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
+        # result = [item.object for item in self.table.nearest(c.deepcopy(target), 100, objects=True)]
 
         return result
 
-    def insert(self, target):
-        pass
+    def insert(self, position, joints, vec_ee):
+        pos_info = (position, joints, vec_ee)
+        self.table.insert(self.table.get_size(), position[6].tolist(), obj=pos_info)
 
     def delete(self, target):
         pass
@@ -51,13 +59,12 @@ class IKSimulator:
         return pos
 
     def find(self, target_pos):
-        positions = self.iktable.query_neighbor(target_pos)
-
-        # target_space = self.get_posts(positions)
-        nearby_postures = self.index2pos_jo(positions)
+        pos_info = self.iktable.query_neighbor(target_pos)
+        nearby_postures = self.posture_comparison(pos_info)
 
         return nearby_postures
 
+    # abandoned
     def index2pos_jo(self, indices):
         pos_jo = namedtuple('pos_jo', ['position', 'joint'])
         target_space = []
@@ -67,6 +74,7 @@ class IKSimulator:
 
         return target_space
 
+    # abandoned
     def get_different_postures(self, target_space):
 
         #finding arm posture types
@@ -83,20 +91,7 @@ class IKSimulator:
 
         return nearby_postures
 
-    def posture_comparison(self, position):
-
-        nearby_postures = []
-        for i_joint, value in enumerate(target_space):
-            for i_type in nearby_postures:
-                pass
-
-
-
-                #test
-            else:
-                nearby_postures.append(value)
-
-
+    # abandoned
     def get_posts(self, indices):
         ref_joint = [3,5,6]
 
@@ -118,24 +113,35 @@ class IKSimulator:
 
         return nearby_postures
 
+    def posture_comparison(self, pos_info):
+        thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
+        thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
+
+        nearby_postures = []
+        for i_pos in pos_info:
+            for ind, i_type in enumerate(nearby_postures):
+                # if np.dot(i_pos[2], i_type[0][2]) > 0.9 and \
+                #    np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and \
+                #    np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
+                #     nearby_postures[ind].append(i_pos)
+                #     break
+                if np.dot(i_pos[2], i_type[2]) > 0.9 and \
+                   np.linalg.norm(i_pos[0][3]-i_type[0][3]) < thres_3 and \
+                   np.linalg.norm(i_pos[0][5]-i_type[0][5]) < thres_5:
+                    break
+            else:
+                # nearby_postures.append([i_pos])
+                nearby_postures.append(i_pos)
+
+        # return [np[0] for np in nearby_postures]
+        return nearby_postures
 
     def find_all_posture(self, target_pos):
-        positions = self.iktable.searching_area(target_pos)
-        if len(positions) == 0:
-            return 0
-        # target_space = self.index2pos_jo(positions)
-        # nearby_postures = self.get_different_postures(target_space)
-
-        target_space = self.get_posts(positions)
-        nearby_postures = self.index2pos_jo(target_space)
-        # print(nearby_postures)
-
+        nearby_postures = self.find(target_pos)
 
         start = d.datetime.now()
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
-        # self.vector_portion(nearby_postures, target_pos)
-
-        # self.messenger(message)
+        # messenger(message)
 
         end = d.datetime.now()
 
@@ -146,6 +152,66 @@ class IKSimulator:
         # return 0
         # return posture
         return message
+
+    def posture_iter_machine(self, nearby_postures, target_pos):
+        n = 0.0
+        movements = [[] for _ in range(7)]
+        origin_diff =  []
+        time = []
+        jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
+        posture = []
+        for p_type in nearby_postures:
+            s = d.datetime.now()
+
+            origin_d = np.linalg.norm(p_type[0][6] - target_pos)
+
+            if self.algo == 'pure':
+                tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
+            elif self.algo == 'vp_v1':
+                tmp_joint, diff = self.vector_portion_v1([p_type[0][6], p_type[1]], target_pos)
+            elif self.algo == 'vp_v2':
+                tmp_joint, diff = self.vector_portion_v2([p_type[0][6], p_type[1]], target_pos)
+                tmp_joint, diff = self.pure_approx(tmp_joint, target_pos)
+            else:
+                tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
+
+            # for i in range(50):
+            #     tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
+
+            e = d.datetime.now()
+
+            posture.append(jo_diff(tmp_joint, diff))
+            time.append(e-s)
+
+            origin_diff.append(origin_d)
+
+            for i in range(7):
+                movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
+
+            if diff > 0.005:#0.5cm
+                n += 1
+                # origin_diff.append(diff)
+
+            # break
+
+
+        message = {}
+        message['target'] = target_pos
+        message['posture'] = len(posture)
+        message['origin_diff'] = np.mean(origin_diff)
+        message['mean_diff'] = np.mean(np.array([p.diff for p in posture]))
+        message['origin_std'] = np.std(np.array(origin_diff))
+        message['std_error'] = np.std(np.array([p.diff for p in posture]))
+        message['worst_diff'] = max([p.diff for p in posture])
+        message['worst%'] = n/len(posture)
+        message['worse_num'] = n
+        # message['origin diff:'] = np.sort(origin_diff)
+        message['avg. time'] = np.mean(np.array(time))
+        for i in range(7):
+            movements[i] = np.mean(movements[i])
+        message['movements'] = movements
+
+        return posture, message
 
     def approximation(self, imitating_joint, target_pos, moving_joint=[i for i in range(6)]):
         # 0.007915
@@ -179,67 +245,6 @@ class IKSimulator:
         # return tmp_joint, pre_diff, end-start
         return tmp_joint, pre_diff
 
-    def posture_iter_machine(self, nearby_postures, target_pos):
-        n = 0.0
-        movements = [[] for _ in range(7)]
-        origin_diff =  []
-        time = []
-        jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
-        posture = []
-        for p_type in nearby_postures:
-            s = d.datetime.now()
-
-            origin_d = np.linalg.norm(p_type.position - target_pos)
-
-
-            if self.algo == 'pure':
-                tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
-            elif self.algo == 'vp_v1':
-                tmp_joint, diff = self.vector_portion_v1(p_type, target_pos)
-            elif self.algo == 'vp_v2':
-                tmp_joint, diff = self.vector_portion_v2(p_type, target_pos)
-                tmp_joint, diff = self.pure_approx(tmp_joint, target_pos)
-            else:
-                tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
-
-            # for i in range(50):
-            #     tmp_joint, diff = self.pure_approx(p_type.joint, target_pos)
-
-            e = d.datetime.now()
-
-            posture.append(jo_diff(tmp_joint, diff))
-            time.append(e-s)
-
-            origin_diff.append(origin_d)
-
-            for i in range(7):
-                movements[i].append(abs(p_type.joint[i]-tmp_joint[i]))
-
-            if diff > 0.005:#0.5cm
-                n += 1
-                # origin_diff.append(diff)
-
-            # break
-
-
-        message = {}
-        message['target'] = target_pos
-        message['posture'] = len(posture)
-        message['origin_diff'] = np.mean(origin_diff)
-        message['mean_diff'] = np.mean(np.array([p.diff for p in posture]))
-        message['origin_std'] = np.std(np.array(origin_diff))
-        message['std_error'] = np.std(np.array([p.diff for p in posture]))
-        message['worst_diff'] = max([p.diff for p in posture])
-        message['worst%'] = n/len(posture)
-        message['worse_num'] = n
-        # message['origin diff:'] = np.sort(origin_diff)
-        message['avg. time'] = np.mean(np.array(time))
-        for i in range(7):
-            movements[i] = np.mean(movements[i])
-        message['movements'] = movements
-
-        return posture, message
-
     def pure_approx(self, joint, target_pos):
         #moving joint:[5,4], ..., [5,4,3,2,1,0], joint[6] does not affect position
         tmp_joint = c.deepcopy(joint)
@@ -257,8 +262,8 @@ class IKSimulator:
         moves = [(1 * m.pi/180)]*7  #0.017453292519943295
         threshold = 0.001
 
-        tmp_joint = c.deepcopy(p_type.joint)
-        diff = np.linalg.norm(p_type.position - target_pos)
+        tmp_joint = c.deepcopy(p_type[1])
+        diff = np.linalg.norm(p_type[0] - target_pos)
         # vectors = []
         loop = 0
         while diff > threshold and loop < 20:
@@ -288,9 +293,9 @@ class IKSimulator:
         moves = np.array([(1 * m.pi/180)]*7)  #0.017453292519943295
         threshold = 0.001
 
-        tmp_joint = c.deepcopy(p_type.joint)
+        tmp_joint = c.deepcopy(p_type[1])
         pre_diff = 1
-        diff = np.linalg.norm(target_pos - p_type.position)
+        diff = np.linalg.norm(target_pos - p_type[0])
         # print(diff)
         # tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=[0])
 
@@ -343,80 +348,6 @@ class IKSimulator:
 
         return tmp_joint, diff
 
-def runner(ik_simulator, iter, filename):
-
-    t20 = [[-0.0049, -0.6795, -0.3356], [-0.7539, 0.7033, 0.7446], [0.3505, -0.5509, -0.1833], [0.3189, 0.2082, -0.3363], [0.0107, 0.0137, -0.0184], [-0.4332, -0.2703, 0.4754], [0.1551, 0.76, 0.7149], [-0.8449, -0.114, 0.975], [-0.3954, -0.6995, 1.1191], [0.7958, -0.7913, 1.0731], [0.1736, -0.7634, 1.0207], [-0.1275, -0.7468, 0.5705], [-0.4789, 0.0986, 0.6545], [-0.3446, 0.1855, 0.5123], [-0.6056, -0.6849, -0.2469], [0.4778, 0.1782, 0.356], [0.2797, 0.2775, -0.2074], [0.0332, -0.2419, 0.1503], [-0.4058, -0.4729, 0.2572], [0.4637, -0.2291, 0.8074]]
-    t50 = [[0.5758, -0.4885, 1.0271], [-0.6085, -0.4255, 0.5083], [0.2788, -0.095, 0.4679], [0.2401, 0.0485, 0.4424], [-0.5991, 0.0507, 0.076], [-0.7214, 0.8085, 1.0062], [0.6651, 0.2353, 0.1987], [0.5085, -0.7104, -0.0782], [0.1461, -0.5669, 0.7866], [0.3165, 0.7707, 0.2065], [0.2235, -0.2836, 0.5669], [-0.5145, 0.1317, -0.2905], [0.7966, -0.4236, 0.8411], [-0.3434, -0.1719, 0.942], [0.1089, 0.2281, 0.3716], [-0.7805, 0.017, 0.1633], [-0.2938, 0.6114, -0.1254], [0.6441, -0.465, 0.3824], [0.5869, 0.5077, 0.6117], [-0.7016, 0.7046, 0.0695], [0.6497, -0.6365, 0.1269], [-0.0412, -0.462, 0.3256], [0.3443, 0.2157, -0.2519], [-0.476, 0.2943, 0.1508], [-0.3097, -0.6039, 0.9085], [-0.5675, -0.1751, 1.1225], [-0.3002, -0.5436, 0.9165], [-0.0303, -0.1176, 0.5681], [0.0569, 0.7381, 0.4034], [0.0173, -0.4492, 0.2811], [0.5773, -0.6733, 0.3621], [0.1824, -0.2039, 0.6849], [0.2546, -0.6338, 0.0493], [0.1626, -0.5477, 0.326], [-0.7549, 0.1028, 0.6731], [0.0792, -0.631, 0.2127], [-0.5684, -0.7224, -0.303], [0.4818, -0.2907, -0.0176], [0.124, -0.2767, -0.3508], [0.7752, 0.018, 0.315], [-0.5902, 0.3012, 1.1607], [-0.8282, -0.4573, 0.9724], [-0.4213, -0.2136, 0.0478], [-0.4584, 0.7187, -0.2936], [0.7528, -0.0771, 0.5969], [-0.0336, -0.7186, 0.5271], [-0.7806, 0.6753, 0.0032], [-0.5677, -0.2493, 0.0197], [-0.5725, 0.3716, -0.1632], [-0.4644, -0.0062, 0.7572]]
-
-    message = []
-    for i in range(iter):
-        x = round(r.uniform(-0.855, 0.855), 4)
-        y = round(r.uniform(-0.855, 0.855), 4)
-        z = round(r.uniform(-0.36, 1.19), 4)
-        target = [x, y, z]
-        print(str(i+1)+': '+str(target))
-        result = ik_simulator.find_all_posture(target)
-        if result:
-            message.append(result)
-            np.save('../data/result/'+filename, message)
-
-    # for i, target in enumerate(t20):
-    #     print(str(i+1)+': '+str(target))
-    #     message.append(ik_simulator.find_all_posture(target))
-
-    np.save('../data/result/'+filename, message)
-    print('done.')
-
-
-
-def show_avg(ik_simulator, filename):
-    message = np.load('../data/result/'+filename+'.npy', allow_pickle=True)
-
-    mes = defaultdict(list)
-    n = 0
-    gdiff = []
-    bdiff = []
-    for m in message:
-        improvement = m['origin_diff']-m['mean_diff']
-        # if m['origin_diff'] >= 0.05:
-        # if m['worst_diff'] < 0.03:
-        if True:
-            n += 1
-            for k, v in m.items():
-                mes[k].append(v)
-
-        #     gdiff.append(improvement)
-        # bdiff.append(improvement)
-
-    # print(gdiff)
-    # print(bdiff)
-    print(n)
-    print(len(message))
-
-    result = {}
-    # print(mes)
-    for k, v in mes.items():
-        if k == 'target':
-            continue
-        elif k == 'worst_diff':
-            result[k] = np.max(v)
-        # elif k == 'posture' or k == 'worse_num' or k == 'avg. time' or k == 'total time':
-        #     result[k] = np.mean(v, axis=0)
-        elif k == 'posture' :
-            result['pos_min'] = np.min(v)
-            result[k] = np.mean(v, axis=0)
-        elif k == 'worse_num' or k == 'avg. time' or k == 'total time':
-            result[k] = np.mean(v, axis=0)
-        else:
-            result[k] = np.average(v, axis=0, weights=mes['posture'])
-        # print(v)
-
-    ik_simulator.messenger(result)
-
-def gather(scale, name):
-    gather = DataCollection(scale=scale)
-    gather.without_colliding_detect(name)
-
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
@@ -428,40 +359,6 @@ if __name__ == '__main__':
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
     print(ik_simulator.find(target))
-
-    # ik_simulator.find_all_posture(target)
-
-
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 300, 'test')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
-    #
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v1'), 300, '300_20near_result_vp_v1')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
-
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 3000, '3000_20near_result_vp_v2')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
-
-
-    # ik_simulator = IKSimulator()
-    # show_avg(ik_simulator, '300_drop_result_pure')
-    # show_avg(ik_simulator, '300_drop_result_vp_v1')
-    # show_avg(ik_simulator, '300_drop_result_vp_v2')
-
-    # show_avg(ik_simulator, 'raw_data_7j_30/300_drop_result_vp_v2')
-
-    # show_avg(ik_simulator, '300_20near_result_pure')
-    # show_avg(ik_simulator, '300_20near_result_vp_v1')
-    # show_avg(ik_simulator, '300_20near_result_vp_v2')
-
-    # show_avg(ik_simulator, '30_20near_result_pure')
-    # show_avg(ik_simulator, '30_20near_result_vp_v1')
-    # show_avg(ik_simulator, '30_20near_result_vp_v2')
 
     print('duration: ', d.datetime.now()-start)
 
