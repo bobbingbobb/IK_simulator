@@ -154,9 +154,11 @@ class DataCollection:
 
                                 # cal fk
                                 position, vec_ee = self.robot.fk_jo(joint)
+                                for p in position:
+                                    p = pos_alignment(p)
 
                                 # storing pos info
-                                pos_info = (pos_alignment(position), joint, vec_ee)
+                                pos_info = (position, joint, vec_ee)
                                 idx.insert(id, position[6].tolist(), obj=pos_info)
 
                                 id += 1

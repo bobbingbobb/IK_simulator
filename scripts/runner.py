@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
     s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 500, '500_006limit_result_vp_v2')
+    runner(IKSimulator(algo='vp_v2'), 1000, '1000_006limit_result_vp_v2')
     e = d.datetime.now()
     print('full process duration: ', e-s)
 

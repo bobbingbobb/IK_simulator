@@ -28,9 +28,8 @@ def density(data, data_dim):
     return np.mean(np.array(recur(data, data_dim)))
 
 def pos_alignment(position):
-    for i, j in enumerate(position):
-        for p, n in enumerate(j):
-            position[i][p] = round(n, 4)
+    for i,v in enumerate(position):
+        position[i] = round(v, 4)
 
     return position
 

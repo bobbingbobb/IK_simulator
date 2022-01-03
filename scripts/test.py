@@ -11,6 +11,7 @@ from data_gen import Robot
 from ik_simulator import IKSimulator
 
 from constants import *
+from utilities import *
 
 import h5py
 
