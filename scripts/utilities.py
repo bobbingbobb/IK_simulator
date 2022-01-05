@@ -37,15 +37,16 @@ def show_avg(filename):
     message = np.load(RESULT_FOLDER+filename+'.npy', allow_pickle=True)
 
     mes = defaultdict(list)
-    n = 0
     gdiff = []
     bdiff = []
     for m in message:
-        improvement = m['origin_diff']-m['mean_diff']
-        # if m['origin_diff'] >= 0.05:
+        if not m['posture']:
+            print(m['target'])
+            continue
+        # improvement = m['origin_diff']-m['mean_diff']
+        # if m['origin_diff'] >= 0.06:
         # if m['worst_diff'] < 0.03:
         if True:
-            n += 1
             for k, v in m.items():
                 mes[k].append(v)
 
@@ -54,8 +55,8 @@ def show_avg(filename):
 
     # print(gdiff)
     # print(bdiff)
-    print(n)
     print(len(message))
+    print(len(mes['posture']))
 
     result = {}
     # print(mes)
@@ -76,6 +77,25 @@ def show_avg(filename):
         # print(v)
 
     messenger(result)
+
+def show_sparse(filename):
+    message = np.load(RESULT_FOLDER+filename+'.npy', allow_pickle=True)
+
+    mes = defaultdict(list)
+    gdiff = []
+    bdiff = []
+    for m in message:
+        if not m['posture']:
+            print(m['target'])
+            continue
+        # improvement = m['origin_diff']-m['mean_diff']
+        # if m['origin_diff'] >= 0.05:
+        # if m['posture'] < 20:
+        if m['target'] == [-0.5906, 0.6227, -0.1446]:
+        # if True:
+            # print(m['posture'], m['target'])
+            messenger(m)
+
 
 # def str2trans(key_str):
 #     return [float(k) for k in str(key_str)[1:-1].split(' ')]

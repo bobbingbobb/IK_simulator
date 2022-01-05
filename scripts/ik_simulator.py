@@ -13,42 +13,57 @@ from data_gen import Robot, DataCollection
 
 
 class IKTable:
-    def __init__(self, filename='raw_data_7j_20'):
+    def __init__(self, filename='raw_data_7j_30'):
         print('loading...')
         start = d.datetime.now()
 
         p = index.Property(dimension=3)
         self.table = index.Index(RAW_DATA_FOLDER+name_alignment(filename), properties=p)
-
         print('loaded. duration: ', d.datetime.now()-start)
+
+        self.robot = Robot()
 
     def query_neighbor(self, target):
         # return a list of position indices
         target = pos_alignment(target)
 
         target_space = self.rtree_query(target)
+        count = 0
+        while len(target_space) < 21 and count < 20:
+            print('sparse!')
+            if not self.pos_info_extension(target_space):
+                return 0
+            target_space = self.rtree_query(target)
+            count += 20
+            # return target_space
+
+        print(len(target_space))
         neighbor_space = self.neighbor_check(target, target_space)
+        print(len(neighbor_space))
+
+        if len(neighbor_space) > 100:
+            print('dense!')
+            return neighbor_space[:100]
 
         return neighbor_space
 
     def neighbor_check(self, target, target_space, range=0.06):
-        for ind, ts in enumerate(target_space):
-            if np.linalg.norm(ts[0][6]-target) > range:
-                # target_space.pop(ind)
-                print(target_space.pop(ind)[1])
+        neighbor_space = []
+        for ts in target_space:
+            distance = np.linalg.norm(ts[0][6]-target)
+            if distance < range:
+                neighbor_space.append(ts)
+            # else:
+            #     print(distance, end=' ')
 
-        return target_space
+        return neighbor_space
 
     def rtree_query(self, target):
         # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
         range=0.03
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
-        if len(result) > 100:
-            print('dense!')
-            return result[:100]
-        elif len(result) < 20:
-            print('sparse!')
+        if len(result) < 20:
             result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
 
         return result
@@ -58,6 +73,33 @@ class IKTable:
 
     def delete(self, target):
         pass
+
+    def pos_info_extension(self, target_space):
+        new_pos = []
+        count = 0
+        while len(new_pos) < 50 and count < 20:
+            print(len(new_pos), end=' ')
+            joint1 = target_space[r.randint(0, (len(target_space)-1))][1]
+            joint2 = target_space[r.randint(0, (len(target_space)-1))][1]
+
+            for j1, j2 in zip(joint1, joint2):
+                if abs(j1-j2) > 3*m.pi/180:
+                    avg_joint = [(j1 + j2)/2.0 for j1, j2 in zip(joint1, joint2)]
+
+                    position, vec_ee = self.robot.fk_jo(avg_joint)
+                    for p in position:
+                        p = pos_alignment(p)
+                    pos_info = (position, avg_joint, vec_ee)
+                    self.insert(c.deepcopy(pos_info))
+                    new_pos.append(pos_info)
+                    count = 0
+                    break
+            count += 1
+        print()
+        return len(new_pos)
+        # target_space.extend(new_pos)
+        #
+        # return nearby_postures
 
 
 class IKSimulator:
@@ -73,10 +115,9 @@ class IKSimulator:
         return self.robot.fk_dh(joints)[0]
 
     def find(self, target_pos):
+        # return self.iktable.query_neighbor(target_pos)
         pos_info = self.iktable.query_neighbor(target_pos)
-        if pos_info:
-            nearby_postures = self.posture_comparison(pos_info)
-
+        nearby_postures = self.posture_comparison(pos_info)
         return nearby_postures
 
     # abandoned
@@ -151,39 +192,13 @@ class IKSimulator:
         # return [np[0] for np in nearby_postures]
         return nearby_postures
 
-    def pos_info_extension(self, nearby_postures):
-        new_pos = []
-        count = 0
-        while len(new_pos) < 50 and count < 20:
-            # print(len(new_pos))
-            joint1 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
-            joint2 = nearby_postures[r.randint(0, (len(nearby_postures)-1))][1]
-
-            for j1, j2 in zip(joint1, joint2):
-                if abs(j1-j2) > 3*m.pi/180:
-                    avg_joint = [(j1 + j2)/2.0 for j1, j2 in zip(joint1, joint2)]
-
-                    position, vec_ee = self.fk(avg_joint, insert=True)
-                    for p in position:
-                        p = pos_alignment(p)
-                    pos_info = (position, avg_joint, vec_ee)
-                    self.iktable.insert(c.deepcopy(pos_info))
-                    new_pos.append(pos_info)
-                    count = 0
-                    break
-            count += 1
-        nearby_postures.extend(new_pos)
-
-        return nearby_postures
-
     def find_all_posture(self, target_pos):
         start = d.datetime.now()
 
-        nearby_postures = self.find(target_pos)
-        if len(nearby_postures) < 21:
-            if not nearby_postures:
-                return target_pos
-            nearby_postures = self.pos_info_extension(nearby_postures)
+        pos_info = self.find(target_pos)
+        if not pos_info:
+            return 0
+        nearby_postures = self.posture_comparison(pos_info)
 
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
@@ -193,9 +208,6 @@ class IKSimulator:
         message['total time'] = end-start
         print(' total time: ', message['total time'])
 
-
-        # return 0
-        # return posture
         return message
 
     def posture_iter_machine(self, nearby_postures, target_pos, insert=False):

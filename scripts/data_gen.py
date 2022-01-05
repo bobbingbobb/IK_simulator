@@ -170,5 +170,5 @@ class DataCollection:
         return filename
 
 if __name__ == '__main__':
-    dc = DataCollection(scale=20)
-    print(dc.without_colliding_detect('raw_data_7j_20'))
+    dc = DataCollection(scale=30)
+    print(dc.without_colliding_detect('raw_data_7j_30'))
