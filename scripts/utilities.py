@@ -41,7 +41,7 @@ def show_avg(filename):
     bdiff = []
     for m in message:
         if not m['posture']:
-            print(m['target'])
+            # print(m['target'])
             continue
         # improvement = m['origin_diff']-m['mean_diff']
         # if m['origin_diff'] >= 0.06:

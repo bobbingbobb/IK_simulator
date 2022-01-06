@@ -22,6 +22,7 @@ class IKTable:
         print('loaded. duration: ', d.datetime.now()-start)
 
         self.robot = Robot()
+        self.range = 0.05
 
     def query_neighbor(self, target):
         # return a list of position indices
@@ -47,11 +48,11 @@ class IKTable:
 
         return neighbor_space
 
-    def neighbor_check(self, target, target_space, range=0.06):
+    def neighbor_check(self, target, target_space):
         neighbor_space = []
         for ts in target_space:
             distance = np.linalg.norm(ts[0][6]-target)
-            if distance < range:
+            if distance < self.range:
                 neighbor_space.append(ts)
             # else:
             #     print(distance, end=' ')
@@ -60,7 +61,7 @@ class IKTable:
 
     def rtree_query(self, target):
         # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
-        range=0.03
+        range = self.range / 2.0
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
         if len(result) < 20:
@@ -117,6 +118,8 @@ class IKSimulator:
     def find(self, target_pos):
         # return self.iktable.query_neighbor(target_pos)
         pos_info = self.iktable.query_neighbor(target_pos)
+        if not pos_info:
+            return 0
         nearby_postures = self.posture_comparison(pos_info)
         return nearby_postures
 

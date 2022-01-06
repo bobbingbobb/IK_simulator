@@ -28,9 +28,9 @@ def runner(ik_simulator, iter, filename):
         if result:
             message.append(result)
         else:
-            mes['target'] = c.deepcopy(target)
+            mes['target'] = target
             mes['posture'] = 0
-            message.append(mes)
+            message.append(c.deepcopy(mes))
         np.save(RESULT_FOLDER+filename, message)
 
 
@@ -70,16 +70,16 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 500, '500_006restrict_result_vp_v2')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 1000, '1000_005restrict_non_result_vp_v2')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
 
-    # ik_simulator = IKSimulator()
-    # show_avg('300_003r_result_vp_v2')
-    # show_avg('500_006limit_result_vp_v2')
-    # show_avg('500_20plus_result_vp_v2')
+    ik_simulator = IKSimulator()
+    show_avg('1000_005restrict_non_result_vp_v2')
+    # show_avg('100_006restrict_non_result_vp_v2')
+    # show_avg('500_006restrict_result_vp_v2')
     # show_sparse('500_20plus_result_vp_v2')
 
     print('duration: ', d.datetime.now()-start)
