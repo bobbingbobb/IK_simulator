@@ -152,23 +152,25 @@ target = [0.5545, -0.0, 0.6245]
 # print(np.random.randn(1, 4, 2))
 
 
-# with h5py.File('test.hdf5', 'w') as f:
-#     dt = np.dtype([\
-#         ("pos", np.float32, [3,]),\
-#         ("joint", np.float32, [7,]),\
-#         ("ee", np.float32, [3,]),\
-#         ("index", np.float32)])
-#     # strst = h5py.vlen_dtype(dt)
-#     # dt = np.dtype('float32', shape=[3,3])
-#     strst = h5py.vlen_dtype(dt)
-#     # dt = h5py.vlen_dtype(np.dtype('int32'))
-#
-#     pos_info = f.create_dataset("pos_info", shape=(2,3,4,), maxshape=(2,3,4), dtype=strst)
-#     # pos_info = f.create_dataset("pos_info", shape=(1,4 ), dtype='i8')
-#     # pos_info[0] = [1,2,3,4]
-#     # print(pos_info)
-#
-#     pos_info.attrs['scale'] = 0
+with h5py.File('test.hdf5', 'a') as f:
+    g = f.create_group('data')
+
+    # dt_pos = h5py.vlen_dtype(np.dtype([("pos", np.float32, [7,3])]))
+    # dt_joint = h5py.vlen_dtype(np.dtype([("joint", np.float32, [7])]))
+    dt_vec = h5py.vlen_dtype(np.dtype([("vec_ee", np.float32, [3])]))
+    # pos = g.create_dataset("pos", shape=(1,), dtype=dt_pos)
+    # joint = g.create_dataset("joint", shape=(1,), dtype=dt_joint)
+    vec_ee = g.create_dataset("vec_ee", shape=(1,), dtype=dt_vec)
+
+    vec_ee = f['data']['vec_ee']
+
+
+    vec_ee[0] = np.append(vec_ee[0], np.array([(3,4,5)], dtype=dt_vec))
+    # vec_ee = np.append(vec_ee, np.array([3,4,5], dtype=dt_vec))
+    # vec_ee = np.append(vec_ee, np.array([3,4,5], dtype=dt_vec))
+
+    print(vec_ee[0])
+
 #
 #
 #     v1 = np.array([([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [2.0, 0.0, 0.0], 3.0)], dtype=dt)
@@ -374,43 +376,43 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
 # print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
 
-from rtree import index
-p = index.Property()
-p.dimension = 3
-idx = index.Index('rtree', properties=index.Property(dimension = 3))
-# idx = index.Index('rtree')
-
-
-# test_pos = []
-# for i in range(5):
-#     x = round(r.uniform(-0.855, 0.855), 4)
-#     y = round(r.uniform(-0.855, 0.855), 4)
-#     z = round(r.uniform(-0.36, 1.19), 4)
+# from rtree import index
+# p = index.Property()
+# p.dimension = 3
+# idx = index.Index('rtree', properties=index.Property(dimension = 3))
+# # idx = index.Index('rtree')
 #
-#     test_pos.append([x, y, z])
-#     print(test_pos[-1])
-#     # idx.insert(i, [x, y, z], obj=[x, y, z])
-print('start')
-target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
-
-st = d.datetime.now()
-print(idx.properties)
-print(idx.get_size())
-# idx.delete(0, [-0.6937, -0.2616, 0.6251])
-# idx.insert(0, [-0.6937, -0.2616, 0.6251], obj=[-0.6937, -0.2616, 0.6251])
-# print(idx.get_bounds)
-
-print([it.object for it in idx.nearest(target, 1, objects=True)])
-print(idx.nearest(target, 1, objects=True))
-# print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
-# print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
-# print([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)]) #all
-print(list(idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19)))) #all
-# print(list(idx.nearest((0.5, 0, 0.6), 30)))
-# print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
-print(d.datetime.now() - st)
-
-idx.close()
+#
+# # test_pos = []
+# # for i in range(5):
+# #     x = round(r.uniform(-0.855, 0.855), 4)
+# #     y = round(r.uniform(-0.855, 0.855), 4)
+# #     z = round(r.uniform(-0.36, 1.19), 4)
+# #
+# #     test_pos.append([x, y, z])
+# #     print(test_pos[-1])
+# #     # idx.insert(i, [x, y, z], obj=[x, y, z])
+# print('start')
+# target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
+#
+# st = d.datetime.now()
+# print(idx.properties)
+# print(idx.get_size())
+# # idx.delete(0, [-0.6937, -0.2616, 0.6251])
+# # idx.insert(0, [-0.6937, -0.2616, 0.6251], obj=[-0.6937, -0.2616, 0.6251])
+# # print(idx.get_bounds)
+#
+# print([it.object for it in idx.nearest(target, 1, objects=True)])
+# print(idx.nearest(target, 1, objects=True))
+# # print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
+# # print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
+# # print([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)]) #all
+# print(list(idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19)))) #all
+# # print(list(idx.nearest((0.5, 0, 0.6), 30)))
+# # print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
+# print(d.datetime.now() - st)
+#
+# idx.close()
 
 # k = np.load(RAW_DATA_FOLDER+'raw_data_7j_30')
 # print(len(k))
@@ -418,19 +420,19 @@ idx.close()
 # with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
 #     f = f['franka_data']
 #     # print(f.attrs['shift'])
-#     # print(f['pos_info'][14,6,22]['vec_ee'])
+#     print(f['pos_info'][14,6,22]['vec_ee'])
 #     # print(f['pos_info'][:]['pos'][6])
 #     xr, yr, zr = f['pos_info'].shape
 #     print(xr, yr, zr)
 #     # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
 #     # print(pos_ind[0])
-
-
-    # for i in range(len(pos_ind)):
-    #     idx.insert(i, (pos_ind[i].tolist()))
-
-    # print(list(idx.nearest(pos_ind[0].tolist(), 3)))
-    # print(list(idx.intersection(pos_ind[10].tolist())))
+#
+#
+#     # for i in range(len(pos_ind)):
+#     #     idx.insert(i, (pos_ind[i].tolist()))
+#
+#     # print(list(idx.nearest(pos_ind[0].tolist(), 3)))
+#     # print(list(idx.intersection(pos_ind[10].tolist())))
 
 # idx.insert(1, (0.6, 0 ,0.3))
 # idx.insert(2, (0.5, 0 ,0.3))
