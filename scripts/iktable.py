@@ -19,11 +19,38 @@ class Graph:
 
 
 class TreeTable:
+    class rectangle:
+        def __init__(self, minx, miny, minz, maxx, maxy, maxz):
+            self.range_x = [minx, maxx]
+            self.range_y = [miny, maxy]
+            self.range_z = [minz, maxz]
+
     class node:
         def __init__(self):
             self.parent = None
-            self.childern = None
+            self.childern = []
+
+
             self.coordinate = None
+
+        def _create(self, root=False):
+            if root:
+                return TreeTable.node()
+
+        def __lt__(self, other):
+            return id(self) < id(other)
+
+        def __gt__(self, other):
+            return id(self) > id(other)
+
+        def __le__(self, other):
+            return id(self) <= id(other)
+
+        def __ge__(self, other):
+            return id(self) >= id(other)
+
+        def __eq__(self, other):
+            return id(self) == id(other)
 
     class leaf(node):
         def __init__(self):
@@ -31,6 +58,9 @@ class TreeTable:
 
         def insert(self, position, object):
             pass
+
+    def tree(self):
+        pass
 
     def __init__(self, name):
         self.filename = TABLE_FOLDER+name+'.idx'
@@ -40,6 +70,7 @@ class TreeTable:
             with open(self.filename, 'rb') as f:
                 self.table = pickle.load(f)
 
+        self.root =
         self.size = None
         self.index = None
         # self.usable = []
