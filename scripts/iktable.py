@@ -18,24 +18,33 @@ class Graph:
 
 
 
-class TreeTable:
+class RTree:
     class rectangle:
-        def __init__(self, minx, miny, minz, maxx, maxy, maxz):
+        def __init__(self, area):
+            # assert isinstance(area, list)
+            minx, miny, minz, maxx, maxy, maxz = area
             self.range_x = [minx, maxx]
             self.range_y = [miny, maxy]
             self.range_z = [minz, maxz]
 
     class node:
+        def _create(root=False):
+            if root:
+                return RTree.node()
+
         def __init__(self):
             self.parent = None
-            self.childern = []
+            self.children = []
 
+            self.coordinate = self.coordinate()
 
-            self.coordinate = None
+        def coordinate(self):
+            if not self.children:
+                return RTree.rectangle([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-        def _create(self, root=False):
-            if root:
-                return TreeTable.node()
+            for r in self.children:
+                pass
+
 
         def __lt__(self, other):
             return id(self) < id(other)
@@ -59,20 +68,29 @@ class TreeTable:
         def insert(self, position, object):
             pass
 
-    def tree(self):
-        pass
+    class inner(node):
+        def __init__(self):
+            super().__init__()
+
+        def insert(self, position, object):
+            pass
+
+    def create_tree(self):
+        return RTree.node._create(root=True)
 
     def __init__(self, name):
         self.filename = TABLE_FOLDER+name+'.idx'
+        self.size = 0
+        self.index = 0
 
-        self.table = None
+        # self.table = None
         if os.path.exists(self.filename):
             with open(self.filename, 'rb') as f:
-                self.table = pickle.load(f)
+                self.tree = pickle.load(f)
+        else:
+            self.tree = self.create_tree()
 
-        self.root =
-        self.size = None
-        self.index = None
+
         # self.usable = []
 
     def insert(self, ):
@@ -150,4 +168,12 @@ class IKTable:
 
 
 if __name__ == '__main__':
-    table = IKTable('franka')
+    # table = IKTable('franka')
+    tree = RTree('tree')
+    print(tree)
+    print(tree.size)
+    print(tree.index)
+    print(tree.tree)
+    print(tree.tree.parent)
+    print(tree.tree.children)
+    print(tree.tree.coordinate)

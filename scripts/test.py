@@ -464,3 +464,18 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # idx.insert(5, (0.2, 0 ,0.3))
 
 # print(list(idx.nearest((0.4, 0 ,0.3), 3)))
+
+print(int(m.log(1,100))+1)
+
+# class test:
+#     def __init__(self):
+#         pass
+#
+#     def __call__(self):
+#         print('asd')
+#
+#     def asd(self):
+#         return self
+# t = test()
+# print(t)
+# print(t.asd())
