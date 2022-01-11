@@ -152,23 +152,46 @@ target = [0.5545, -0.0, 0.6245]
 # print(np.random.randn(1, 4, 2))
 
 
-with h5py.File('test.hdf5', 'a') as f:
+with h5py.File('test.hdf5', 'w') as f:
     g = f.create_group('data')
 
-    # dt_pos = h5py.vlen_dtype(np.dtype([("pos", np.float32, [7,3])]))
-    # dt_joint = h5py.vlen_dtype(np.dtype([("joint", np.float32, [7])]))
-    dt_vec = h5py.vlen_dtype(np.dtype([("vec_ee", np.float32, [3])]))
-    # pos = g.create_dataset("pos", shape=(1,), dtype=dt_pos)
-    # joint = g.create_dataset("joint", shape=(1,), dtype=dt_joint)
-    vec_ee = g.create_dataset("vec_ee", shape=(1,), dtype=dt_vec)
+    dt_joint = np.dtype([('j1', np.float32), ('j2', np.float32), ('j3', np.float32), ('j4', np.float32), ('j5', np.float32), ('j6', np.float32), ('j7', np.float32)])
+    dt_vec = np.dtype([('x', np.float32), ('y', np.float32), ('z', np.float32)])
+    dt_pos = np.dtype([("j1", dt_vec),\
+                       ("j2", dt_vec),\
+                       ("j3", dt_vec),\
+                       ("j4", dt_vec),\
+                       ("j5", dt_vec),\
+                       ("j6", dt_vec),\
+                       ("j7", dt_vec)])
+    # dt_pos = np.dtype((np.float32, [7,3]))
+    # dt_vec = np.dtype(np.float32, [3])
+    # dt_vec = h5py.vlen_dtype(np.dtype([(np.float32, np.float32, np.float32)]))
+    pos = g.create_dataset("pos", shape=(1,), dtype=h5py.vlen_dtype(dt_pos))
+    joint = g.create_dataset("joint", shape=(1,), dtype=h5py.vlen_dtype(dt_joint))
+    vec_ee = g.create_dataset("vec_ee", shape=(1,), dtype=h5py.vlen_dtype(dt_vec))
 
-    vec_ee = f['data']['vec_ee']
+    # vec_ee = f['data']['vec_ee']
 
+    print(dt_vec.shape)
+    v = [1,2,3]#must be tuple?
+    j = [1,2,3,4,5,6,7]
+    p = [[ 0.    ,  0.    ,  0.14  ], [ 0.    ,  0.    ,  0.333 ], [ 0.0361,  0.0128,  0.5222], [ 0.0259, -0.0536,  0.6541], [-0.0048, -0.1546,  0.7598], [-0.1056, -0.3876,  0.8136], [-0.1255, -0.5195,  0.7762]]
+    # print([tuple(i) for i in p])
+    pp = np.array(tuple([tuple(i) for i in p]), dtype=dt_pos)
+    # pp = np.array(p, dtype=dt_pos)
+    jj = np.array(tuple(j), dtype=dt_joint)
+    vv = np.array(tuple(v), dtype=dt_vec)
 
-    vec_ee[0] = np.append(vec_ee[0], np.array([(3,4,5)], dtype=dt_vec))
+    for _ in range(2):
+        pos[0] = np.append(pos[0], pp)
+        joint[0] = np.append(joint[0], jj)
+        vec_ee[0] = np.append(vec_ee[0], vv)
     # vec_ee = np.append(vec_ee, np.array([3,4,5], dtype=dt_vec))
     # vec_ee = np.append(vec_ee, np.array([3,4,5], dtype=dt_vec))
 
+    print(pos[0])
+    print(joint[0])
     print(vec_ee[0])
 
 #
