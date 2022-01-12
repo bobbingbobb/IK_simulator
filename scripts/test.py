@@ -465,7 +465,11 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 
 # print(list(idx.nearest((0.4, 0 ,0.3), 3)))
 
-print(int(m.log(1,100))+1)
+# print(int(m.log(1,100))+1)
+# print(int(m.log(2,100))+1)
+# print(int(m.log(99,100))+1)
+# print(int(m.log(100,100))+1)
+# print(int(m.log(101,100))+1)
 
 # class test:
 #     def __init__(self):

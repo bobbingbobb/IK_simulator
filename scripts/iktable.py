@@ -20,12 +20,34 @@ class Graph:
 
 class RTree:
     class rectangle:
+        def __new__(cls, area):
+            if not (isinstance(area, (list, np.ndarray)) and len(area) == 6):
+                print('coordinate must be a 6-value array')
+                return
+
+            if not np.all([mi<=ma for mi,ma in zip(area[:3], area[3:])]):
+                print('max must equal or greater than min. format: [minx, miny, minz, maxx, maxy, maxz]')
+                return
+
+            return super().__new__(cls)
+
         def __init__(self, area):
-            # assert isinstance(area, list)
-            minx, miny, minz, maxx, maxy, maxz = area
-            self.range_x = [minx, maxx]
-            self.range_y = [miny, maxy]
-            self.range_z = [minz, maxz]
+            self.min = np.asarray(area)[:3]
+            self.max = np.asarray(area)[3:]
+            # print('init')
+
+        def __call__(self):
+            print("coordinate: %s" %np.append(self.min, self.max))
+
+        def rec_change(self, position, write=False):
+            min = np.asarray([np.minimum(m, p) for m, p in zip(self.min, position)])
+            max = np.asarray([np.maximum(m, p) for m, p in zip(self.max, position)])
+
+            if write:
+                self.min = min
+                self.max = max
+
+            return min, max
 
     class node:
         def _create(root=False):
@@ -35,7 +57,6 @@ class RTree:
         def __init__(self):
             self.parent = None
             self.children = []
-
             self.coordinate = self.coordinate()
 
         def coordinate(self):
@@ -82,6 +103,7 @@ class RTree:
         self.filename = TABLE_FOLDER+name+'.idx'
         self.size = 0
         self.index = 0
+        self.branch = 100
 
         # self.table = None
         if os.path.exists(self.filename):
@@ -91,10 +113,40 @@ class RTree:
             self.tree = self.create_tree()
 
 
-        # self.usable = []
+    def innernode_select(self, position, node_coord):
+        # lesser growth, or less children
+        branch = None
+        branch_grow = float('inf')
+        within = []
+        for child in node_coord.children:
+            rec = child.coordinate
+            min, max = rec.rec_change(position)
+            grow = np.prod([ma-mi for mi,ma in zip(min, max)]) / np.prod([ma-mi for mi,ma in zip(rec.min, rec.max)])
+            if grow == 1:
+                within.append(child)
+            elif not within:
+                if grow < branch_grow:
+                    branch = child
+                    branch_grow = grow
 
-    def insert(self, ):
-        pass
+        if within:
+            return within[np.argmin([len(w.children) for w in within])]
+
+        return branch
+
+    def insert(self, position):
+        self.size += 1
+        self.index += 1
+
+        node = self.tree
+        depth = int(m.log(self.size, self.branch))+1
+        for dim in range(depth-1):
+            node = self.innernode_select(position, node)
+            node.coordinate.rec_change(position, write=True)
+
+        node.children.append(self.index)
+        node.coordinate.rec_change(position, write=True)
+
 
 class HDF5Data:
     def __init__(self, name):
@@ -169,11 +221,16 @@ class IKTable:
 
 if __name__ == '__main__':
     # table = IKTable('franka')
-    tree = RTree('tree')
-    print(tree)
-    print(tree.size)
-    print(tree.index)
-    print(tree.tree)
-    print(tree.tree.parent)
-    print(tree.tree.children)
-    print(tree.tree.coordinate)
+    # tree = RTree('tree')
+    # print(tree)
+    # print(tree.size)
+    # print(tree.index)
+    # print(tree.tree)
+    # print(tree.tree.parent)
+    # print(tree.tree.children)
+    # print(tree.tree.coordinate)
+    # tree.tree.coordinate()
+
+    r=RTree.rectangle([1,2,3,4,5,6])
+    print(r.rec_change([5,-2,5]))
+    r()
