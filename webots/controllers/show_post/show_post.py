@@ -190,8 +190,8 @@ def main():
     # ball_trans = ball_solid.getField('translation')
     # ball_trans.setSFVec3f([0.7, 1, 0])
 
-    jo_load = np.load('../../../scripts/js.npy', allow_pickle=True)
-    jo_list = jo_load[4]
+    jo_load = np.load('../../../scripts/new.npy', allow_pickle=True)
+    jo_list = jo_load
     # jo_load = np.load('../../../scripts/example_eeonly.npy', allow_pickle=True)
     # jo_load = np.load('../../../scripts/example_disonly.npy', allow_pickle=True)
     # jo_list = [j[1] for j in jo_load[-2]]
@@ -211,7 +211,7 @@ def main():
         print(jo_list[jc])
 
         count += 1
-        if count == 100:
+        if count == 50:
             # break
             count = 0
             franka.set_joint_pos(motors, psensor, [*jo_list[jc], grip, grip])

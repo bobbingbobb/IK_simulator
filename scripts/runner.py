@@ -70,14 +70,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 1000, '1000_005restrict_non_result_vp_v2')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
+    s = d.datetime.now()
+    runner(IKSimulator(algo='vp_v2'), 1000, 'test')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
 
 
-    ik_simulator = IKSimulator()
-    show_avg('1000_005restrict_non_result_vp_v2')
+    # ik_simulator = IKSimulator()
+    # show_avg('1000_005restrict_non_result_vp_v2')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')
     # show_sparse('500_20plus_result_vp_v2')

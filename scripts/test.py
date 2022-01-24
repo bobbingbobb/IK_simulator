@@ -483,3 +483,16 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # t = test()
 # print(t)
 # print(t.asd())
+
+f = np.load(RAW_DATA_FOLDER+'raw_data_7j_30.npz')
+
+# print(f['joints'][1])
+data = [d[6] for d in f['positions']]
+
+target = [0.5545, 0.0, 0.6245]
+
+#scipy.spatial.kdtree
+
+kd = KDTree(data, leafsize=2, balanced_tree=True)
+result = kd.query(target, k=20, distance_upper_bound=0.05)[1]
+print(len(result))

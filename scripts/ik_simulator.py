@@ -97,6 +97,12 @@ class IKTable:
                     break
             count += 1
         print()
+
+        # savep1 = [j[1] for j in target_space]
+        # savep2 = [j[1] for j in new_pos]
+        # np.save('tar', savep1)
+        # np.save('new', savep2)
+
         return len(new_pos)
         # target_space.extend(new_pos)
         #
