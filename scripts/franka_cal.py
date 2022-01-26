@@ -95,8 +95,8 @@ def fk_dh(joints:list):
     return [p[3] for p in mat[:3]]
 
 def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
-    dist_a = m.sqrt(sum([(i - j)**2 for i, j in zip(pos_a, pos_c)]))
-    dist_b = m.sqrt(sum([(i - j)**2 for i, j in zip(pos_b, pos_c)]))
+    dist_a = np.linalg.norm(pos_a - pos_c)
+    dist_b = np.linalg.norm(pos_b - pos_c)
 
     prop_a = dist_a/(dist_a+dist_b)
     print(prop_a)
@@ -104,7 +104,7 @@ def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     tmp_joint = [i - (i - j)* prop_a for i, j in zip(joint_a, joint_b)]
     tmp_pos = fk_dh(tmp_joint)
     print(tmp_pos)
-    diff = diff_cal(tmp_pos, pos_c)
+    diff = np.linalg.norm(tmp_pos - pos_c)
     print(diff)
     return tmp_joint
 
@@ -311,12 +311,44 @@ def chaining():
                 break
     return chained_positions[:-1]
 
+def two_points(joint_a, joint_b):
+    points = [[] for _ in range(3)]
+    dense = 100
+
+    for prop in range(dense+1):
+        tmp_joint = [i - (i - j)* prop/dense for i, j in zip(joint_a, joint_b)]
+        tmp_pos = fk_dh(tmp_joint)
+        for i in range(3):
+            points[i].append(tmp_pos[i])
+        print(tmp_pos)
+    return points
+
+def draw(points):
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    fig = plt.figure()
+    ax2 = Axes3D(fig)
+
+    z = np.linspace(0,13,1000)
+    x = 5*np.sin(z)
+    y = 5*np.cos(z)
+    zd = 13*np.random.random(100)
+    xd = 5*np.sin(zd)
+    yd = 5*np.cos(zd)
+    ax2.scatter3D(points[0][1:-2], points[1][1:-2], points[2][1:-2], cmap='Blues')
+    ax2.scatter3D(points[0][0], points[1][0], points[2][0], cmap='Reds')
+    ax2.scatter3D(points[0][-1], points[1][-1], points[2][-1], cmap='Reds')
+    # ax2.plot3D(x,y,z,'gray')    #繪製空間曲線
+    plt.show()
+
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
     pos_a = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
 
-    joint_b:list = [0.1, 0.1, 0.1, -1.5, -0.05, 2.1, 0.9]
+    joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
+    pos_b = [ 0.5471, -0.0024,  0.6091]
 
     # pos_a = fk_dh(joint_a)
     # pos_b = fk_dh(joint_b)
@@ -334,7 +366,4 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    k = np.load('../data/table/table3.npz')
-    a = k['table']
-
-    print(type(a))
+    draw(two_points(joint_a, joint_b))

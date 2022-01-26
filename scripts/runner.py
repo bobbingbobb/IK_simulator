@@ -55,9 +55,10 @@ if __name__ == '__main__':
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
 
-    # ik_simulator = IKSimulator(algo='vp_v2')
+    ik_simulator = IKSimulator(algo='vp_v2')
     # messenger(ik_simulator.find_all_posture(target))
-    # print(ik_simulator.find([-0.5906, 0.6227, -0.1446]))
+    # print(ik_simulator.find([-0.5906, 0.0, -0.1446]))
+    print(ik_simulator.find(target))
 
 
     # s = d.datetime.now()
@@ -70,10 +71,10 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 1000, 'test')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 1000, 'test')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
 
     # ik_simulator = IKSimulator()
