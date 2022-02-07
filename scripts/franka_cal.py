@@ -342,6 +342,30 @@ def draw(points):
     # ax2.plot3D(x,y,z,'gray')    #繪製空間曲線
     plt.show()
 
+def ikpy_test():
+    from ikpy.chain import Chain
+    import ikpy.utils.plot as plot_utils
+
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+
+    target = [0.5545, 0.0, 0.6245]
+
+    ini1 = [ 0.7,  0.8, -1.3, -1.5, -2.8,  0. ,  0. ]
+    ini2 = [ 2.2, -0.2, -2.3, -1.5, -2.3,  3.5,  0. ]
+
+    work_joints:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+    print([p[3] for p in chain.forward_kinematics([0, *work_joints, 0, 0])[:3]])
+
+    result = chain.inverse_kinematics(target, [0, 0, -1], orientation_mode=None , initial_position=[0, *ini1, 0, 0])[1:8]
+    # print(result)
+    print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
+
+    result = chain.inverse_kinematics(target, [0, 0, -1], orientation_mode=None , initial_position=[0, *ini2, 0, 0])[1:8]
+    # print(result)
+    print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
+
+
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
@@ -366,4 +390,6 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    draw(two_points(joint_a, joint_b))
+    # draw(two_points(joint_a, joint_b))
+
+    ikpy_test()

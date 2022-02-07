@@ -170,5 +170,8 @@ class DataCollection:
         return filename
 
 if __name__ == '__main__':
-    dc = DataCollection(scale=30)
-    print(dc.without_colliding_detect('raw_data_7j_30'))
+    # dc = DataCollection(scale=30)
+    # print(dc.without_colliding_detect('raw_data_7j_30'))
+
+    robot = Robot()
+    print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
