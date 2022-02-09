@@ -115,6 +115,10 @@ class IKSimulator:
         self.robot = Robot()
         self.algo = algo
 
+        from ikpy.chain import Chain
+        import ikpy.utils.plot as plot_utils
+        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False])
+
     def fk(self, joints, insert=False):
         if insert:
             return self.robot.fk_jo(joints)
@@ -218,6 +222,7 @@ class IKSimulator:
         print(' total time: ', message['total time'])
 
         return message
+        # return posture, message
 
     def posture_iter_machine(self, nearby_postures, target_pos, insert=False):
         n = 0.0
@@ -238,6 +243,8 @@ class IKSimulator:
             elif self.algo == 'vp_v2':
                 tmp_joint, diff = self.vector_portion_v2([p_type[0][6], p_type[1]], target_pos)
                 tmp_joint, diff = self.pure_approx(tmp_joint, target_pos)
+            elif self.algo == 'ikpy':
+                tmp_joint, diff = self.ikpy_run(p_type[1], target_pos)
             else:
                 tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
 
@@ -414,6 +421,12 @@ class IKSimulator:
 
         return tmp_joint, diff
 
+    def ikpy_run(self, joint, target_pos):
+        tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0, 0])[1:8]
+        diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
+
+        return tmp_joint, diff
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
@@ -421,10 +434,10 @@ if __name__ == '__main__':
     # gather(20, 'raw_data_7j_20')
 
     # table = IKTable('raw_data_7j_30')
-    ik_simulator = IKSimulator()
+    ik_simulator = IKSimulator(algo='ikpy')
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
-    print(ik_simulator.find(target))
+    print([jd.joint for jd in ik_simulator.find_all_posture(target)[0]])
 
     print('duration: ', d.datetime.now()-start)
 

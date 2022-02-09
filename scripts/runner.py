@@ -55,10 +55,10 @@ if __name__ == '__main__':
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
 
-    ik_simulator = IKSimulator(algo='vp_v2')
+    # ik_simulator = IKSimulator(algo='vp_v2')
     # messenger(ik_simulator.find_all_posture(target))
     # print(ik_simulator.find([-0.5906, 0.0, -0.1446]))
-    print(ik_simulator.find(target))
+    # print(ik_simulator.find(target))
 
 
     # s = d.datetime.now()
@@ -76,12 +76,23 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
-    # ik_simulator = IKSimulator()
-    # show_avg('1000_005restrict_non_result_vp_v2')
+
+    ik_simulator = IKSimulator()
+    show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')
     # show_sparse('500_20plus_result_vp_v2')
+
+    # ik_simulator = IKSimulator(algo='ikpy')
+    # # target = [-0.8449, -0.114, 0.975]
+    # posture, message = ik_simulator.find_all_posture(target)
+    # print([jd.joint for jd in posture])
+    # messenger(message)
 
     print('duration: ', d.datetime.now()-start)
 
