@@ -38,9 +38,9 @@ class IKTable:
             count += 20
             # return target_space
 
-        print(len(target_space))
+        # print(len(target_space))
         neighbor_space = self.neighbor_check(target, target_space)
-        print(len(neighbor_space))
+        # print(len(neighbor_space))
 
         if len(neighbor_space) > 100:
             print('dense!')
@@ -117,7 +117,7 @@ class IKSimulator:
 
         from ikpy.chain import Chain
         import ikpy.utils.plot as plot_utils
-        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False])
+        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
 
     def fk(self, joints, insert=False):
         if insert:
@@ -189,18 +189,18 @@ class IKSimulator:
         nearby_postures = []
         for i_pos in pos_info:
             for ind, i_type in enumerate(nearby_postures):
-                # if np.dot(i_pos[2], i_type[0][2]) > 0.9 and \
-                #    np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and \
-                #    np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
-                #     nearby_postures[ind].append(i_pos)
-                #     break
-                if np.dot(i_pos[2], i_type[2]) > 0.9 and \
-                   np.linalg.norm(i_pos[0][3]-i_type[0][3]) < thres_3 and \
-                   np.linalg.norm(i_pos[0][5]-i_type[0][5]) < thres_5:
+                if np.dot(i_pos[2], i_type[0][2]) > 0.8 and \
+                   np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and \
+                   np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
+                    nearby_postures[ind].append(i_pos)
                     break
+                # if np.dot(i_pos[2], i_type[2]) > 0.9 and \
+                #    np.linalg.norm(i_pos[0][3]-i_type[0][3]) < thres_3 and \
+                #    np.linalg.norm(i_pos[0][5]-i_type[0][5]) < thres_5:
+                #     break
             else:
-                # nearby_postures.append([i_pos])
-                nearby_postures.append(i_pos)
+                nearby_postures.append([i_pos])
+                # nearby_postures.append(i_pos)
 
         # return [np[0] for np in nearby_postures]
         return nearby_postures
@@ -432,12 +432,21 @@ if __name__ == '__main__':
     start = d.datetime.now()
 
     # gather(20, 'raw_data_7j_20')
-
-    # table = IKTable('raw_data_7j_30')
-    ik_simulator = IKSimulator(algo='ikpy')
     target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
     # target = [-0.8449, -0.114, 0.975]
-    print([jd.joint for jd in ik_simulator.find_all_posture(target)[0]])
+
+    # table = IKTable('raw_data_7j_30')
+    # print(table.query_neighbor(target))
+
+    ik_simulator = IKSimulator(algo='ikpy')
+    result = ik_simulator.find(target)
+    #26:5, 16,47:3
+    # for i,v in enumerate(result):
+    #     if len(v) > 2:
+    #         print(i)
+    print([i[0][6] for i in result[26]])
+
+    # print([jd.joint for jd in ik_simulator.find_all_posture(target)[0]])
 
     print('duration: ', d.datetime.now()-start)
 
