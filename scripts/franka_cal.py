@@ -382,28 +382,43 @@ def ikpy_test():
     e = d.datetime.now()
     print(e-s)
 
-
-
 def plane(point1, point2, point3):
     return [[0.0, 0.0, 0.0],\
             [p2-p1 for p1,p2 in zip(point1, point2)],\
             [p3-p1 for p1,p3 in zip(point1, point3)],]
 
-def within(target, point1, point2, point3, point4):
+def within(target, near_4_point):
     from sympy import Point3D, Plane
 
-    p1 = [0.5495, 0.003 , 0.6157]
-    p2 = [0.5487, 0.0025, 0.6126]
-    p3 = [0.55  , 0.002 , 0.6187]
-    p4 = [5.501e-01, -4.000e-04, 6.209e-01]
-    p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+    # from itertools import combinations
+    # print(list(combinations([_ for _ in range(4)], 3)))
 
-    plane1 = Plane(Point3D(p1), Point3D(p2), Point3D(p3))
-    print(plane1.equation())
-    print(float(plane1.equation(x=1.0e-6, y=1.0e-6, z=1.0e-6)))
-    equ = lambda x, y, z: eval(str(plane1.equation()))
+    for i in range(4):
+        print(i)
+        plane_point = []
+        for j in range(4):
+            if i == j:
+                outter_point = near_4_point[j]
+            else:
+                plane_point.append(near_4_point[j])
 
-    print(equ(0,0,0))
+        plane = Plane(Point3D(plane_point[0]), Point3D(plane_point[1]), Point3D(plane_point[2]))
+
+        dir = lambda x, y, z: eval(str(plane.equation()))
+
+        tar_sgn = np.sign(dir(target[0], target[1], target[2]))
+        out_sgn = np.sign(dir(outter_point[0], outter_point[1], outter_point[2]))
+
+        if not tar_sgn == out_sgn:
+            break
+    else:
+        return True
+
+    return False
+
+    # print(float(plane.equation(x=1.0e-6, y=1.0e-6, z=1.0e-6)))
+    # equ = lambda x, y, z: eval(str(plane.equation()))
+    # print(equ(0,0,0))
 
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
@@ -433,4 +448,20 @@ if __name__ == '__main__':
 
     # ikpy_test()
 
-    within()
+    p1 = [0.5495, 0.003 , 0.6157]
+    p2 = [0.5487, 0.0025, 0.6126]
+    p3 = [0.55  , 0.002 , 0.6187]
+    p4 = [5.501e-01, -4.000e-04, 6.209e-01]
+    p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+
+    # target = [0.0, 0.0, 0.0]
+    # p1 = [-2.0, 1.0, 3.0]
+    # p2 = [-2.0, 1.0, -1.0]
+    # p3 = [-2.0, -3.0, -1.0]
+    # p4 = [5.0, 0.0, 0.0]
+    pp = [p1, p2, p3, p4, p5]
+    target = pos_a
+    from itertools import combinations
+
+    for (i1, i2, i3, i4) in list(combinations(pp, 4)):
+        print(within(target, [i1, i2, i3, i4]))
