@@ -420,6 +420,25 @@ def within(target, near_4_point):
     # equ = lambda x, y, z: eval(str(plane.equation()))
     # print(equ(0,0,0))
 
+def within_test():
+    p1 = [0.5495, 0.003 , 0.6157]
+    p2 = [0.5487, 0.0025, 0.6126]
+    p3 = [0.55  , 0.002 , 0.6187]
+    p4 = [5.501e-01, -4.000e-04, 6.209e-01]
+    p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+
+    # target = [0.0, 0.0, 0.0]
+    # p1 = [-2.0, 1.0, 3.0]
+    # p2 = [-2.0, 1.0, -1.0]
+    # p3 = [-2.0, -3.0, -1.0]
+    # p4 = [5.0, 0.0, 0.0]
+    pp = [p1, p2, p3, p4, p5]
+    target = pos_a
+    from itertools import combinations
+
+    for (i1, i2, i3, i4) in list(combinations(pp, 4)):
+        print(within(target, [i1, i2, i3, i4]))
+
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
@@ -444,24 +463,8 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    # draw(two_points(joint_a, joint_b))
+    draw(two_points(joint_a, joint_b))
 
     # ikpy_test()
 
-    p1 = [0.5495, 0.003 , 0.6157]
-    p2 = [0.5487, 0.0025, 0.6126]
-    p3 = [0.55  , 0.002 , 0.6187]
-    p4 = [5.501e-01, -4.000e-04, 6.209e-01]
-    p5 = [5.478e-01, 5.000e-04, 6.102e-01]
-
-    # target = [0.0, 0.0, 0.0]
-    # p1 = [-2.0, 1.0, 3.0]
-    # p2 = [-2.0, 1.0, -1.0]
-    # p3 = [-2.0, -3.0, -1.0]
-    # p4 = [5.0, 0.0, 0.0]
-    pp = [p1, p2, p3, p4, p5]
-    target = pos_a
-    from itertools import combinations
-
-    for (i1, i2, i3, i4) in list(combinations(pp, 4)):
-        print(within(target, [i1, i2, i3, i4]))
+    # within_test()
