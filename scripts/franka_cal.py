@@ -382,11 +382,6 @@ def ikpy_test():
     e = d.datetime.now()
     print(e-s)
 
-def plane(point1, point2, point3):
-    return [[0.0, 0.0, 0.0],\
-            [p2-p1 for p1,p2 in zip(point1, point2)],\
-            [p3-p1 for p1,p3 in zip(point1, point3)],]
-
 def within(target, near_4_point):
     from sympy import Point3D, Plane
 
@@ -394,7 +389,7 @@ def within(target, near_4_point):
     # print(list(combinations([_ for _ in range(4)], 3)))
 
     for i in range(4):
-        print(i)
+        # print(i)
         plane_point = []
         for j in range(4):
             if i == j:
@@ -421,6 +416,12 @@ def within(target, near_4_point):
     # print(equ(0,0,0))
 
 def within_test():
+    target = [0.5545, 0.0, 0.6245]
+
+    from ik_simulator import IKSimulator
+    ik_simulator = IKSimulator(algo='ikpy')
+    result = ik_simulator.find(target)
+
     p1 = [0.5495, 0.003 , 0.6157]
     p2 = [0.5487, 0.0025, 0.6126]
     p3 = [0.55  , 0.002 , 0.6187]
@@ -432,12 +433,15 @@ def within_test():
     # p2 = [-2.0, 1.0, -1.0]
     # p3 = [-2.0, -3.0, -1.0]
     # p4 = [5.0, 0.0, 0.0]
-    pp = [p1, p2, p3, p4, p5]
-    target = pos_a
+
+    # pp = [p1, p2, p3, p4, p5]
+    pp = [i[0][6] for i in result[4]]
     from itertools import combinations
 
-    for (i1, i2, i3, i4) in list(combinations(pp, 4)):
-        print(within(target, [i1, i2, i3, i4]))
+
+    for ind in list(combinations(range(len(pp)), 4)):
+        if within(target, [pp[i] for i in ind]):
+            print([result[4][i][1] for i in ind])
 
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
@@ -463,8 +467,8 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    draw(two_points(joint_a, joint_b))
+    # draw(two_points(joint_a, joint_b))
 
     # ikpy_test()
 
-    # within_test()
+    within_test()

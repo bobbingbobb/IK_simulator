@@ -61,7 +61,8 @@ class IKTable:
 
     def rtree_query(self, target):
         # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
-        range = self.range / 2.0
+        # range = self.range / 2.0
+        range = self.range
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
         if len(result) < 20:
@@ -444,7 +445,8 @@ if __name__ == '__main__':
     # for i,v in enumerate(result):
     #     if len(v) > 2:
     #         print(i)
-    print([i[0][6] for i in result[26]])
+    # print([len(i) for i in result])
+    print([i[0][6] for i in result[4]])
 
     # print([jd.joint for jd in ik_simulator.find_all_posture(target)[0]])
 
