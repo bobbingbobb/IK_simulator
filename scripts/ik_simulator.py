@@ -40,11 +40,11 @@ class IKTable:
 
         # print(len(target_space))
         neighbor_space = self.neighbor_check(target, target_space)
-        # print(len(neighbor_space))
+        print(len(neighbor_space))
 
         if len(neighbor_space) > 100:
             print('dense!')
-            return neighbor_space[:100]
+            # return neighbor_space[:100]
 
         return neighbor_space
 
@@ -204,6 +204,7 @@ class IKSimulator:
                 # nearby_postures.append(i_pos)
 
         # return [np[0] for np in nearby_postures]
+        print(len(nearby_postures))
         return nearby_postures
 
     def find_all_posture(self, target_pos):

@@ -4,6 +4,8 @@ import random as r
 import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
+from itertools import combinations
+
 
 from ik_simulator import IKTable
 
@@ -314,36 +316,131 @@ def chaining():
                 break
     return chained_positions[:-1]
 
-def two_points(joint_a, joint_b):
-    points = [[] for _ in range(3)]
-    dense = 100
+def two_points(joints, dense=100):
+    points = []
 
     for prop in range(dense+1):
-        tmp_joint = [i - (i - j)* prop/dense for i, j in zip(joint_a, joint_b)]
+        tmp_joint = [i - (i - j)* prop/dense for i, j in zip(joints[0], joints[1])]
         tmp_pos = fk_dh(tmp_joint)
-        for i in range(3):
-            points[i].append(tmp_pos[i])
-        print(tmp_pos)
+        points.append(tmp_pos)
+        # print(tmp_pos)
     return points
 
-def draw(points):
+def four_points(joints):
+    points = []
+    dense = 10
+
+    for p1 in range(dense+1):
+        for p2 in range(dense+1):
+            if p1+p2 > dense:
+                continue
+            for p3 in range(dense+1):
+                if p1+p2+p3 > dense:
+                    continue
+                p4 = dense - (p1 + p2 + p3)
+
+                tmp_joint = [(q1*p1 + q2*p2 + q3*p3 + q4*p4)/dense for q1, q2, q3, q4 in [j for j in np.array(joints).T]]
+                tmp_pos = fk_dh(tmp_joint)
+                points.append(tmp_pos)
+                # print(tmp_pos)
+    return points
+
+def draw(points, origin=None):
+    # print(len(points))
+    print(origin[:-1])
+    points = np.array(points).T
+    origin = np.array(origin).T
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     fig = plt.figure()
     ax2 = Axes3D(fig)
 
-    z = np.linspace(0,13,1000)
-    x = 5*np.sin(z)
-    y = 5*np.cos(z)
-    zd = 13*np.random.random(100)
-    xd = 5*np.sin(zd)
-    yd = 5*np.cos(zd)
-    ax2.scatter3D(points[0][1:-2], points[1][1:-2], points[2][1:-2], cmap='Blues')
-    ax2.scatter3D(points[0][0], points[1][0], points[2][0], cmap='Reds')
-    ax2.scatter3D(points[0][-1], points[1][-1], points[2][-1], cmap='Reds')
+    # z = np.linspace(0,13,1000)
+    # x = 5*np.sin(z)
+    # y = 5*np.cos(z)
+    # zd = 13*np.random.random(100)
+    # xd = 5*np.sin(zd)
+    # yd = 5*np.cos(zd)
+    ax2.scatter3D(points[0], points[1], points[2], cmap='Blues')
+    ax2.scatter3D(origin[0], origin[1], origin[2], cmap='Reds')
+
+    # ax2.scatter3D(points[0][1:-2], points[1][1:-2], points[2][1:-2], cmap='Blues')
+    # ax2.scatter3D(points[0][0], points[1][0], points[2][0], cmap='Reds')
+    # ax2.scatter3D(points[0][-1], points[1][-1], points[2][-1], cmap='Reds')
     # ax2.plot3D(x,y,z,'gray')    #繪製空間曲線
     plt.show()
+
+def within(target, near_4_point):
+    from sympy import Point3D, Plane
+
+    # from itertools import combinations
+    # print(list(combinations([_ for _ in range(4)], 3)))
+
+    for i in range(4):
+        # print(i)
+        plane_point = []
+        for j in range(4):
+            if i == j:
+                outter_point = near_4_point[j]
+            else:
+                plane_point.append(near_4_point[j])
+
+        plane = Plane(Point3D(plane_point[0]), Point3D(plane_point[1]), Point3D(plane_point[2]))
+
+        dir = lambda x, y, z: eval(str(plane.equation()))
+
+        tar_sgn = np.sign(dir(target[0], target[1], target[2]))
+        out_sgn = np.sign(dir(outter_point[0], outter_point[1], outter_point[2]))
+
+        if not tar_sgn == out_sgn:
+            break
+    else:
+        return True
+
+    print('not inside')
+    return False
+
+    # print(float(plane.equation(x=1.0e-6, y=1.0e-6, z=1.0e-6)))
+    # equ = lambda x, y, z: eval(str(plane.equation()))
+    # print(equ(0,0,0))
+
+def within_test():
+    target = [0.5545, 0.0, 0.6245]
+    # target = [0.5471, -0.1024, 0.6091]
+
+    from ik_simulator import IKSimulator
+    ik_simulator = IKSimulator(algo='ikpy')
+    r = ik_simulator.find(target)
+    result = max(r, key=len)
+    result = [posi for post in r for posi in post]
+    print(len(result))
+
+    # p1 = [0.5495, 0.003 , 0.6157]
+    # p2 = [0.5487, 0.0025, 0.6126]
+    # p3 = [0.55  , 0.002 , 0.6187]
+    # p4 = [5.501e-01, -4.000e-04, 6.209e-01]
+    # p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+
+    # target = [0.0, 0.0, 0.0]
+    # p1 = [-2.0, 1.0, 3.0]
+    # p2 = [-2.0, 1.0, -1.0]
+    # p3 = [-2.0, -3.0, -1.0]
+    # p4 = [5.0, 0.0, 0.0]
+
+    # pp = [p1, p2, p3, p4, p5]
+    pp = [i[0][6] for i in result]
+
+    draw(pp, target)
+
+    # for ind in list(combinations(range(len(pp)), 4)):
+    #     if within(target, [pp[i] for i in ind]):
+    #         points = []
+    #         for j in list(combinations([result[i][1] for i in ind], 2)):
+    #             points.extend(two_points(j, dense=10))
+    #         origin = [result[i][0][6].tolist() for i in ind]
+    #         origin.append(target)
+    #         draw(points, origin)
 
 def ikpy_test():
     from ikpy.chain import Chain
@@ -382,67 +479,6 @@ def ikpy_test():
     e = d.datetime.now()
     print(e-s)
 
-def within(target, near_4_point):
-    from sympy import Point3D, Plane
-
-    # from itertools import combinations
-    # print(list(combinations([_ for _ in range(4)], 3)))
-
-    for i in range(4):
-        # print(i)
-        plane_point = []
-        for j in range(4):
-            if i == j:
-                outter_point = near_4_point[j]
-            else:
-                plane_point.append(near_4_point[j])
-
-        plane = Plane(Point3D(plane_point[0]), Point3D(plane_point[1]), Point3D(plane_point[2]))
-
-        dir = lambda x, y, z: eval(str(plane.equation()))
-
-        tar_sgn = np.sign(dir(target[0], target[1], target[2]))
-        out_sgn = np.sign(dir(outter_point[0], outter_point[1], outter_point[2]))
-
-        if not tar_sgn == out_sgn:
-            break
-    else:
-        return True
-
-    return False
-
-    # print(float(plane.equation(x=1.0e-6, y=1.0e-6, z=1.0e-6)))
-    # equ = lambda x, y, z: eval(str(plane.equation()))
-    # print(equ(0,0,0))
-
-def within_test():
-    target = [0.5545, 0.0, 0.6245]
-
-    from ik_simulator import IKSimulator
-    ik_simulator = IKSimulator(algo='ikpy')
-    result = ik_simulator.find(target)
-
-    p1 = [0.5495, 0.003 , 0.6157]
-    p2 = [0.5487, 0.0025, 0.6126]
-    p3 = [0.55  , 0.002 , 0.6187]
-    p4 = [5.501e-01, -4.000e-04, 6.209e-01]
-    p5 = [5.478e-01, 5.000e-04, 6.102e-01]
-
-    # target = [0.0, 0.0, 0.0]
-    # p1 = [-2.0, 1.0, 3.0]
-    # p2 = [-2.0, 1.0, -1.0]
-    # p3 = [-2.0, -3.0, -1.0]
-    # p4 = [5.0, 0.0, 0.0]
-
-    # pp = [p1, p2, p3, p4, p5]
-    pp = [i[0][6] for i in result[4]]
-    from itertools import combinations
-
-
-    for ind in list(combinations(range(len(pp)), 4)):
-        if within(target, [pp[i] for i in ind]):
-            print([result[4][i][1] for i in ind])
-
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
@@ -467,7 +503,17 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    # draw(two_points(joint_a, joint_b))
+    joints = [[-0.8, -0.2,  0.7, -2. , -1.3,  3. ,  0. ], [-0.3, -0.2,  0.2, -2. , -1.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  2.5,  0. ]]
+    points = [fk_dh(j) for j in joints]
+    # draw(four_points(joints), points)
+    # p = []
+    # for j in list(combinations(joints, 2)):
+    #     p.extend(two_points(j, dense=10))
+    # draw(p, points)
+
+    # joints = [joint_a, joint_b]
+    # points = [pos_a, pos_b]
+    # draw(two_points(joints), points)
 
     # ikpy_test()
 
