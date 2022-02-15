@@ -326,9 +326,8 @@ def two_points(joints, dense=100):
         # print(tmp_pos)
     return points
 
-def four_points(joints):
+def four_points(joints, dense=10):
     points = []
-    dense = 10
 
     for p1 in range(dense+1):
         for p2 in range(dense+1):
@@ -356,18 +355,13 @@ def draw(points, origin=None):
     fig = plt.figure()
     ax2 = Axes3D(fig)
 
-    # z = np.linspace(0,13,1000)
-    # x = 5*np.sin(z)
-    # y = 5*np.cos(z)
-    # zd = 13*np.random.random(100)
-    # xd = 5*np.sin(zd)
-    # yd = 5*np.cos(zd)
+
     ax2.scatter3D(points[0], points[1], points[2], cmap='Blues')
     ax2.scatter3D(origin[0], origin[1], origin[2], cmap='Reds')
 
-    # ax2.scatter3D(points[0][1:-2], points[1][1:-2], points[2][1:-2], cmap='Blues')
-    # ax2.scatter3D(points[0][0], points[1][0], points[2][0], cmap='Reds')
-    # ax2.scatter3D(points[0][-1], points[1][-1], points[2][-1], cmap='Reds')
+    # z = np.linspace(0,13,1000)
+    # x = 5*np.sin(z)
+    # y = 5*np.cos(z)
     # ax2.plot3D(x,y,z,'gray')    #繪製空間曲線
     plt.show()
 
@@ -412,35 +406,40 @@ def within_test():
     from ik_simulator import IKSimulator
     ik_simulator = IKSimulator(algo='ikpy')
     r = ik_simulator.find(target)
-    result = max(r, key=len)
-    result = [posi for post in r for posi in post]
-    print(len(result))
+    # result = max(r, key=len)
+    # result = [posi for post in r for posi in post]#all
+    # print(len(result))
 
-    # p1 = [0.5495, 0.003 , 0.6157]
-    # p2 = [0.5487, 0.0025, 0.6126]
-    # p3 = [0.55  , 0.002 , 0.6187]
-    # p4 = [5.501e-01, -4.000e-04, 6.209e-01]
-    # p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+    for result in r:
+        if len(result) > 3:
+            # draw([i[0][6] for i in result], target)
+            for ind in list(combinations(range(len(result)), 4)):
+                print(ind)
+                origin = [result[i][0][6].tolist() for i in ind]
+                origin.append(target)
+                print([result[i][1] for i in ind])
+                p = four_points([result[i][1] for i in ind], dense=10)
+                # print(p)
+                draw(p, origin)
+                # break
+            # break
 
-    # target = [0.0, 0.0, 0.0]
-    # p1 = [-2.0, 1.0, 3.0]
-    # p2 = [-2.0, 1.0, -1.0]
-    # p3 = [-2.0, -3.0, -1.0]
-    # p4 = [5.0, 0.0, 0.0]
+    # pp = [i[0][6] for i in result]
 
-    # pp = [p1, p2, p3, p4, p5]
-    pp = [i[0][6] for i in result]
-
-    draw(pp, target)
+    # draw(pp, target)#all
 
     # for ind in list(combinations(range(len(pp)), 4)):
     #     if within(target, [pp[i] for i in ind]):
     #         points = []
-    #         for j in list(combinations([result[i][1] for i in ind], 2)):
+    #         for j in list(combinations([result[i][1] for i in ind], 2)):#lines
     #             points.extend(two_points(j, dense=10))
     #         origin = [result[i][0][6].tolist() for i in ind]
     #         origin.append(target)
     #         draw(points, origin)
+
+def approx_within():
+    joints = [[-0.3, -0.2,  0.2, -2. ,  2.2,  2. ,  0. ], [-0.8, -0.2,  0.7, -2. ,  2.2,  2.5,  0. ], [-0.8, -0.2,  0.7, -2. ,  1.7,  2.5,  0. ], [-0.8, -0.2,  0.7, -2. ,  2.2,  2. ,  0. ]]
+    pos = [[0.5449, 0.0053, 0.6544], [0.5569, -0.0334, 0.5901], [0.5576, -0.0343, 0.5931], [0.5608, 0.0257, 0.6246]]
 
 def ikpy_test():
     from ikpy.chain import Chain

@@ -192,7 +192,8 @@ class IKSimulator:
             for ind, i_type in enumerate(nearby_postures):
                 if np.dot(i_pos[2], i_type[0][2]) > 0.8 and \
                    np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and \
-                   np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5:
+                   np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5 and \
+                   np.linalg.norm(i_pos[1][2]-i_type[0][1][2]) < 0.6:
                     nearby_postures[ind].append(i_pos)
                     break
                 # if np.dot(i_pos[2], i_type[2]) > 0.9 and \
@@ -205,6 +206,20 @@ class IKSimulator:
 
         # return [np[0] for np in nearby_postures]
         print(len(nearby_postures))
+        return nearby_postures
+
+    def get_different_postures(self, pos_info):
+        #finding arm posture types
+        threshold = 1.5
+        nearby_postures = []
+        for i_joint, value in enumerate(pos_info):
+            for i_type in nearby_postures:
+                diff = self.diff_cal(i_type.joint, value.joint)
+                if diff < threshold:
+                    # nearby_postures.append(value)
+                    break
+            else:
+                nearby_postures.append(value)
         return nearby_postures
 
     def find_all_posture(self, target_pos):
@@ -443,11 +458,11 @@ if __name__ == '__main__':
     ik_simulator = IKSimulator(algo='ikpy')
     result = ik_simulator.find(target)
     #26:5, 16,47:3
-    # for i,v in enumerate(result):
-    #     if len(v) > 2:
-    #         print(i)
+    for i,v in enumerate(result):
+        if len(v) > 3:
+            print(len(v))
     # print([len(i) for i in result])
-    print([i[0][6] for i in result[4]])
+    # print([i[0][6] for i in result[4]])
 
     # print([jd.joint for jd in ik_simulator.find_all_posture(target)[0]])
 

@@ -41,6 +41,41 @@ def runner(ik_simulator, iter, filename):
     np.save(RESULT_FOLDER+filename, message)
     print('done.')
 
+def sample_num(iter):
+    ik_simulator = IKSimulator(algo='ikpy')
+    num = []
+
+    for i in range(iter):
+        x = round(r.uniform(-0.855, 0.855), 4)
+        y = round(r.uniform(-0.855, 0.855), 4)
+        z = round(r.uniform(-0.36, 1.19), 4)
+        target = [x, y, z]
+        result = ik_simulator.find(target)
+        if result:
+            n = [0,0,0,0]
+            for v in result:
+                if len(v) ==1:
+                    n[0] += 1
+                elif len(v) ==2:
+                    n[1] += 1
+                elif len(v) == 3:
+                    n[2] += 1
+                else:
+                    n[3] += 1
+
+            n.append(len(result))
+            num.append(n)
+
+    num = np.array(num).T
+    mes = {}
+    mes['post_num'] = np.average(num[4])
+    mes['1'] = np.average(num[0])
+    mes['2'] = np.average(num[1])
+    mes['3'] = np.average(num[2])
+    mes['>4'] = np.average(num[3])
+
+    messenger(mes)
+
 def gather(scale, name):
     gather = DataCollection(scale=scale)
     gather.without_colliding_detect(name)
@@ -82,8 +117,8 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
 
-    ik_simulator = IKSimulator()
-    show_avg('ikpy_100')
+    # ik_simulator = IKSimulator()
+    # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')
     # show_sparse('500_20plus_result_vp_v2')
@@ -93,6 +128,8 @@ if __name__ == '__main__':
     # posture, message = ik_simulator.find_all_posture(target)
     # print([jd.joint for jd in posture])
     # messenger(message)
+
+    sample_num(100)
 
     print('duration: ', d.datetime.now()-start)
 
