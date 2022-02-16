@@ -290,8 +290,8 @@ class IKSimulator:
         message['posture'] = len(posture)
         message['origin_diff'] = np.mean(origin_diff)
         message['mean_diff'] = np.mean(np.array([p.diff for p in posture]))
-        message['origin_std'] = np.std(np.array(origin_diff))
-        message['std_error'] = np.std(np.array([p.diff for p in posture]))
+        # message['origin_std'] = np.std(np.array(origin_diff))
+        # message['std_error'] = np.std(np.array([p.diff for p in posture]))
         message['worst_diff'] = max([p.diff for p in posture])
         message['worst%'] = n/len(posture)
         message['worse_num'] = n

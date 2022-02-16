@@ -11,6 +11,7 @@ from sympy.matrices import Matrix, eye
 from sympy import pprint
 
 from ik_simulator import IKTable, IKSimulator
+from utilities import *
 
 
 ik_dict = {}
@@ -429,21 +430,27 @@ def within(target, near_4_point):
     # equ = lambda x, y, z: eval(str(plane.equation()))
     # print(equ(0,0,0))
 
-def within_test():
-    target = np.array([0.5545, 0.0, 0.6245])
+def within_test(posture, target):
+    target = np.array(target)
     # target = [0.5471, -0.1024, 0.6091]
 
-    ik_simulator = IKSimulator(algo='ikpy')
-    r = ik_simulator.find(target)
+    # r = posture
     # result = max(r, key=len)
     # result = [posi for post in r for posi in post]#all
     # print(len(result))
 
+    s = d.datetime.now()
+    jo = []
+    di = []
+    ori_diff = []
     count = 0
     num = 0
-    for result in r:
+    for result in posture:
         check = True
         if len(result) > 1:
+
+            joint = []
+            diff = 1
             num += 1
             # draw([i[0][6] for i in result], target)
             # for ind in list(combinations(range(len(result)), 4)):
@@ -462,37 +469,55 @@ def within_test():
                 side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
                 # print(side)
 
-                diff = min([np.linalg.norm(vec[0]), np.linalg.norm(vec[1])])
-                print(diff)
+                diff2 = min([np.linalg.norm(vec[0]), np.linalg.norm(vec[1])])
+                # print(diff2)
                 # if side < -0.5:
 
                 print([result[i][1] for i in ind])
 
-                tmp_joint_interpolate = fk_dh(interpolate(result[ind[0]], result[ind[1]], target))
-                print(np.linalg.norm(tmp_joint_interpolate-target)/diff)
-                # if np.linalg.norm(tmp_joint_interpolate-target)/diff >= 1:
+                joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
+                # print(np.linalg.norm(joint_int-target)/diff2)
+                # if np.linalg.norm(joint_int-target)/diff2 >= 1:
                 #     count -= 1
 
-                tmp_joint_approx = fk_dh(two_point_func(result[ind[0]], result[ind[1]], target))
-                print(np.linalg.norm(tmp_joint_approx-target)/diff, np.linalg.norm(tmp_joint_approx-target))
+                joint_approx, diff_approx = approx_iter(result[ind[0]], result[ind[1]], target)
+                # print(np.linalg.norm(joint_approx-target)/diff2, np.linalg.norm(joint_approx-target))
 
-                if np.linalg.norm(tmp_joint_approx-target)/diff < 0.8:
+                if diff_approx <= diff:
+                    diff = diff_approx
+                    joint = joint_approx
+
+                if np.linalg.norm(fk_dh(joint_approx)-target)/diff2 < 0.8:
                     # continue
                     if check:
                         count += 1
                         check = False
 
-
-                origin.append(tmp_joint_interpolate)
-                origin.append(tmp_joint_approx)
-                origin.append(target)
-                p = two_points([result[i][1] for i in ind], dense=20)
+                # origin.append(tmp_joint_interpolate)
+                # origin.append(tmp_joint_approx)
+                # origin.append(target)
+                # p = two_points([result[i][1] for i in ind], dense=20)
                 # draw(p, origin)
 
-                # break
-            # break
+            di.append(diff)
+            jo.append(joint)
+            ori_diff.append(np.mean([np.linalg.norm(np.array(re[0][6])-target) for re in result]))
+
 
     print(count, num)
+    e = d.datetime.now()
+    print(e-s)
+
+    message = {}
+    # message['target'] = target
+    message['work_p'] = num
+    message['work_well'] = count
+    message['posture'] = len(posture)
+    message['origin_diff'] = np.mean(ori_diff)
+    message['mean_diff'] = np.mean(np.array(di))
+
+    return message
+
     # pp = [i[0][6] for i in result]
 
     # draw(pp, target)#all
@@ -524,9 +549,11 @@ def two_point_func(post_1, post_2, target):
 
     return tmp_joint
 
-def approx_iter(w1, post_1, post_2, target):
+# def approx_iter(w1, post_1, post_2, target):
+def approx_iter(post_1, post_2, target):
     # s = d.datetime.now()
-    offset = 0.3
+    w1 = 0.5
+    offset = 0.24
     diff = np.linalg.norm(np.array(post_1[0][6]) - target)
     tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
 
@@ -552,6 +579,7 @@ def approx_iter(w1, post_1, post_2, target):
         else:
             w1 += offset
             tmp_joint = pre_joint
+            diff = pre_diff
 
         offset *= abs(offset)
 
@@ -562,7 +590,7 @@ def approx_iter(w1, post_1, post_2, target):
     #
     # e = d.datetime.now()
     # print(m-s, e-m)
-    return tmp_joint
+    return tmp_joint, diff
 
 def interpolate(post_1, post_2, target):
     s = d.datetime.now()
@@ -574,9 +602,33 @@ def interpolate(post_1, post_2, target):
     tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
     # print(tmp_joint)
 
+    diff = np.linalg.norm(fk_dh(tmp_joint) - target)
+
     print(d.datetime.now()-s)
 
-    return tmp_joint
+    return tmp_joint, diff
+
+def run_within(iter):
+    ik_simulator = IKSimulator(algo='ikpy')
+    num = []
+    mes = defaultdict(list)
+
+    for i in range(iter):
+        x = round(r.uniform(-0.855, 0.855), 4)
+        y = round(r.uniform(-0.855, 0.855), 4)
+        z = round(r.uniform(-0.36, 1.19), 4)
+        target = [x, y, z]
+        result = ik_simulator.find(target)
+        if result:
+            message = within_test(result, target)
+            print(message)
+            for k,v in message.items():
+                mes[k].append(v)
+    result = {}
+    for k, v in mes.items():
+        result[k] = np.mean(v)
+
+    messenger(result)
 
 def ikpy_test():
     from ikpy.chain import Chain
@@ -653,4 +705,5 @@ if __name__ == '__main__':
 
     # two_point_func()
 
-    within_test()
+    # within_test()
+    run_within(10)
