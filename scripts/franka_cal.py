@@ -6,8 +6,12 @@ import datetime as d
 from collections import namedtuple, defaultdict
 from itertools import combinations
 
+from sympy import Point3D, Plane, symbols, cos, sin
+from sympy.matrices import Matrix, eye
+from sympy import pprint
 
-from ik_simulator import IKTable
+from ik_simulator import IKTable, IKSimulator
+
 
 ik_dict = {}
 
@@ -94,7 +98,31 @@ def fk_dh(joints:list):
         mat = np.dot(mat, dh_t)
         # print([p[3] for p in mat[:3]])
         # print(mat)
-    return [p[3] for p in mat[:3]]
+    return np.array([p[3] for p in mat[:3]])
+
+def fk_sympy(joints:list):
+    # dh: joint(theta), distance between axes(-1 a), movement on axis(d), angle(-1 alpha)
+    dh = np.array([[0.0,     0.0, 0.333,     0.0],\
+                   [0.0,     0.0,   0.0, -m.pi/2],\
+                   [0.0,     0.0, 0.316,  m.pi/2],\
+                   [0.0,  0.0825,   0.0,  m.pi/2],\
+                   [0.0, -0.0825, 0.384,  -m.pi/2],\
+                   [0.0,     0.0,   0.0,  m.pi/2],\
+                   [0.0,   0.088, 0.107,  m.pi/2]])
+
+    # dh[:,0] = joints
+    mat = eye(4)
+    for i in range(7):
+        dh_t = Matrix([[cos(joints[i])               , -sin(joints[i])               ,  0             ,  dh[i,1]               ],\
+        		       [sin(joints[i])*cos(dh[i,3]),  cos(joints[i])*cos(dh[i,3]), -sin(dh[i,3]), -dh[i,2]*sin(dh[i,3])],\
+        		       [sin(joints[i])*sin(dh[i,3]),  cos(joints[i])*sin(dh[i,3]),  cos(dh[i,3]),  dh[i,2]*cos(dh[i,3])],\
+        		       [0                              ,  0                              ,  0             ,  1                     ]])
+        mat = mat.multiply(dh_t)
+        # print([p[3] for p in mat[:3]])
+        # print(mat)
+
+    pprint(mat)
+    return mat
 
 def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     dist_a = np.linalg.norm(pos_a - pos_c)
@@ -356,8 +384,11 @@ def draw(points, origin=None):
     ax2 = Axes3D(fig)
 
 
-    ax2.scatter3D(points[0], points[1], points[2], cmap='Blues')
-    ax2.scatter3D(origin[0], origin[1], origin[2], cmap='Reds')
+    ax2.scatter3D(points[0], points[1], points[2], cmap='Greys')
+    if not origin is None:
+        ax2.scatter3D(origin[0][:-2], origin[1][:-2], origin[2][:-2], cmap='Blues')
+        ax2.scatter3D(origin[0][-2], origin[1][-2], origin[2][-2], cmap='Blues')
+        ax2.scatter3D(origin[0][-1], origin[1][-1], origin[2][-1], cmap='Reds')
 
     # z = np.linspace(0,13,1000)
     # x = 5*np.sin(z)
@@ -368,7 +399,6 @@ def draw(points, origin=None):
 def within(target, near_4_point):
     from sympy import Point3D, Plane
 
-    # from itertools import combinations
     # print(list(combinations([_ for _ in range(4)], 3)))
 
     for i in range(4):
@@ -400,30 +430,69 @@ def within(target, near_4_point):
     # print(equ(0,0,0))
 
 def within_test():
-    target = [0.5545, 0.0, 0.6245]
+    target = np.array([0.5545, 0.0, 0.6245])
     # target = [0.5471, -0.1024, 0.6091]
 
-    from ik_simulator import IKSimulator
     ik_simulator = IKSimulator(algo='ikpy')
     r = ik_simulator.find(target)
     # result = max(r, key=len)
     # result = [posi for post in r for posi in post]#all
     # print(len(result))
 
+    count = 0
+    num = 0
     for result in r:
-        if len(result) > 3:
+        check = True
+        if len(result) > 1:
+            num += 1
             # draw([i[0][6] for i in result], target)
-            for ind in list(combinations(range(len(result)), 4)):
-                print(ind)
-                origin = [result[i][0][6].tolist() for i in ind]
-                origin.append(target)
+            # for ind in list(combinations(range(len(result)), 4)):
+            #     print(ind)
+            #     origin = [result[i][0][6].tolist() for i in ind]
+            #     origin.append(target)
+            #     print([result[i][1] for i in ind])
+            #     p = four_points([result[i][1] for i in ind], dense=10)
+            #     # print(p)
+            #     draw(p, origin)
+
+            for ind in list(combinations(range(len(result)), 2)):
+                origin = [result[i][0][6] for i in ind]
+
+                vec = [origin[0]-target, origin[1]-target]
+                side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
+                # print(side)
+
+                diff = min([np.linalg.norm(vec[0]), np.linalg.norm(vec[1])])
+                print(diff)
+                # if side < -0.5:
+
                 print([result[i][1] for i in ind])
-                p = four_points([result[i][1] for i in ind], dense=10)
-                # print(p)
-                draw(p, origin)
+
+                tmp_joint_interpolate = fk_dh(interpolate(result[ind[0]], result[ind[1]], target))
+                print(np.linalg.norm(tmp_joint_interpolate-target)/diff)
+                # if np.linalg.norm(tmp_joint_interpolate-target)/diff >= 1:
+                #     count -= 1
+
+                tmp_joint_approx = fk_dh(two_point_func(result[ind[0]], result[ind[1]], target))
+                print(np.linalg.norm(tmp_joint_approx-target)/diff, np.linalg.norm(tmp_joint_approx-target))
+
+                if np.linalg.norm(tmp_joint_approx-target)/diff < 0.8:
+                    # continue
+                    if check:
+                        count += 1
+                        check = False
+
+
+                origin.append(tmp_joint_interpolate)
+                origin.append(tmp_joint_approx)
+                origin.append(target)
+                p = two_points([result[i][1] for i in ind], dense=20)
+                # draw(p, origin)
+
                 # break
             # break
 
+    print(count, num)
     # pp = [i[0][6] for i in result]
 
     # draw(pp, target)#all
@@ -437,9 +506,77 @@ def within_test():
     #         origin.append(target)
     #         draw(points, origin)
 
-def approx_within():
-    joints = [[-0.3, -0.2,  0.2, -2. ,  2.2,  2. ,  0. ], [-0.8, -0.2,  0.7, -2. ,  2.2,  2.5,  0. ], [-0.8, -0.2,  0.7, -2. ,  1.7,  2.5,  0. ], [-0.8, -0.2,  0.7, -2. ,  2.2,  2. ,  0. ]]
-    pos = [[0.5449, 0.0053, 0.6544], [0.5569, -0.0334, 0.5901], [0.5576, -0.0343, 0.5931], [0.5608, 0.0257, 0.6246]]
+def two_point_func(post_1, post_2, target):
+    s = d.datetime.now()
+
+    npp = np.linalg.norm(post_1[0][6]-post_2[0][6])
+    n1t = np.linalg.norm(post_1[0][6]-target)
+    n2t = np.linalg.norm(post_2[0][6]-target)
+
+    if n1t < npp/2:
+        tmp_joint = approx_iter(n1t/npp, post_1, post_2, target)
+    elif n2t < npp/2:
+        tmp_joint = approx_iter(n2t/npp, post_2, post_1, target)
+    else:
+        tmp_joint = approx_iter(0.5, post_1, post_2, target)
+
+    print(d.datetime.now()-s)
+
+    return tmp_joint
+
+def approx_iter(w1, post_1, post_2, target):
+    # s = d.datetime.now()
+    offset = 0.3
+    diff = np.linalg.norm(np.array(post_1[0][6]) - target)
+    tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+
+    while offset > 0.001:
+        reverse = 0
+        while reverse < 2:
+            w1 += offset
+            # print(offset)
+            if w1 > 1 or w1 < 0:
+                w1 -= offset
+                print('out!')
+                break
+            pre_joint = tmp_joint
+            tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+            pre_diff = diff
+            diff = np.linalg.norm(fk_dh(tmp_joint) - target)
+            if diff >= pre_diff:
+                offset *= -1
+                reverse += 1
+
+            # print(diff)
+            # draw(p, [fk_dh(tmp_joint)])
+        else:
+            w1 += offset
+            tmp_joint = pre_joint
+
+        offset *= abs(offset)
+
+
+    # m = d.datetime.now()
+    # p = two_points([post_1[1], post_2[1]], dense=20)
+    # print(min([np.linalg.norm(pp - target) for pp in p]))
+    #
+    # e = d.datetime.now()
+    # print(m-s, e-m)
+    return tmp_joint
+
+def interpolate(post_1, post_2, target):
+    s = d.datetime.now()
+
+    full = np.array(post_2[0][6]) - np.array(post_1[0][6])
+    part1 = target - np.array(post_1[0][6])
+
+    w1 = np.dot(part1, full) / (np.linalg.norm(full) ** 2)
+    tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+    # print(tmp_joint)
+
+    print(d.datetime.now()-s)
+
+    return tmp_joint
 
 def ikpy_test():
     from ikpy.chain import Chain
@@ -502,8 +639,8 @@ if __name__ == '__main__':
     # iktable = IKTable('table2')
     # print(iktable.positions[0])
 
-    joints = [[-0.8, -0.2,  0.7, -2. , -1.3,  3. ,  0. ], [-0.3, -0.2,  0.2, -2. , -1.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  2.5,  0. ]]
-    points = [fk_dh(j) for j in joints]
+    # joints = [[-0.8, -0.2,  0.7, -2. , -1.3,  3. ,  0. ], [-0.3, -0.2,  0.2, -2. , -1.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  2.5,  0. ]]
+    # points = [fk_dh(j) for j in joints]
     # draw(four_points(joints), points)
     # p = []
     # for j in list(combinations(joints, 2)):
@@ -514,6 +651,6 @@ if __name__ == '__main__':
     # points = [pos_a, pos_b]
     # draw(two_points(joints), points)
 
-    # ikpy_test()
+    # two_point_func()
 
     within_test()
