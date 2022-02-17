@@ -353,13 +353,14 @@ def even_distribute(joints, dense=10, ind=0, agg=0):
     # print(cp_joints)
 
     if ind+1 == len(joints):
-        cp_joints[ind] = [j * (dense-agg)/dense for j in joints[ind]]
-        tmp_joint = [np.sum(q) for q in np.array(cp_joints).T]
-        tmp_pos = fk_dh(tmp_joint)
-        # print(tmp_pos)
-        points.append(tmp_pos)
+        if not agg == 0:
+            cp_joints[ind] = [j * (dense-agg)/dense for j in joints[ind]]
+            tmp_joint = [np.sum(q) for q in np.array(cp_joints).T]
+            tmp_pos = fk_dh(tmp_joint)
+            # print(tmp_pos)
+            points.append(tmp_pos)
     else:
-        for prop in range(dense+1):
+        for prop in range(dense):
             if agg+prop > dense:
                 break
             cp_joints[ind] = [j * prop/dense for j in joints[ind]]
@@ -409,9 +410,11 @@ def draw(points, origin=None):
 
     ax2.scatter3D(points[0], points[1], points[2], c='grey')
     if not origin is None:
-        ax2.scatter3D(origin[0][:-2], origin[1][:-2], origin[2][:-2], c='blue')
-        # ax2.scatter3D(origin[0][-2], origin[1][-2], origin[2][-2], c='green')
-        ax2.scatter3D(origin[0][-1], origin[1][-1], origin[2][-1], c='red')
+        # ax2.scatter3D(origin[0][:-2], origin[1][:-2], origin[2][:-2], c='blue')
+        ax2.scatter3D(origin[0][:-3], origin[1][:-3], origin[2][:-3], c='blue')
+        ax2.scatter3D(origin[0][-3], origin[1][-3], origin[2][-3], c='red')
+        ax2.scatter3D(origin[0][-2], origin[1][-2], origin[2][-2], c='green')
+        ax2.scatter3D(origin[0][-1], origin[1][-1], origin[2][-1], c='orange')
 
     # z = np.linspace(0,13,1000)
     # x = 5*np.sin(z)
@@ -455,12 +458,14 @@ def within(target, near_4_point):
 def int_approx(posture, target):
     target = np.array(target)
 
-    s = d.datetime.now()
     jo = []
     di = []
     ori_diff = []
+    time = []
     count = 0
+    worst = 0
     num = 0
+    total = 0
     for result in posture:
         check = True
         if len(result) > 1:
@@ -473,37 +478,47 @@ def int_approx(posture, target):
                 origin = [result[i][0][6] for i in ind]
 
                 vec = [origin[0]-target, origin[1]-target]
-                side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
+                # side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
                 # print(side)
 
                 diff2 = min([np.linalg.norm(vec[0]), np.linalg.norm(vec[1])])
-                # print(diff2)
+                print(diff2)
                 # if side < -0.5:
+                # print([result[i][1] for i in ind])
 
-                print([result[i][1] for i in ind])
+                s = d.datetime.now()
 
-                joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
-                # print(np.linalg.norm(joint_int-target)/diff2)
+                # joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
+                # print('interpolate: ', diff_int/diff2, diff_int)
 
                 joint_approx, diff_approx = approx_iter(result[ind[0]], result[ind[1]], target)
-                # print(np.linalg.norm(joint_approx-target)/diff2, np.linalg.norm(joint_approx-target))
+                print('       true: ', diff_approx/diff2, diff_approx)
+                e = d.datetime.now()
+                time.append(e-s)
 
                 if diff_approx <= diff:
-                    # diff = diff_approx
-                    # joint = joint_approx
-                    diff = diff_int
-                    joint = joint_int
+                # if diff_int <= diff:
+                    diff = diff_approx
+                    joint = joint_approx
+                    # diff = diff_int
+                    # joint = joint_int
 
-                if np.linalg.norm(fk_dh(joint_approx)-target)/diff2 < 0.8:
+                if diff/diff2 < 0.8:
                     # continue
                     if check:
                         count += 1
                         check = False
 
-                # origin.append(tmp_joint_interpolate)
-                # origin.append(tmp_joint_approx)
-                # origin.append(target)
-                # p = even_distribute([result[i][1] for i in ind], dense=20)
+                total += 1
+                if diff/diff2 > 1.03:
+                    worst += 1
+
+                p = even_distribute([result[i][1] for i in ind], dense=20)
+
+                # origin.append(fk_dh(joint_int))
+                origin.append(fk_dh(joint_approx))
+                # origin.append(p[np.argmin([np.linalg.norm(pp - target) for pp in p])])
+                origin.append(target)
                 # draw(p, origin)
 
             di.append(diff)
@@ -511,53 +526,26 @@ def int_approx(posture, target):
             ori_diff.append(np.mean([np.linalg.norm(np.array(re[0][6])-target) for re in result]))
 
 
-    print(count, num)
+    # print(count, num)
     e = d.datetime.now()
-    print(e-s)
+    # print(e-s)
 
     message = {}
     # message['target'] = target
+    message['posture'] = len(posture)
     message['work_p'] = num
     message['work_well'] = count
-    message['posture'] = len(posture)
+    message['worst%'] = worst/total if not total==0 else 0
     message['origin_diff'] = np.mean(ori_diff)
     message['mean_diff'] = np.mean(np.array(di))
+    message['avg. time'] = np.mean(np.array(time))
 
     return message
 
 def print_points(postures, target):
-# def print_points():
-#     target = [0.5545, 0.0, 0.6245]
-#     # target = [0.5471, -0.1024, 0.6091]
-#     from ik_simulator import IKSimulator
-#     ik_simulator = IKSimulator(algo='ikpy')
-#     postures = ik_simulator.find(target)
-#     result = max(postures, key=len)
-#     result = [posi for post in postures for posi in post]
-#     print(len(result))
-
-    # p1 = [0.5495, 0.003 , 0.6157]
-    # p2 = [0.5487, 0.0025, 0.6126]
-    # p3 = [0.55  , 0.002 , 0.6187]
-    # p4 = [5.501e-01, -4.000e-04, 6.209e-01]
-    # p5 = [5.478e-01, 5.000e-04, 6.102e-01]
-
-    # target = [0.0, 0.0, 0.0]
-    # p1 = [-2.0, 1.0, 3.0]
-    # p2 = [-2.0, 1.0, -1.0]
-    # p3 = [-2.0, -3.0, -1.0]
-    # p4 = [5.0, 0.0, 0.0]
-
-    # pp = [p1, p2, p3, p4, p5]
-    # pp = [i[0][6] for i in result]
-    # draw(pp, target)
-
-    # result = max(r, key=len)
-    # result = [posi for post in r for posi in post]#all
-    # print(len(result))
 
     for result in postures:
-        length = 3
+        length = 2
         if len(result) > length-1:
             # draw([i[0][6] for i in result], target)
             print([re[1] for re in result])
@@ -594,6 +582,7 @@ def two_point_func(post_1, post_2, target):
 # def approx_iter(w1, post_1, post_2, target):
 def approx_iter(post_1, post_2, target):
     # s = d.datetime.now()
+
     w1 = 0.5
     offset = 0.24
     diff = np.linalg.norm(np.array(post_1[0][6]) - target)
@@ -625,11 +614,8 @@ def approx_iter(post_1, post_2, target):
 
         offset *= abs(offset)
 
-
     # m = d.datetime.now()
-    # p = even_distribute([post_1[1], post_2[1]], dense=20)
-    # print(min([np.linalg.norm(pp - target) for pp in p]))
-    #
+
     # e = d.datetime.now()
     # print(m-s, e-m)
     return tmp_joint, diff
@@ -668,7 +654,10 @@ def run_within(iter):
                 mes[k].append(v)
     result = {}
     for k, v in mes.items():
-        result[k] = np.nanmean(v)
+        if k == 'avg. time':
+            result[k] = np.mean(v)
+        else:
+            result[k] = np.nanmean(v)
 
     messenger(result)
 
@@ -719,14 +708,15 @@ if __name__ == '__main__':
 
 
 
-    ik_simulator = IKSimulator(algo='ikpy')
-    x = round(r.uniform(-0.855, 0.855), 4)
-    y = round(r.uniform(-0.855, 0.855), 4)
-    z = round(r.uniform(-0.36, 1.19), 4)
-    target = [x, y, z]
-    result = ik_simulator.find(target)
-    if result:
-        print_points(result, target)
+    # ik_simulator = IKSimulator(algo='ikpy')
+    # x = round(r.uniform(-0.855, 0.855), 4)
+    # y = round(r.uniform(-0.855, 0.855), 4)
+    # z = round(r.uniform(-0.36, 1.19), 4)
+    # target = [x, y, z]
+    # target = pos_a
+    # result = ik_simulator.find(target)
+    # if result:
+    #     # print_points(result, target)
+    #     int_approx(result, target)
 
-    # run_within(500)
-    # print_points()
+    run_within(500)
