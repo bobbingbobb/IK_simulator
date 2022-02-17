@@ -5,6 +5,8 @@ import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
 from itertools import combinations
+import copy as c
+
 
 from sympy import Point3D, Plane, symbols, cos, sin
 from sympy.matrices import Matrix, eye
@@ -345,6 +347,26 @@ def chaining():
                 break
     return chained_positions[:-1]
 
+def even_distribute(joints, dense=10, ind=0, agg=0):
+    points=[]
+    cp_joints = c.deepcopy(joints)
+    # print(cp_joints)
+
+    if ind+1 == len(joints):
+        cp_joints[ind] = [j * (dense-agg)/dense for j in joints[ind]]
+        tmp_joint = [np.sum(q) for q in np.array(cp_joints).T]
+        tmp_pos = fk_dh(tmp_joint)
+        # print(tmp_pos)
+        points.append(tmp_pos)
+    else:
+        for prop in range(dense+1):
+            if agg+prop > dense:
+                break
+            cp_joints[ind] = [j * prop/dense for j in joints[ind]]
+            points += even_distribute(cp_joints, dense=dense, ind=(ind+1), agg=agg+prop)
+            # print(points)
+    return points
+
 def two_points(joints, dense=100):
     points = []
 
@@ -375,7 +397,7 @@ def four_points(joints, dense=10):
 
 def draw(points, origin=None):
     # print(len(points))
-    print(origin[:-1])
+    # print(origin[:-1])
     points = np.array(points).T
     origin = np.array(origin).T
     from matplotlib import pyplot as plt
@@ -385,11 +407,11 @@ def draw(points, origin=None):
     ax2 = Axes3D(fig)
 
 
-    ax2.scatter3D(points[0], points[1], points[2], cmap='Greys')
+    ax2.scatter3D(points[0], points[1], points[2], c='grey')
     if not origin is None:
-        ax2.scatter3D(origin[0][:-2], origin[1][:-2], origin[2][:-2], cmap='Blues')
-        ax2.scatter3D(origin[0][-2], origin[1][-2], origin[2][-2], cmap='Blues')
-        ax2.scatter3D(origin[0][-1], origin[1][-1], origin[2][-1], cmap='Reds')
+        ax2.scatter3D(origin[0][:-2], origin[1][:-2], origin[2][:-2], c='blue')
+        # ax2.scatter3D(origin[0][-2], origin[1][-2], origin[2][-2], c='green')
+        ax2.scatter3D(origin[0][-1], origin[1][-1], origin[2][-1], c='red')
 
     # z = np.linspace(0,13,1000)
     # x = 5*np.sin(z)
@@ -430,14 +452,8 @@ def within(target, near_4_point):
     # equ = lambda x, y, z: eval(str(plane.equation()))
     # print(equ(0,0,0))
 
-def within_test(posture, target):
+def int_approx(posture, target):
     target = np.array(target)
-    # target = [0.5471, -0.1024, 0.6091]
-
-    # r = posture
-    # result = max(r, key=len)
-    # result = [posi for post in r for posi in post]#all
-    # print(len(result))
 
     s = d.datetime.now()
     jo = []
@@ -452,15 +468,6 @@ def within_test(posture, target):
             joint = []
             diff = 1
             num += 1
-            # draw([i[0][6] for i in result], target)
-            # for ind in list(combinations(range(len(result)), 4)):
-            #     print(ind)
-            #     origin = [result[i][0][6].tolist() for i in ind]
-            #     origin.append(target)
-            #     print([result[i][1] for i in ind])
-            #     p = four_points([result[i][1] for i in ind], dense=10)
-            #     # print(p)
-            #     draw(p, origin)
 
             for ind in list(combinations(range(len(result)), 2)):
                 origin = [result[i][0][6] for i in ind]
@@ -477,15 +484,15 @@ def within_test(posture, target):
 
                 joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
                 # print(np.linalg.norm(joint_int-target)/diff2)
-                # if np.linalg.norm(joint_int-target)/diff2 >= 1:
-                #     count -= 1
 
                 joint_approx, diff_approx = approx_iter(result[ind[0]], result[ind[1]], target)
                 # print(np.linalg.norm(joint_approx-target)/diff2, np.linalg.norm(joint_approx-target))
 
                 if diff_approx <= diff:
-                    diff = diff_approx
-                    joint = joint_approx
+                    # diff = diff_approx
+                    # joint = joint_approx
+                    diff = diff_int
+                    joint = joint_int
 
                 if np.linalg.norm(fk_dh(joint_approx)-target)/diff2 < 0.8:
                     # continue
@@ -496,7 +503,7 @@ def within_test(posture, target):
                 # origin.append(tmp_joint_interpolate)
                 # origin.append(tmp_joint_approx)
                 # origin.append(target)
-                # p = two_points([result[i][1] for i in ind], dense=20)
+                # p = even_distribute([result[i][1] for i in ind], dense=20)
                 # draw(p, origin)
 
             di.append(diff)
@@ -518,18 +525,53 @@ def within_test(posture, target):
 
     return message
 
+def print_points(postures, target):
+# def print_points():
+#     target = [0.5545, 0.0, 0.6245]
+#     # target = [0.5471, -0.1024, 0.6091]
+#     from ik_simulator import IKSimulator
+#     ik_simulator = IKSimulator(algo='ikpy')
+#     postures = ik_simulator.find(target)
+#     result = max(postures, key=len)
+#     result = [posi for post in postures for posi in post]
+#     print(len(result))
+
+    # p1 = [0.5495, 0.003 , 0.6157]
+    # p2 = [0.5487, 0.0025, 0.6126]
+    # p3 = [0.55  , 0.002 , 0.6187]
+    # p4 = [5.501e-01, -4.000e-04, 6.209e-01]
+    # p5 = [5.478e-01, 5.000e-04, 6.102e-01]
+
+    # target = [0.0, 0.0, 0.0]
+    # p1 = [-2.0, 1.0, 3.0]
+    # p2 = [-2.0, 1.0, -1.0]
+    # p3 = [-2.0, -3.0, -1.0]
+    # p4 = [5.0, 0.0, 0.0]
+
+    # pp = [p1, p2, p3, p4, p5]
     # pp = [i[0][6] for i in result]
+    # draw(pp, target)
 
-    # draw(pp, target)#all
+    # result = max(r, key=len)
+    # result = [posi for post in r for posi in post]#all
+    # print(len(result))
 
-    # for ind in list(combinations(range(len(pp)), 4)):
-    #     if within(target, [pp[i] for i in ind]):
-    #         points = []
-    #         for j in list(combinations([result[i][1] for i in ind], 2)):#lines
-    #             points.extend(two_points(j, dense=10))
-    #         origin = [result[i][0][6].tolist() for i in ind]
-    #         origin.append(target)
-    #         draw(points, origin)
+    for result in postures:
+        length = 3
+        if len(result) > length-1:
+            # draw([i[0][6] for i in result], target)
+            print([re[1] for re in result])
+            for ind in list(combinations(range(len(result)), length)):
+                print(ind)
+                origin = [result[i][0][6].tolist() for i in ind]
+                origin.append(target)
+                # p = two_points([result[i][1] for i in ind], dense=10)
+                # p = four_points([result[i][1] for i in ind], dense=10)
+                p = even_distribute([result[i][1] for i in ind])
+                # print(p)
+                draw(p, origin)
+                # break
+            # break
 
 def two_point_func(post_1, post_2, target):
     s = d.datetime.now()
@@ -585,7 +627,7 @@ def approx_iter(post_1, post_2, target):
 
 
     # m = d.datetime.now()
-    # p = two_points([post_1[1], post_2[1]], dense=20)
+    # p = even_distribute([post_1[1], post_2[1]], dense=20)
     # print(min([np.linalg.norm(pp - target) for pp in p]))
     #
     # e = d.datetime.now()
@@ -620,13 +662,13 @@ def run_within(iter):
         target = [x, y, z]
         result = ik_simulator.find(target)
         if result:
-            message = within_test(result, target)
+            message = int_approx(result, target)
             print(message)
             for k,v in message.items():
                 mes[k].append(v)
     result = {}
     for k, v in mes.items():
-        result[k] = np.mean(v)
+        result[k] = np.nanmean(v)
 
     messenger(result)
 
@@ -675,35 +717,16 @@ if __name__ == '__main__':
     joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
     pos_b = [ 0.5471, -0.0024,  0.6091]
 
-    # pos_a = fk_dh(joint_a)
-    # pos_b = fk_dh(joint_b)
-    # print(pos_a)
-    # print(pos_b)
-    # pos_c = [(i+j)/2 for i, j in zip(pos_a, pos_b)]
-    # pos_c = pos_b
 
-    # joint_c = linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c)
-    # joint_c = approximation(joint_a, pos_c)
 
-    # find_all_posture(joint_a, pos_a)
+    ik_simulator = IKSimulator(algo='ikpy')
+    x = round(r.uniform(-0.855, 0.855), 4)
+    y = round(r.uniform(-0.855, 0.855), 4)
+    z = round(r.uniform(-0.36, 1.19), 4)
+    target = [x, y, z]
+    result = ik_simulator.find(target)
+    if result:
+        print_points(result, target)
 
-    # print(fk_dh(joint_a))
-    # iktable = IKTable('table2')
-    # print(iktable.positions[0])
-
-    # joints = [[-0.8, -0.2,  0.7, -2. , -1.3,  3. ,  0. ], [-0.3, -0.2,  0.2, -2. , -1.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  3. ,  0. ], [-0.8, -0.2,  0.7, -2. , -0.3,  2.5,  0. ]]
-    # points = [fk_dh(j) for j in joints]
-    # draw(four_points(joints), points)
-    # p = []
-    # for j in list(combinations(joints, 2)):
-    #     p.extend(two_points(j, dense=10))
-    # draw(p, points)
-
-    # joints = [joint_a, joint_b]
-    # points = [pos_a, pos_b]
-    # draw(two_points(joints), points)
-
-    # two_point_func()
-
-    # within_test()
-    run_within(10)
+    # run_within(500)
+    # print_points()
