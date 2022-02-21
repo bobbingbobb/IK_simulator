@@ -498,6 +498,7 @@ result = kd.query(target, k=20, distance_upper_bound=0.05)[1]
 print(len(result))
 
 a=[[1,2], [3,4], [5,6]]
+a1=[[3,4],[1,2], [5,6]]
 print([i+j+k for i, j, k in [aa for aa in np.array(a).T]])
 k = np.array(a[0])*1 + np.array(a[1])*2
 print(np.dot(a[0], a[1]))

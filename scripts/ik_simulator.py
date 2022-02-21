@@ -131,22 +131,85 @@ class IKSimulator:
         pos_info = self.iktable.query_neighbor(target_pos)
         if not pos_info:
             return 0
-        nearby_postures = self.posture_comparison(pos_info)
+        # nearby_postures = self.posture_comparison(pos_info)
+        nearby_postures = self.posture_comparison_all_joint(pos_info)
+
+        # nearby_postures = []
+        # nearby_postures.append(self.posture_comparison_all_joint(pos_info))
+        # nearby_postures.append(self.posture_comparison_all_joint_sorted(pos_info))
+        return nearby_postures
+
+    def posture_comparison_all_joint_sorted(self, target_space):
+        thres = 0.5
+        nearby_postures = []
+        def sorting(sort_target, q):
+            result = []
+            sort_ind = [sort_target[i] for i in np.argsort([target_space[st][1][q] for st in sort_target])]
+
+            i = 0
+            while True:
+                r = 1
+                if i+r == len(sort_ind):
+                    return result
+                while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < thres:
+                    r += 1
+                    if not i+r < len(sort_ind):
+                        break
+                else:
+                    if r == 1:
+                        result.append([sort_ind[i]])
+                    else:
+                        if q == 5:
+                            result.append(sort_ind[i:i+r])
+                        else:
+                            result += sorting(sort_ind[i:i+r], q+1)
+                    i += r
+                    continue
+
+                if q == 5:
+                    result.append(sort_ind[i:])
+                    return result
+                else:
+                    result += sorting(sort_ind[i:], q+1)
+                    break
+            return result
+
+        nearby_postures = sorting([_ for _ in range(len(target_space))], 0)
+
+        return nearby_postures
+
+    def posture_comparison_all_joint(self, target_space):
+        thres = 0.5
+        nearby_postures = []
+        for pos in target_space:
+            for type in nearby_postures:
+                for j_pos, j_type in zip(pos[1], type[0][1]):
+                    if abs(j_pos-j_type) >= thres:
+                        break
+                else:
+                    type.append(pos)
+                    break
+            else:
+                nearby_postures.append([pos])
+
+
+        #index
+        # for i_pos, v_pos in enumerate(target_space):
+        #     # print(nearby_postures)
+        #     for i_type, v_type in enumerate(nearby_postures):
+        #         for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
+        #             if abs(j_pos-j_type) >= thres:
+        #                 break
+        #         else:
+        #             nearby_postures[i_type].append(i_pos)
+        #             break
+        #     else:
+        #         nearby_postures.append([i_pos])
+
         return nearby_postures
 
     # abandoned
-    def index2pos_jo(self, indices):
-        pos_jo = namedtuple('pos_jo', ['position', 'joint'])
-        target_space = []
-        for index in indices:
-            # target_space.append(pos_jo(self.iktable.positions[index], self.iktable.joints[index]))
-            target_space.append([self.iktable.all_posi[index], self.iktable.joints[index]])
-
-        return target_space
-
-    # abandoned
     def get_different_postures(self, target_space):
-
         #finding arm posture types
         threshold = 1.5
         nearby_postures = []
@@ -160,6 +223,16 @@ class IKSimulator:
                 nearby_postures.append(value)
 
         return nearby_postures
+
+    # abandoned
+    def index2pos_jo(self, indices):
+        pos_jo = namedtuple('pos_jo', ['position', 'joint'])
+        target_space = []
+        for index in indices:
+            # target_space.append(pos_jo(self.iktable.positions[index], self.iktable.joints[index]))
+            target_space.append([self.iktable.all_posi[index], self.iktable.joints[index]])
+
+        return target_space
 
     # abandoned
     def get_posts(self, indices):
@@ -189,16 +262,16 @@ class IKSimulator:
 
         nearby_postures = []
         for i_pos in pos_info:
-            for ind, i_type in enumerate(nearby_postures):
-                if np.dot(i_pos[2], i_type[0][2]) > 0.8 and \
-                   np.linalg.norm(i_pos[0][3]-i_type[0][0][3]) < thres_3 and \
-                   np.linalg.norm(i_pos[0][5]-i_type[0][0][5]) < thres_5 and \
-                   np.linalg.norm(i_pos[1][2]-i_type[0][1][2]) < 0.6:
-                    nearby_postures[ind].append(i_pos)
+            for type in nearby_postures:
+                if np.dot(i_pos[2], type[0][2]) > 0.8 and \
+                   np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
+                   np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
+                   np.linalg.norm(i_pos[1][2]-type[0][1][2]) < 0.6:
+                    type.append(i_pos)
                     break
-                # if np.dot(i_pos[2], i_type[2]) > 0.9 and \
-                #    np.linalg.norm(i_pos[0][3]-i_type[0][3]) < thres_3 and \
-                #    np.linalg.norm(i_pos[0][5]-i_type[0][5]) < thres_5:
+                # if np.dot(i_pos[2], type[2]) > 0.9 and \
+                #    np.linalg.norm(i_pos[0][3]-type[0][3]) < thres_3 and \
+                #    np.linalg.norm(i_pos[0][5]-type[0][5]) < thres_5:
                 #     break
             else:
                 nearby_postures.append([i_pos])
@@ -206,20 +279,6 @@ class IKSimulator:
 
         # return [np[0] for np in nearby_postures]
         print(len(nearby_postures))
-        return nearby_postures
-
-    def get_different_postures(self, pos_info):
-        #finding arm posture types
-        threshold = 1.5
-        nearby_postures = []
-        for i_joint, value in enumerate(pos_info):
-            for i_type in nearby_postures:
-                diff = self.diff_cal(i_type.joint, value.joint)
-                if diff < threshold:
-                    # nearby_postures.append(value)
-                    break
-            else:
-                nearby_postures.append(value)
         return nearby_postures
 
     def find_all_posture(self, target_pos):
@@ -457,10 +516,20 @@ if __name__ == '__main__':
 
     ik_simulator = IKSimulator(algo='ikpy')
     result = ik_simulator.find(target)
+    print(result)
+    # print(len(result[0]))
+    # print(len(result[1]))
+    # for r in result:
+    #     l = 0
+    #     for i in r:
+    #         l += len(i)
+    #     print(l)
+
+    # print(result)
     #26:5, 16,47:3
-    for i,v in enumerate(result):
-        if len(v) > 3:
-            print(len(v))
+    # for i,v in enumerate(result):
+    #     if len(v) > 3:
+    #         print(len(v))
     # print([len(i) for i in result])
     # print([i[0][6] for i in result[4]])
 
