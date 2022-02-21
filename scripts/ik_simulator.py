@@ -132,7 +132,7 @@ class IKSimulator:
         if not pos_info:
             return 0
         # nearby_postures = self.posture_comparison(pos_info)
-        nearby_postures = self.posture_comparison_all_joint(pos_info)
+        nearby_postures = self.posture_comparison_all_joint_sorted(pos_info)
 
         # nearby_postures = []
         # nearby_postures.append(self.posture_comparison_all_joint(pos_info))
@@ -143,6 +143,8 @@ class IKSimulator:
         thres = 0.5
         nearby_postures = []
         def sorting(sort_target, q):
+            if len(sort_target) == 1:
+                return [sort_target]
             result = []
             sort_ind = [sort_target[i] for i in np.argsort([target_space[st][1][q] for st in sort_target])]
 
@@ -150,19 +152,17 @@ class IKSimulator:
             while True:
                 r = 1
                 if i+r == len(sort_ind):
+                    result.append([sort_ind[i]])
                     return result
                 while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < thres:
                     r += 1
                     if not i+r < len(sort_ind):
                         break
                 else:
-                    if r == 1:
-                        result.append([sort_ind[i]])
+                    if q == 5:
+                        result.append(sort_ind[i:i+r])
                     else:
-                        if q == 5:
-                            result.append(sort_ind[i:i+r])
-                        else:
-                            result += sorting(sort_ind[i:i+r], q+1)
+                        result += sorting(sort_ind[i:i+r], q+1)
                     i += r
                     continue
 
@@ -181,30 +181,30 @@ class IKSimulator:
     def posture_comparison_all_joint(self, target_space):
         thres = 0.5
         nearby_postures = []
-        for pos in target_space:
-            for type in nearby_postures:
-                for j_pos, j_type in zip(pos[1], type[0][1]):
-                    if abs(j_pos-j_type) >= thres:
-                        break
-                else:
-                    type.append(pos)
-                    break
-            else:
-                nearby_postures.append([pos])
-
-
-        #index
-        # for i_pos, v_pos in enumerate(target_space):
-        #     # print(nearby_postures)
-        #     for i_type, v_type in enumerate(nearby_postures):
-        #         for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
+        # for pos in target_space:
+        #     for type in nearby_postures:
+        #         for j_pos, j_type in zip(pos[1], type[0][1]):
         #             if abs(j_pos-j_type) >= thres:
         #                 break
         #         else:
-        #             nearby_postures[i_type].append(i_pos)
+        #             type.append(pos)
         #             break
         #     else:
-        #         nearby_postures.append([i_pos])
+        #         nearby_postures.append([pos])
+
+
+        #index
+        for i_pos, v_pos in enumerate(target_space):
+            # print(nearby_postures)
+            for i_type, v_type in enumerate(nearby_postures):
+                for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
+                    if abs(j_pos-j_type) >= thres:
+                        break
+                else:
+                    nearby_postures[i_type].append(i_pos)
+                    break
+            else:
+                nearby_postures.append([i_pos])
 
         return nearby_postures
 
@@ -516,8 +516,9 @@ if __name__ == '__main__':
 
     ik_simulator = IKSimulator(algo='ikpy')
     result = ik_simulator.find(target)
-    print(result)
+    # print(result)
     # print(len(result[0]))
+    # print()
     # print(len(result[1]))
     # for r in result:
     #     l = 0
