@@ -1,4 +1,4 @@
-import os
+import os, shutil
 import numpy as np
 import math as m
 import datetime as d
@@ -288,9 +288,10 @@ def high_dense_gen(iter):
     robot = Robot()
 
     id = 0
-    p = index.Property()
-    p.dimension = 3
-    idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=p)
+    property = index.Property(dimension=3)
+    idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=property)
+
+    # print([item.object for item in idx.nearest([0.0, 0.0, 0.2], 1, objects=True)])
 
     for i in range(iter):
         q = np.zeros(7)
@@ -312,6 +313,14 @@ def high_dense_gen(iter):
                     idx.insert(id, position[6].tolist(), obj=pos_info)
 
                     id += 1
+        if (i+1)%100 == 0 and not (i+1 == iter):
+            idx.close()
+            shutil.copyfile(RAW_DATA_FOLDER+'dense_'+str(iter)+'.idx', RAW_DATA_FOLDER+str(i+1)+'.idx')
+            shutil.copyfile(RAW_DATA_FOLDER+'dense_'+str(iter)+'.dat', RAW_DATA_FOLDER+str(i+1)+'.dat')
+            end = d.datetime.now()
+            print(str(i+1)+' saved. duration: ', end-start)
+            idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=property)
+    idx.close()
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
@@ -322,5 +331,4 @@ if __name__ == '__main__':
     # robot = Robot()
     # print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
 
-    high_dense_gen(100)
     high_dense_gen(500)
