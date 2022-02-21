@@ -80,6 +80,19 @@ def gather(scale, name):
     gather = DataCollection(scale=scale)
     gather.without_colliding_detect(name)
 
+def test():
+    table = IKTable()
+    dense = []
+    for i in range(500):
+        x = round(r.uniform(-0.855, 0.855), 4)
+        y = round(r.uniform(-0.855, 0.855), 4)
+        z = round(r.uniform(-0.36, 1.19), 4)
+        target = [x, y, z]
+        result = table.rtree_query(target)
+        if len(result) > 100:
+            dense.append([target, len(result)])
+    print([dense[i] for i in np.argsort(np.array(dense).T[1])[-10:]])
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
@@ -129,7 +142,9 @@ if __name__ == '__main__':
     # print([jd.joint for jd in posture])
     # messenger(message)
 
-    sample_num(100)
+    # sample_num(100)
+
+    test()
 
     print('duration: ', d.datetime.now()-start)
 

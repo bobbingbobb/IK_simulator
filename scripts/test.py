@@ -440,15 +440,16 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # k = np.load(RAW_DATA_FOLDER+'raw_data_7j_30')
 # print(len(k))
 
-# with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_20.hdf5', 'r') as f:
-#     f = f['franka_data']
-#     # print(f.attrs['shift'])
-#     print(f['pos_info'][14,6,22]['vec_ee'])
-#     # print(f['pos_info'][:]['pos'][6])
-#     xr, yr, zr = f['pos_info'].shape
-#     print(xr, yr, zr)
-#     # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
-#     # print(pos_ind[0])
+with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_30.hdf5', 'r') as f:
+    f = f['franka_data']
+    # print(f.attrs['shift'])
+    print(f['pos_info'])
+    # print(f['pos_info'][:]['pos'][6])
+    xr, yr, zr = f['pos_info'].shape
+    print(xr, yr, zr)
+    # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+    # print(len(pos_ind))
+    print(len(f['pos_info'][20][20][15]))
 #
 #
 #     # for i in range(len(pos_ind)):
@@ -484,21 +485,18 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # print(t)
 # print(t.asd())
 
-f = np.load(RAW_DATA_FOLDER+'raw_data_7j_30.npz')
-
-# print(f['joints'][1])
-data = [d[6] for d in f['positions']]
+# f = np.load(RAW_DATA_FOLDER+'raw_data_7j_30.npz')
+# data = [d[6] for d in f['positions']]
 
 target = [0.5545, 0.0, 0.6245]
 
 #scipy.spatial.kdtree
 
-kd = KDTree(data, leafsize=2, balanced_tree=True)
-result = kd.query(target, k=20, distance_upper_bound=0.05)[1]
-print(len(result))
+# kd = KDTree(data, leafsize=2, balanced_tree=True)
+# result = kd.query(target, k=20, distance_upper_bound=0.05)[1]
+# print(len(result))
 
-a=[[1,2], [3,4], [5,6]]
-a1=[[3,4],[1,2], [5,6]]
-print([i+j+k for i, j, k in [aa for aa in np.array(a).T]])
-k = np.array(a[0])*1 + np.array(a[1])*2
-print(np.dot(a[0], a[1]))
+# a=[[1,2], [3,4], [5,6]]
+# print([i+j+k for i, j, k in [aa for aa in np.array(a).T]])
+# k = np.array(a[0])*1 + np.array(a[1])*2
+# print(np.dot(a[0], a[1]))

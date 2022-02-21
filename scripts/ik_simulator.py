@@ -65,13 +65,13 @@ class IKTable:
         range = self.range
         result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
-        if len(result) < 20:
-            result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
+        # if len(result) < 20:
+        #     result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
 
         return result
 
     def insert(self, pos_info):
-        self.table.insert(0, pos_info[0][6].tolist(), obj=pos_info)
+        self.table.insert(r.randint(0, 100000), pos_info[0][6].tolist(), obj=pos_info)
 
     def delete(self, target):
         pass
