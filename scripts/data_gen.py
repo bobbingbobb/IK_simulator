@@ -280,28 +280,29 @@ class DataCollection:
         print('done. duration: ', end-start)
         return filename
 
-def high_dense_gen(iter):
+def high_dense_gen(iter, id=0):
     start = d.datetime.now()
     from ikpy.chain import Chain
     import ikpy.utils.plot as plot_utils
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
     robot = Robot()
 
-    id = 0
+    # id = 0
     property = index.Property(dimension=3)
     idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=property)
 
     # print([item.object for item in idx.nearest([0.0, 0.0, 0.2], 1, objects=True)])
 
     for i in range(iter):
+        s = d.datetime.now()
         q = np.zeros(7)
         for j in range(6):
             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
         print(i, q)
 
-        for x in range(200, 250, 1):
-            for y in range(450, 500, 1):
-                for z in range(300, 350, 1):
+        for x in range(200, 250, 2):
+            for y in range(450, 500, 2):
+                for z in range(300, 350, 2):
                     target = [x/1000, y/1000, z/1000]
                     joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
 
@@ -313,6 +314,7 @@ def high_dense_gen(iter):
                     idx.insert(id, position[6].tolist(), obj=pos_info)
 
                     id += 1
+        print(d.datetime.now()-s)
         if (i+1)%100 == 0 and not (i+1 == iter):
             idx.close()
             shutil.copyfile(RAW_DATA_FOLDER+'dense_'+str(iter)+'.idx', RAW_DATA_FOLDER+str(i+1)+'.idx')
@@ -330,5 +332,9 @@ if __name__ == '__main__':
 
     # robot = Robot()
     # print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
+
+    # from multiprocessing import Process, Pool
+    # pool = Pool()
+    # pool.starmap(high_dense_gen, ((0, 100), (1562500, 100), (3125000, 100), (4687500, 100)))
 
     high_dense_gen(500)
