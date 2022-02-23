@@ -280,7 +280,7 @@ class DataCollection:
         print('done. duration: ', end-start)
         return filename
 
-def high_dense_gen(iter, id=0):
+def high_dense_gen(iter, name, id=0):
     start = d.datetime.now()
     from ikpy.chain import Chain
     import ikpy.utils.plot as plot_utils
@@ -289,7 +289,7 @@ def high_dense_gen(iter, id=0):
 
     # id = 0
     property = index.Property(dimension=3)
-    idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=property)
+    idx = index.Index(RAW_DATA_FOLDER+name+'_'+str(iter), properties=property)
 
     # print([item.object for item in idx.nearest([0.0, 0.0, 0.2], 1, objects=True)])
 
@@ -299,11 +299,14 @@ def high_dense_gen(iter, id=0):
         for j in range(6):
             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
         print(i, q)
+        target = [0.0, 0.0, 0.0]
 
         for x in range(200, 250, 2):
+            target[0] = x/1000
             for y in range(450, 500, 2):
+                target[1] = y/1000
                 for z in range(300, 350, 2):
-                    target = [x/1000, y/1000, z/1000]
+                    target[2] = z/1000
                     joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
 
                     position, vec_ee = robot.fk_jo(joint)
@@ -317,16 +320,17 @@ def high_dense_gen(iter, id=0):
         print(d.datetime.now()-s)
         if (i+1)%100 == 0 and not (i+1 == iter):
             idx.close()
-            shutil.copyfile(RAW_DATA_FOLDER+'dense_'+str(iter)+'.idx', RAW_DATA_FOLDER+str(i+1)+'.idx')
-            shutil.copyfile(RAW_DATA_FOLDER+'dense_'+str(iter)+'.dat', RAW_DATA_FOLDER+str(i+1)+'.dat')
+            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.idx', RAW_DATA_FOLDER+str(i+1)+'.idx')
+            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.dat', RAW_DATA_FOLDER+str(i+1)+'.dat')
             end = d.datetime.now()
             print(str(i+1)+' saved. duration: ', end-start)
-            idx = index.Index(RAW_DATA_FOLDER+'dense_'+str(iter), properties=property)
+            idx = index.Index(RAW_DATA_FOLDER+name+'_'+str(iter), properties=property)
     idx.close()
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
 if __name__ == '__main__':
+    pass
     # dc = DataCollection(scale=30)
     # print(dc.hdf5_store('raw_data_7j_30'))
 
@@ -335,6 +339,6 @@ if __name__ == '__main__':
 
     # from multiprocessing import Process, Pool
     # pool = Pool()
-    # pool.starmap(high_dense_gen, ((0, 100), (1562500, 100), (3125000, 100), (4687500, 100)))
+    # pool.starmap(high_dense_gen, ((100, '7dense_'), (100, '8dense_'), (100, '9dense_'), (100, '10dense_')))
 
-    high_dense_gen(500)
+    # high_dense_gen(100, 'dense_')

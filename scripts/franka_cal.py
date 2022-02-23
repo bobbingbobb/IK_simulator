@@ -698,8 +698,25 @@ def ikpy_test():
     e = d.datetime.now()
     print(e-s)
 
+def dense_test(target):
+    iktable = IKTable('dense')
+    # result = iktable.query(target)
+    ik_simulator = IKSimulator(algo='ikpy')
+    # result = ik_simulator.find(target)
+
+    for _ in range(10):
+        x = r.uniform(0.2, 0.25)
+        y = r.uniform(0.45, 0.5)
+        z = r.uniform(0.3, 0.35)
+
+        target = [x, y, z]
+
+        print(len(iktable.query(target)), len(ik_simulator.find(target)))
+        print()
+
 if __name__ == '__main__':
     #[ 0.5545 0  0.7315]
+    target = [0.5545, 0.0, 0.6245]
     joint_a:list = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
     pos_a = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
 
@@ -719,4 +736,7 @@ if __name__ == '__main__':
     #     # print_points(result, target)
     #     int_approx(result, target)
 
-    run_within(500)
+    # run_within(500)
+
+    target = [0.22, 0.47, 0.32]
+    dense_test(target)

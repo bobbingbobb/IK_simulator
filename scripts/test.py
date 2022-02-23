@@ -500,3 +500,36 @@ target = [0.5545, 0.0, 0.6245]
 # print([i+j+k for i, j, k in [aa for aa in np.array(a).T]])
 # k = np.array(a[0])*1 + np.array(a[1])*2
 # print(np.dot(a[0], a[1]))
+
+# def transforming():
+#     property = index.Property(dimension=3)
+#     target_idx = index.Index(RAW_DATA_FOLDER+'dense_100', properties=property)
+#     id = target_idx.get_size()
+#     total_size = id
+#
+#     for i in range(8):
+#         filename = RAW_DATA_FOLDER+str(i)+'dense_100'
+#         print(filename)
+#         idx = index.Index(filename, properties=property)
+#
+#         for pos_info in [item.object for item in idx.nearest([0.2, 0.45, 0.3], idx.get_size(), objects=True)]:
+#             target_idx.insert(id, pos_info[0][6].tolist(), obj=pos_info)
+#             id += 1
+#         print(i, idx.get_size())
+#         total_size += idx.get_size()
+#         print(target_idx.get_size(), total_size)
+#         idx.close()
+#     target_idx.close()
+#
+# transforming()
+
+# property = index.Property(dimension=3)
+# idx = index.Index(RAW_DATA_FOLDER+'dense_100', properties=property)
+# print(len([item.object for item in idx.nearest([0.232, 0.45, 0.3], 1, objects=True)]))
+
+dataset = []
+for file in os.listdir(RAW_DATA_FOLDER):
+    if file.startswith("dense") and file.endswith(".dat"):
+        dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
+
+print(dataset)

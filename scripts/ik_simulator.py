@@ -14,15 +14,33 @@ from data_gen import Robot, DataCollection
 
 class IKTable:
     def __init__(self, filename='raw_data_7j_30'):
+
+        self.table = self._load_dataset()
+
+        self.robot = Robot()
+        self.range = 0.05
+
+    def _load_dataset(self):
         print('loading...')
         start = d.datetime.now()
 
         p = index.Property(dimension=3)
-        self.table = index.Index(RAW_DATA_FOLDER+name_alignment(filename), properties=p)
-        print('loaded. duration: ', d.datetime.now()-start)
+        dataset = []
+        for file in os.listdir(RAW_DATA_FOLDER):
+            if file.startswith("tdense") and file.endswith(".dat"):
+                dataset.append(index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(file)), properties=p))
 
-        self.robot = Robot()
-        self.range = 0.05
+        print('loaded. duration: ', d.datetime.now()-start)
+        return dataset
+
+    def query(self, target):
+        target = pos_alignment(target)
+
+        result = self.dot_query(target)
+        if len(result) < 20:
+            result = self.query_neighbor(target)
+
+        return result
 
     def query_neighbor(self, target):
         # return a list of position indices
@@ -59,19 +77,31 @@ class IKTable:
 
         return neighbor_space
 
+    def dot_query(self, target):
+        result = []
+        for table in self.table:
+            result += [item.object for item in table.nearest(c.deepcopy(target), 1, objects=True)]
+
+        return result
+
     def rtree_query(self, target):
         # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
         # range = self.range / 2.0
         range = self.range
-        result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
+
+        result = []
+        for table in self.table:
+            result += [item.object for item in table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
         # if len(result) < 20:
-        #     result = [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
+        #     result = []
+        #     for table in self.table:
+        #         result += [item.object for item in table.nearest(c.deepcopy(target), 20, objects=True)]
 
         return result
 
     def insert(self, pos_info):
-        self.table.insert(r.randint(0, 100000), pos_info[0][6].tolist(), obj=pos_info)
+        self.table[0].insert(r.randint(0, 100000), pos_info[0][6].tolist(), obj=pos_info)
 
     def delete(self, target):
         pass
@@ -112,7 +142,8 @@ class IKTable:
 
 class IKSimulator:
     def __init__(self, algo='pure'):
-        self.iktable = IKTable()
+        # self.iktable = IKTable()
+        self.iktable = IKTable('dense')
         self.robot = Robot()
         self.algo = algo
 
@@ -127,16 +158,42 @@ class IKSimulator:
         return self.robot.fk_dh(joints)[0]
 
     def find(self, target_pos):
-        # return self.iktable.query_neighbor(target_pos)
-        pos_info = self.iktable.query_neighbor(target_pos)
+        # return self.iktable.query(target_pos)
+        pos_info = self.iktable.query(target_pos)
         if not pos_info:
             return 0
-        # nearby_postures = self.posture_comparison(pos_info)
-        nearby_postures = self.posture_comparison_all_joint_sorted(pos_info)
+        nearby_postures = self.posture_comparison(pos_info)
+        # nearby_postures = self.posture_comparison_all_joint(pos_info)
+        # nearby_postures = self.posture_comparison_all_joint_sorted(pos_info)
 
         # nearby_postures = []
         # nearby_postures.append(self.posture_comparison_all_joint(pos_info))
         # nearby_postures.append(self.posture_comparison_all_joint_sorted(pos_info))
+        return nearby_postures
+
+    def posture_comparison(self, pos_info):
+        thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
+        thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
+
+        nearby_postures = []
+        for i_pos in pos_info:
+            for type in nearby_postures:
+                if np.dot(i_pos[2], type[0][2]) > 0.9 and \
+                   np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
+                   np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
+                   np.linalg.norm(i_pos[1][2]-type[0][1][2]) < 0.6:
+                    type.append(i_pos)
+                    break
+                # if np.dot(i_pos[2], type[2]) > 0.9 and \
+                #    np.linalg.norm(i_pos[0][3]-type[0][3]) < thres_3 and \
+                #    np.linalg.norm(i_pos[0][5]-type[0][5]) < thres_5:
+                #     break
+            else:
+                nearby_postures.append([i_pos])
+                # nearby_postures.append(i_pos)
+
+        # return [np[0] for np in nearby_postures]
+        print(len(nearby_postures))
         return nearby_postures
 
     def posture_comparison_all_joint_sorted(self, target_space):
@@ -254,31 +311,6 @@ class IKSimulator:
 
         # print(len(indices), len(nearby_postures))
 
-        return nearby_postures
-
-    def posture_comparison(self, pos_info):
-        thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
-        thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
-
-        nearby_postures = []
-        for i_pos in pos_info:
-            for type in nearby_postures:
-                if np.dot(i_pos[2], type[0][2]) > 0.8 and \
-                   np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
-                   np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
-                   np.linalg.norm(i_pos[1][2]-type[0][1][2]) < 0.6:
-                    type.append(i_pos)
-                    break
-                # if np.dot(i_pos[2], type[2]) > 0.9 and \
-                #    np.linalg.norm(i_pos[0][3]-type[0][3]) < thres_3 and \
-                #    np.linalg.norm(i_pos[0][5]-type[0][5]) < thres_5:
-                #     break
-            else:
-                nearby_postures.append([i_pos])
-                # nearby_postures.append(i_pos)
-
-        # return [np[0] for np in nearby_postures]
-        print(len(nearby_postures))
         return nearby_postures
 
     def find_all_posture(self, target_pos):
