@@ -307,16 +307,19 @@ def high_dense_gen(iter, name, id=0):
                 target[1] = y/1000
                 for z in range(300, 350, 2):
                     target[2] = z/1000
-                    joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                    try:
+                        joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
 
-                    position, vec_ee = robot.fk_jo(joint)
-                    for p in position:
-                        p = pos_alignment(p)
+                        position, vec_ee = robot.fk_jo(joint)
+                        for p in position:
+                            p = pos_alignment(p)
+                        pos_info = (position, joint, vec_ee)
+                        idx.insert(id, position[6].tolist(), obj=pos_info)
 
-                    pos_info = (position, joint, vec_ee)
-                    idx.insert(id, position[6].tolist(), obj=pos_info)
+                        id += 1
+                    except ValueError:
+                        print('error raised.')
 
-                    id += 1
         print(d.datetime.now()-s)
         if (i+1)%100 == 0 and not (i+1 == iter):
             idx.close()
@@ -339,6 +342,6 @@ if __name__ == '__main__':
 
     # from multiprocessing import Process, Pool
     # pool = Pool()
-    # pool.starmap(high_dense_gen, ((100, '7dense_'), (100, '8dense_'), (100, '9dense_'), (100, '10dense_')))
+    # pool.starmap(high_dense_gen, ((100, '0dense'), (100, '1dense'), (100, '2dense'), (100, '3dense')))
 
-    # high_dense_gen(100, 'dense_')
+    # high_dense_gen(100, 'dense')

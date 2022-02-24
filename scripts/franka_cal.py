@@ -468,7 +468,8 @@ def int_approx(posture, target):
     total = 0
     for result in posture:
         check = True
-        if len(result) > 1:
+        # if len(result) > 5 and len(result) < 10:
+        if len(result) == 3:
 
             joint = []
             diff = 1
@@ -482,26 +483,26 @@ def int_approx(posture, target):
                 # print(side)
 
                 diff2 = min([np.linalg.norm(vec[0]), np.linalg.norm(vec[1])])
-                print(diff2)
+                # print(diff2)
                 # if side < -0.5:
                 # print([result[i][1] for i in ind])
 
                 s = d.datetime.now()
 
-                # joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
+                joint_int, diff_int = interpolate(result[ind[0]], result[ind[1]], target)
                 # print('interpolate: ', diff_int/diff2, diff_int)
+                if diff_int <= diff:
+                    diff = diff_int
+                    joint = joint_int
 
-                joint_approx, diff_approx = approx_iter(result[ind[0]], result[ind[1]], target)
-                print('       true: ', diff_approx/diff2, diff_approx)
+                # joint_approx, diff_approx = approx_iter(result[ind[0]], result[ind[1]], target)
+                # print('       true: ', diff_approx/diff2, diff_approx)
+                # if diff_approx <= diff:
+                    # diff = diff_approx
+                    # joint = joint_approx
+
                 e = d.datetime.now()
                 time.append(e-s)
-
-                if diff_approx <= diff:
-                # if diff_int <= diff:
-                    diff = diff_approx
-                    joint = joint_approx
-                    # diff = diff_int
-                    # joint = joint_int
 
                 if diff/diff2 < 0.8:
                     # continue
@@ -513,18 +514,19 @@ def int_approx(posture, target):
                 if diff/diff2 > 1.03:
                     worst += 1
 
-                p = even_distribute([result[i][1] for i in ind], dense=20)
+                # p = even_distribute([result[i][1] for i in ind], dense=20)
 
                 # origin.append(fk_dh(joint_int))
-                origin.append(fk_dh(joint_approx))
+                # origin.append(fk_dh(joint_approx))
                 # origin.append(p[np.argmin([np.linalg.norm(pp - target) for pp in p])])
-                origin.append(target)
+                # origin.append(target)
                 # draw(p, origin)
 
             di.append(diff)
             jo.append(joint)
+            # ori_diff.append(np.mean([np.linalg.norm(np.array(re[0][6])-target) for re in result]))
             ori_diff.append(np.mean([np.linalg.norm(np.array(re[0][6])-target) for re in result]))
-
+            # break
 
     # print(count, num)
     e = d.datetime.now()
@@ -621,7 +623,7 @@ def approx_iter(post_1, post_2, target):
     return tmp_joint, diff
 
 def interpolate(post_1, post_2, target):
-    s = d.datetime.now()
+    # s = d.datetime.now()
 
     full = np.array(post_2[0][6]) - np.array(post_1[0][6])
     part1 = target - np.array(post_1[0][6])
@@ -632,7 +634,7 @@ def interpolate(post_1, post_2, target):
 
     diff = np.linalg.norm(fk_dh(tmp_joint) - target)
 
-    print(d.datetime.now()-s)
+    # print(d.datetime.now()-s)
 
     return tmp_joint, diff
 
@@ -642,9 +644,13 @@ def run_within(iter):
     mes = defaultdict(list)
 
     for i in range(iter):
-        x = round(r.uniform(-0.855, 0.855), 4)
-        y = round(r.uniform(-0.855, 0.855), 4)
-        z = round(r.uniform(-0.36, 1.19), 4)
+        # x = round(r.uniform(-0.855, 0.855), 4)
+        # y = round(r.uniform(-0.855, 0.855), 4)
+        # z = round(r.uniform(-0.36, 1.19), 4)
+
+        x = r.uniform(0.2, 0.25)
+        y = r.uniform(0.45, 0.5)
+        z = r.uniform(0.3, 0.35)
         target = [x, y, z]
         result = ik_simulator.find(target)
         if result:
@@ -698,13 +704,13 @@ def ikpy_test():
     e = d.datetime.now()
     print(e-s)
 
-def dense_test(target):
+def dense_test(target, iter):
     iktable = IKTable('dense')
     # result = iktable.query(target)
     ik_simulator = IKSimulator(algo='ikpy')
     # result = ik_simulator.find(target)
 
-    for _ in range(10):
+    for _ in range(iter):
         x = r.uniform(0.2, 0.25)
         y = r.uniform(0.45, 0.5)
         z = r.uniform(0.3, 0.35)
@@ -731,12 +737,16 @@ if __name__ == '__main__':
     # z = round(r.uniform(-0.36, 1.19), 4)
     # target = [x, y, z]
     # target = pos_a
-    # result = ik_simulator.find(target)
-    # if result:
-    #     # print_points(result, target)
-    #     int_approx(result, target)
-
-    # run_within(500)
-
     target = [0.22, 0.47, 0.32]
-    dense_test(target)
+    # result = ik_simulator.find(target)
+    # print(len(result))
+    # for r in result:
+    #     if len(r) > 10:
+    #         print(len(r))
+    # if result:
+    #     print_points(result, target)
+        # int_approx(result, target)
+
+    run_within(1)
+
+    # dense_test(target, 1)

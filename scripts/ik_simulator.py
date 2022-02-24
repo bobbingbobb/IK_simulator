@@ -36,9 +36,12 @@ class IKTable:
     def query(self, target):
         target = pos_alignment(target)
 
-        result = self.dot_query(target)
-        if len(result) < 20:
-            result = self.query_neighbor(target)
+        # result = self.dot_query(target)
+        # if len(result) < 20:
+        #     result = self.query_neighbor(target)
+        
+        self.range = 0.01
+        result = self.query_neighbor(target)
 
         return result
 
@@ -86,8 +89,8 @@ class IKTable:
 
     def rtree_query(self, target):
         # return [item.object for item in self.table.nearest(c.deepcopy(target), 20, objects=True)]
-        # range = self.range / 2.0
-        range = self.range
+        range = self.range / 2.0
+        # range = self.range
 
         result = []
         for table in self.table:
@@ -162,9 +165,9 @@ class IKSimulator:
         pos_info = self.iktable.query(target_pos)
         if not pos_info:
             return 0
-        nearby_postures = self.posture_comparison(pos_info)
-        # nearby_postures = self.posture_comparison_all_joint(pos_info)
-        # nearby_postures = self.posture_comparison_all_joint_sorted(pos_info)
+        # nearby_postures = self.posture_comparison(pos_info)
+        # nearby_postures = self.posture_comparison_all_joint(pos_info)#index
+        nearby_postures = [[pos_info[i_type] for i_type in inds] for inds in self.posture_comparison_all_joint_sorted(pos_info)]#index
 
         # nearby_postures = []
         # nearby_postures.append(self.posture_comparison_all_joint(pos_info))
@@ -178,7 +181,7 @@ class IKSimulator:
         nearby_postures = []
         for i_pos in pos_info:
             for type in nearby_postures:
-                if np.dot(i_pos[2], type[0][2]) > 0.9 and \
+                if np.dot(i_pos[2], type[0][2]) > 0.8 and \
                    np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
                    np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
                    np.linalg.norm(i_pos[1][2]-type[0][1][2]) < 0.6:
@@ -238,30 +241,30 @@ class IKSimulator:
     def posture_comparison_all_joint(self, target_space):
         thres = 0.5
         nearby_postures = []
-        # for pos in target_space:
-        #     for type in nearby_postures:
-        #         for j_pos, j_type in zip(pos[1], type[0][1]):
-        #             if abs(j_pos-j_type) >= thres:
-        #                 break
-        #         else:
-        #             type.append(pos)
-        #             break
-        #     else:
-        #         nearby_postures.append([pos])
-
-
-        #index
-        for i_pos, v_pos in enumerate(target_space):
-            # print(nearby_postures)
-            for i_type, v_type in enumerate(nearby_postures):
-                for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
+        for pos in target_space:
+            for type in nearby_postures:
+                for j_pos, j_type in zip(pos[1], type[0][1]):
                     if abs(j_pos-j_type) >= thres:
                         break
                 else:
-                    nearby_postures[i_type].append(i_pos)
+                    type.append(pos)
                     break
             else:
-                nearby_postures.append([i_pos])
+                nearby_postures.append([pos])
+
+
+        #index
+        # for i_pos, v_pos in enumerate(target_space):
+        #     # print(nearby_postures)
+        #     for i_type, v_type in enumerate(nearby_postures):
+        #         for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
+        #             if abs(j_pos-j_type) >= thres:
+        #                 break
+        #         else:
+        #             nearby_postures[i_type].append(i_pos)
+        #             break
+        #     else:
+        #         nearby_postures.append([i_pos])
 
         return nearby_postures
 
