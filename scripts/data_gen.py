@@ -172,49 +172,6 @@ class DataCollection:
         print('done. duration: ', end-start)
         return filename
 
-    def rtree_split(self, filename='raw_data'):
-        foldername = RAW_DATA_FOLDER+filename
-        ps.mkdir(foldername)
-        if os.path.exists(foldername):
-            print('dataset exists.')
-            return 0
-
-        start = d.datetime.now()
-
-        size = [int((reach.max-reach.min)/self.diff)+1 for reach in self.robot.reach]
-
-        id = np.zeros(size, dtype=int)
-
-        # rtree preparing
-        p = index.Property()
-        p.dimension = 3
-        idx = index.Index(filename, properties=p)
-
-        for j1 in range(int(self.joints[0].min*10), int(self.joints[0].max*10), int(self.scale*10)):
-            for j2 in range(int(self.joints[1].min*10), int(self.joints[1].max*10), int(self.scale*10)):
-                for j3 in range(int(self.joints[2].min*10), int(self.joints[2].max*10), int(self.scale*10)):
-                    for j4 in range(int(self.joints[3].min*10), int(self.joints[3].max*10), int(self.scale*10)):
-                        for j5 in range(int(self.joints[4].min*10), int(self.joints[4].max*10), int(self.scale*10)):
-                            for j6 in range(int(self.joints[5].min*10), int(self.joints[5].max*10), int(self.scale*10)):
-                                joint = np.array([j1/10.0, j2/10.0, j3/10.0, j4/10.0, j5/10.0, j6/10.0, 0.0])
-
-                                # cal fk
-                                position, vec_ee = self.robot.fk_jo(joint)
-                                for p in position:
-                                    p = pos_alignment(p)
-
-                                # storing pos info
-                                pos_info = (position, joint, vec_ee)
-                                idx.insert(id, position[6].tolist(), obj=pos_info)
-
-                                id += 1
-
-        idx.close()
-
-        end = d.datetime.now()
-        print('done. duration: ', end-start)
-        return filename
-
     def hdf5_store(self, filename='raw_data'):
         # self.filename = RAW_DATA_FOLDER+filename+'.npz'
         filename = RAW_DATA_FOLDER+filename+'.hdf5'
@@ -334,8 +291,8 @@ def high_dense_gen(iter, name, id=0):
 
 if __name__ == '__main__':
     pass
-    # dc = DataCollection(scale=30)
-    # print(dc.hdf5_store('raw_data_7j_30'))
+    dc = DataCollection(scale=20)
+    print(dc.without_colliding_detect('raw_data_7j_20'))
 
     # robot = Robot()
     # print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))

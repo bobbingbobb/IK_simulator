@@ -36,12 +36,12 @@ class IKTable:
     def query(self, target):
         target = pos_alignment(target)
 
-        # result = self.dot_query(target)
-        # if len(result) < 20:
-        #     result = self.query_neighbor(target)
-        
-        self.range = 0.01
-        result = self.query_neighbor(target)
+        result = self.dot_query(target)
+        if len(result) < 20:
+            result = self.query_neighbor(target)
+
+        # self.range = 0.01
+        # result = self.query_neighbor(target)
 
         return result
 
@@ -145,8 +145,8 @@ class IKTable:
 
 class IKSimulator:
     def __init__(self, algo='pure'):
-        # self.iktable = IKTable()
-        self.iktable = IKTable('dense')
+        self.iktable = IKTable()
+        # self.iktable = IKTable('dense')
         self.robot = Robot()
         self.algo = algo
 
@@ -165,6 +165,7 @@ class IKSimulator:
         pos_info = self.iktable.query(target_pos)
         if not pos_info:
             return 0
+        print(len(pos_info))
         # nearby_postures = self.posture_comparison(pos_info)
         # nearby_postures = self.posture_comparison_all_joint(pos_info)#index
         nearby_postures = [[pos_info[i_type] for i_type in inds] for inds in self.posture_comparison_all_joint_sorted(pos_info)]#index
@@ -214,7 +215,46 @@ class IKSimulator:
                 if i+r == len(sort_ind):
                     result.append([sort_ind[i]])
                     return result
-                while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < thres:
+                while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < thres:#pure posture
+                    r += 1
+                    if not i+r < len(sort_ind):
+                        break
+                else:
+                    if q == 5:
+                        result.append(sort_ind[i:i+r])
+                    else:
+                        result += sorting(sort_ind[i:i+r], q+1)
+                    i += r
+                    continue
+
+                if q == 5:
+                    result.append(sort_ind[i:])
+                    return result
+                else:
+                    result += sorting(sort_ind[i:], q+1)
+                    break
+            return result
+
+        nearby_postures = sorting([_ for _ in range(len(target_space))], 0)
+
+        return nearby_postures
+
+    def posture_comparison_all_joint_sorted_pure(self, target_space):
+        thres = 0.5
+        nearby_postures = []
+        def sorting(sort_target, q):
+            if len(sort_target) == 1:
+                return [sort_target]
+            result = []
+            sort_ind = [sort_target[i] for i in np.argsort([target_space[st][q] for st in sort_target])]#pure posture
+
+            i = 0
+            while True:
+                r = 1
+                if i+r == len(sort_ind):
+                    result.append([sort_ind[i]])
+                    return result
+                while target_space[sort_ind[i+r]][q] - target_space[sort_ind[i]][q] < thres:#pure posture
                     r += 1
                     if not i+r < len(sort_ind):
                         break
@@ -319,11 +359,7 @@ class IKSimulator:
     def find_all_posture(self, target_pos):
         start = d.datetime.now()
 
-        pos_info = self.find(target_pos)
-        if not pos_info:
-            return 0
-        nearby_postures = self.posture_comparison(pos_info)
-
+        nearby_postures = self.find(target_pos)
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 
@@ -332,8 +368,8 @@ class IKSimulator:
         message['total time'] = end-start
         print(' total time: ', message['total time'])
 
-        return message
-        # return posture, message
+        # return message
+        return posture, message
 
     def posture_iter_machine(self, nearby_postures, target_pos, insert=False):
         n = 0.0
@@ -343,6 +379,7 @@ class IKSimulator:
         jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
         posture = []
         for p_type in nearby_postures:
+            p_type = p_type[0]
             s = d.datetime.now()
 
             origin_d = np.linalg.norm(p_type[0][6] - target_pos)
@@ -365,6 +402,7 @@ class IKSimulator:
             e = d.datetime.now()
 
             posture.append(jo_diff(tmp_joint, diff))
+            # posture.append(tmp_joint)
             time.append(e-s)
 
             origin_diff.append(origin_d)
