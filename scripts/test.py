@@ -524,12 +524,12 @@ target = [0.5545, 0.0, 0.6245]
 # transforming()
 
 # property = index.Property(dimension=3)
-# idx = index.Index(RAW_DATA_FOLDER+'dense_100', properties=property)
+# idx = index.Index(RAW_DATA_FOLDER+'tdense_sep', properties=property)
 # print(len([item.object for item in idx.nearest([0.232, 0.45, 0.3], 1, objects=True)]))
+# idx.close()
 
-dataset = []
-for file in os.listdir(RAW_DATA_FOLDER):
-    if file.startswith("dense") and file.endswith(".dat"):
-        dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
-
-print(dataset)
+# dataset = []
+# for file in os.listdir(RAW_DATA_FOLDER):
+#     if file.startswith("dense") and file.endswith(".dat"):
+#         dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
+# print(dataset)
