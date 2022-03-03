@@ -127,7 +127,7 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
+    runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     # sample_num(100)
 
-    change_test(1)
+    # change_test(1)
 
     print('duration: ', d.datetime.now()-start)
 

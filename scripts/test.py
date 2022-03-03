@@ -501,26 +501,30 @@ target = [0.5545, 0.0, 0.6245]
 # k = np.array(a[0])*1 + np.array(a[1])*2
 # print(np.dot(a[0], a[1]))
 
-# def transforming():
-#     property = index.Property(dimension=3)
-#     target_idx = index.Index(RAW_DATA_FOLDER+'dense_100', properties=property)
-#     id = target_idx.get_size()
-#     total_size = id
-#
-#     for i in range(8):
-#         filename = RAW_DATA_FOLDER+str(i)+'dense_100'
-#         print(filename)
-#         idx = index.Index(filename, properties=property)
-#
-#         for pos_info in [item.object for item in idx.nearest([0.2, 0.45, 0.3], idx.get_size(), objects=True)]:
-#             target_idx.insert(id, pos_info[0][6].tolist(), obj=pos_info)
-#             id += 1
-#         print(i, idx.get_size())
-#         total_size += idx.get_size()
-#         print(target_idx.get_size(), total_size)
-#         idx.close()
-#     target_idx.close()
-#
+def transforming():
+    property = index.Property(dimension=3)
+    target_idx = index.Index(RAW_DATA_FOLDER+'full_jointonly', properties=property)
+    id = target_idx.get_size()
+    print(id)
+    total_size = id
+
+    for i in range(7):
+        filename = RAW_DATA_FOLDER+str(i)+'full_jointonly_1'
+        print(filename)
+        idx = index.Index(filename, properties=property)
+
+        # for item in idx.nearest([0.2, 0.45, 0.3], idx.get_size(), objects=True):
+        #     target_idx.insert(id, item.bounds[::2], obj=item.object)
+        #     id += 1
+        for joint in [item.object for item in idx.nearest([0.2, 0.45, 0.3], idx.get_size(), objects=True)]:
+            target_idx.insert(id, pos_info[0][6].tolist(), obj=joint)
+            id += 1
+        print(i, idx.get_size())
+        total_size += idx.get_size()
+        print(target_idx.get_size(), total_size)
+        idx.close()
+    target_idx.close()
+
 # transforming()
 
 # property = index.Property(dimension=3)

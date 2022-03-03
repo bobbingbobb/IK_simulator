@@ -96,10 +96,10 @@ class IKTable:
         for table in self.table:
             result += [item.object for item in table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
-        # if len(result) < 20:
-        #     result = []
-        #     for table in self.table:
-        #         result += [item.object for item in table.nearest(c.deepcopy(target), 20, objects=True)]
+        if len(result) < 20:
+            result = []
+            for table in self.table:
+                result += [item.object for item in table.nearest(c.deepcopy(target), 20, objects=True)]
 
         return result
 
@@ -360,6 +360,8 @@ class IKSimulator:
         start = d.datetime.now()
 
         nearby_postures = self.find(target_pos)
+        if not nearby_postures:
+            return 0
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 
@@ -368,8 +370,8 @@ class IKSimulator:
         message['total time'] = end-start
         print(' total time: ', message['total time'])
 
-        # return message
-        return posture, message
+        return message
+        # return posture, message
 
     def posture_iter_machine(self, nearby_postures, target_pos, insert=False):
         n = 0.0
@@ -588,7 +590,8 @@ if __name__ == '__main__':
     # print(table.query_neighbor(target))
 
     ik_simulator = IKSimulator(algo='ikpy')
-    result = ik_simulator.find(target)
+    print(ik_simulator.ikpy_run([0.0]*7, target))
+    # result = ik_simulator.find(target)
     # print(result)
     # print(len(result[0]))
     # print()
