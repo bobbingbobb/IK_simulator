@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    # s = d.datetime.now()
+    s = d.datetime.now()
     runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)

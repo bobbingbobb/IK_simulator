@@ -13,21 +13,21 @@ from data_gen import Robot, DataCollection
 
 
 class IKTable:
-    def __init__(self, filename='raw_data_7j_30'):
+    def __init__(self, filename='raw_data_7j_20'):
 
-        self.table = self._load_dataset()
+        self.table = self._load_dataset(filename)
 
         self.robot = Robot()
         self.range = 0.05
 
-    def _load_dataset(self):
+    def _load_dataset(self, filename):
         print('loading...')
         start = d.datetime.now()
 
         p = index.Property(dimension=3)
         dataset = []
         for file in os.listdir(RAW_DATA_FOLDER):
-            if file.startswith("tdense") and file.endswith(".dat"):
+            if file.startswith(filename) and file.endswith(".dat"):
                 dataset.append(index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(file)), properties=p))
 
         print('loaded. duration: ', d.datetime.now()-start)
@@ -38,6 +38,7 @@ class IKTable:
 
         result = self.dot_query(target)
         if len(result) < 20:
+            print('no')
             result = self.query_neighbor(target)
 
         # self.range = 0.01
@@ -83,7 +84,7 @@ class IKTable:
     def dot_query(self, target):
         result = []
         for table in self.table:
-            result += [item.object for item in table.nearest(c.deepcopy(target), 1, objects=True)]
+            result += [item.object for item in table.intersection(c.deepcopy(target), objects=True)]
 
         return result
 
@@ -147,6 +148,7 @@ class IKSimulator:
     def __init__(self, algo='pure'):
         self.iktable = IKTable()
         # self.iktable = IKTable('dense')
+        # self.iktable = IKTable('full_jointonly')
         self.robot = Robot()
         self.algo = algo
 
@@ -412,7 +414,7 @@ class IKSimulator:
             for i in range(7):
                 movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
-            if diff > 0.005:#0.5cm
+            if diff > 0.001:#0.5cm
                 n += 1
                 # origin_diff.append(diff)
 

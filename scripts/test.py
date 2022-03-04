@@ -5,6 +5,8 @@ from collections import namedtuple
 import os
 import datetime as d
 import random as r
+from rtree import index
+
 
 from scipy.spatial import KDTree
 from data_gen import Robot
@@ -440,18 +442,18 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # k = np.load(RAW_DATA_FOLDER+'raw_data_7j_30')
 # print(len(k))
 
-with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_30.hdf5', 'r') as f:
-    f = f['franka_data']
-    # print(f.attrs['shift'])
-    print(f['pos_info'])
-    # print(f['pos_info'][:]['pos'][6])
-    xr, yr, zr = f['pos_info'].shape
-    print(xr, yr, zr)
-    # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
-    # print(len(pos_ind))
-    print(len(f['pos_info'][20][20][15]))
-#
-#
+# with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_30.hdf5', 'r') as f:
+#     f = f['franka_data']
+#     # print(f.attrs['shift'])
+#     print(f['pos_info'])
+#     # print(f['pos_info'][:]['pos'][6])
+#     xr, yr, zr = f['pos_info'].shape
+#     print(xr, yr, zr)
+#     # pos_ind = [p[0][6] for p in f['pos_info'][20][20][15]]
+#     # print(len(pos_ind))
+#     print(len(f['pos_info'][20][20][15]))
+
+
 #     # for i in range(len(pos_ind)):
 #     #     idx.insert(i, (pos_ind[i].tolist()))
 #
@@ -528,8 +530,8 @@ def transforming():
 # transforming()
 
 # property = index.Property(dimension=3)
-# idx = index.Index(RAW_DATA_FOLDER+'tdense_sep', properties=property)
-# print(len([item.object for item in idx.nearest([0.232, 0.45, 0.3], 1, objects=True)]))
+# idx = index.Index(RAW_DATA_FOLDER+'full_jointonly', properties=property)
+# print(idx.bounds)
 # idx.close()
 
 # dataset = []
