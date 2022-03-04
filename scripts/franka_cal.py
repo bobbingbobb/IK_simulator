@@ -15,6 +15,7 @@ from utilities import *
 
 ik_dict = {}
 
+robot = Robot()
 
 def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     dist_a = np.linalg.norm(pos_a - pos_c)
@@ -24,7 +25,7 @@ def linear_interpolation(joint_a, joint_b, pos_a, pos_b, pos_c):
     print(prop_a)
 
     tmp_joint = [i - (i - j)* prop_a for i, j in zip(joint_a, joint_b)]
-    tmp_pos = fk_dh(tmp_joint)
+    tmp_pos = robot.fk_dh(tmp_joint)[0]
     print(tmp_pos)
     diff = np.linalg.norm(tmp_pos - pos_c)
     print(diff)
@@ -122,7 +123,7 @@ def even_distribute(joints, dense=10, ind=0, agg=0):
         if not agg == 0:
             cp_joints[ind] = [j * (dense-agg)/dense for j in joints[ind]]
             tmp_joint = [np.sum(q) for q in np.array(cp_joints).T]
-            tmp_pos = fk_dh(tmp_joint)
+            tmp_pos = robot.fk_dh(tmp_joint)[0]
             # print(tmp_pos)
             points.append(tmp_pos)
     else:
@@ -254,8 +255,8 @@ def int_approx(posture, target):
 
                 # p = even_distribute([result[i][1] for i in ind], dense=20)
 
-                # origin.append(fk_dh(joint_int))
-                # origin.append(fk_dh(joint_approx))
+                # origin.append(robot.fk_dh(joint_int)[0])
+                # origin.append(robot.fk_dh(joint_approx)[0])
                 # origin.append(p[np.argmin([np.linalg.norm(pp - target) for pp in p])])
                 # origin.append(target)
                 # draw(p, origin)
@@ -338,13 +339,13 @@ def approx_iter(post_1, post_2, target):
             pre_joint = tmp_joint
             tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
             pre_diff = diff
-            diff = np.linalg.norm(fk_dh(tmp_joint) - target)
+            diff = np.linalg.norm(robot.fk_dh(tmp_joint) - target)
             if diff >= pre_diff:
                 offset *= -1
                 reverse += 1
 
             # print(diff)
-            # draw(p, [fk_dh(tmp_joint)])
+            # draw(p, [robot.fk_dh(tmp_joint)[0]])
         else:
             w1 += offset
             tmp_joint = pre_joint
@@ -368,7 +369,7 @@ def interpolate(post_1, post_2, target):
     tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
     # print(tmp_joint)
 
-    diff = np.linalg.norm(fk_dh(tmp_joint) - target)
+    diff = np.linalg.norm(robot.fk_dh(tmp_joint)[0] - target)
 
     # print(d.datetime.now()-s)
 

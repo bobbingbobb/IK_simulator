@@ -42,7 +42,7 @@ class IKTable:
             print('no')
             result = self.query_neighbor(target)
 
-        # self.range = 0.01
+        # self.range = 0.003
         # result = self.query_neighbor(target)
 
         return result
@@ -52,13 +52,14 @@ class IKTable:
         target = pos_alignment(target)
 
         target_space = self.rtree_query(target)
+        print(len(target_space))
         count = 0
-        while len(target_space) < 21 and count < 20:
+        while len(target_space) < 60 and count < 10:
             print('sparse!')
-            if not self.pos_info_extension(target_space):
+            if not self.pos_info_extension(target_space, target):
                 return 0
             target_space = self.rtree_query(target)
-            count += 20
+            count += 1
             # return target_space
 
         # print(len(target_space))
@@ -101,7 +102,7 @@ class IKTable:
         if len(result) < 20:
             result = []
             for table in self.table:
-                result += [item.object for item in table.nearest(c.deepcopy(target), 20, objects=True)]
+                result += [item.object for item in table.nearest(c.deepcopy(target), 50, objects=True)]
 
         return result
 
@@ -111,28 +112,38 @@ class IKTable:
     def delete(self, target):
         pass
 
-    def pos_info_extension(self, target_space):
+    def pos_info_extension(self, target_space, target_pos):
         new_pos = []
         count = 0
         while len(new_pos) < 50 and count < 20:
-            # print(len(new_pos), end=' ')
-            joint1 = target_space[r.randint(0, (len(target_space)-1))][1]
-            joint2 = target_space[r.randint(0, (len(target_space)-1))][1]
-
-            for j1, j2 in zip(joint1, joint2):
-                if abs(j1-j2) > 3*m.pi/180:
-                    avg_joint = [(j1 + j2)/2.0 for j1, j2 in zip(joint1, joint2)]
-
-                    position, vec_ee = self.robot.fk_jo(avg_joint)
-                    for p in position:
-                        p = pos_alignment(p)
-                    pos_info = (position, avg_joint, vec_ee)
-                    self.insert(c.deepcopy(pos_info))
-                    new_pos.append(pos_info)
-                    count = 0
+            print(len(new_pos), end=' ')
+            ind_1 = r.randint(0, (len(target_space)-1))
+            ind_2 = r.randint(0, (len(target_space)-1))
+            vec = [target_space[ind_1][0][6]-target_pos, target_space[ind_2][0][6]-target_pos]
+            side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
+            c_side = 0
+            while side > 0.0:
+                ind_2 = r.randint(0, (len(target_space)-1))
+                vec[1] = target_space[ind_2][0][6]-target_pos
+                side = np.dot(vec[0]/np.linalg.norm(vec[0]), vec[1]/np.linalg.norm(vec[1]))
+                # print(side)
+                if c_side > 100:
                     break
+                c_side += 1
+            else:
+                full = np.array(target_space[ind_2][0][6]) - np.array(target_space[ind_1][0][6])
+                w1 = np.dot(target_pos - np.array(target_space[ind_1][0][6]), full) / (np.linalg.norm(full) ** 2)
+                avg_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(target_space[ind_1][1], target_space[ind_2][1])]
+
+                position, vec_ee = self.robot.fk_jo(avg_joint)
+                for p in position:
+                    p = pos_alignment(p)
+                pos_info = (position, avg_joint, vec_ee)
+                self.insert(c.deepcopy(pos_info))
+                new_pos.append(pos_info)
+                count = 0
             count += 1
-        # print()
+        print()
 
         # savep1 = [j[1] for j in target_space]
         # savep2 = [j[1] for j in new_pos]
@@ -148,9 +159,12 @@ class IKTable:
 class IKSimulator:
     def __init__(self, algo='pure'):
         self.iktable = IKTable()
+        self.diff_thres = 0.0005 #0.05cm
+
         # self.iktable = IKTable('dense')
+        # self.diff_thres = 0.0001 #0.01cm
+
         # self.iktable = IKTable('full_jointonly')
-        self.diff_thres = 0.001 #0.1cm
         self.robot = Robot()
         self.algo = algo
 
@@ -169,7 +183,7 @@ class IKSimulator:
         pos_info = self.iktable.query(target_pos)
         if not pos_info:
             return 0
-        print(len(pos_info))
+        print('find', len(pos_info))
         # nearby_postures = self.posture_comparison(pos_info)
         # nearby_postures = self.posture_comparison_all_joint(pos_info)#index
         nearby_postures = [[pos_info[i_type] for i_type in inds] for inds in self.posture_comparison_all_joint_sorted(pos_info)]#index
@@ -424,7 +438,7 @@ class IKSimulator:
             # for i in range(7):
             #     movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
-            if diff > self.diff_thres:
+            if diff > self.diff_thres*10:
                 n += 1
                 # origin_diff.append(diff)
 
@@ -467,6 +481,7 @@ class IKSimulator:
                 # tmp_joint = joint_approx
 
             if diff < self.diff_thres:
+                print('speed!')
                 break
 
         return tmp_joint, diff
