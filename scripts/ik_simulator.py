@@ -2,7 +2,7 @@ import os
 import numpy as np
 import math as m
 import datetime as d
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 from itertools import combinations
 import copy as c
 import random as r
@@ -383,6 +383,7 @@ class IKSimulator:
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 
+        message['result_post'] = len(self.posture_comparison_all_joint_sorted(posture))
         end = d.datetime.now()
 
         message['total time'] = end-start
@@ -396,7 +397,6 @@ class IKSimulator:
         movements = [[] for _ in range(7)]
         origin_diff =  []
         time = []
-        jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
         posture = []
         for type_list in nearby_postures:
             p_type = type_list[0]
@@ -429,7 +429,7 @@ class IKSimulator:
 
             e = d.datetime.now()
 
-            posture.append(jo_diff(tmp_joint, diff))
+            posture.append([diff, tmp_joint])
             # posture.append(tmp_joint)
             time.append(e-s)
 
@@ -449,10 +449,10 @@ class IKSimulator:
         message['target'] = target_pos
         message['posture'] = len(posture)
         message['origin_diff'] = np.mean(origin_diff)
-        message['mean_diff'] = np.mean(np.array([p.diff for p in posture]))
+        message['mean_diff'] = np.mean(np.array([p[0] for p in posture]))
         # message['origin_std'] = np.std(np.array(origin_diff))
         # message['std_error'] = np.std(np.array([p.diff for p in posture]))
-        message['worst_diff'] = max([p.diff for p in posture])
+        message['worst_diff'] = max([p[0] for p in posture])
         message['worst%'] = n/len(posture)
         message['worse_num'] = n
         # message['origin diff:'] = np.sort(origin_diff)

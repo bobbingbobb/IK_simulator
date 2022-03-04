@@ -114,34 +114,38 @@ if __name__ == '__main__':
     # print(ik_simulator.find(target))
 
 
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='inter'), 100, 'inter_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='pure'), 100, 'pure_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v1'), 100, 'vp_v1_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='vp_v2'), 100, 'vp_v2_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+
     s = d.datetime.now()
-    runner(IKSimulator(algo='inter'), 100, 'inter_100')
+    runner(IKSimulator(algo='inter'), 10, 'test')
     e = d.datetime.now()
     print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='pure'), 100, 'pure_100')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v1'), 100, 'vp_v1_100')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner(IKSimulator(algo='vp_v2'), 100, 'vp_v2_100')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-
-    # ik_simulator = IKSimulator()
-    # show_avg('int_test')
+    ik_simulator = IKSimulator()
+    show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')
