@@ -56,6 +56,9 @@ def fully_covered(iter):
     mes['worst'] = max(dev)
     messenger(mes)
 
+def run_interpolation():
+    pass
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()

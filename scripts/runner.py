@@ -111,11 +111,16 @@ if __name__ == '__main__':
     # print(ik_simulator.find(target))
 
 
+    s = d.datetime.now()
+    runner(IKSimulator(algo='inter'), 100, 'test')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
+
     # s = d.datetime.now()
     # runner(IKSimulator(algo='pure'), 300, 'test')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
-    #
+
     # s = d.datetime.now()
     # runner(IKSimulator(algo='vp_v1'), 300, '300_20near_result_vp_v1')
     # e = d.datetime.now()
@@ -126,13 +131,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='ikpy'), 100, 'ikpy_100')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
 
-    # ik_simulator = IKSimulator()
+    ik_simulator = IKSimulator()
+    show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')

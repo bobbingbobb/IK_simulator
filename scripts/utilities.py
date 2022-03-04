@@ -55,8 +55,8 @@ def show_avg(filename):
 
     # print(gdiff)
     # print(bdiff)
-    print(len(message))
-    print(len(mes['posture']))
+    print('query', len(message))
+    print('respond', len(mes['posture']))
 
     result = {}
     # print(mes)

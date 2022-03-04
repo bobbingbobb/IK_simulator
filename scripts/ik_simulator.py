@@ -3,6 +3,7 @@ import numpy as np
 import math as m
 import datetime as d
 from collections import namedtuple, defaultdict
+from itertools import combinations
 import copy as c
 import random as r
 from rtree import index
@@ -114,7 +115,7 @@ class IKTable:
         new_pos = []
         count = 0
         while len(new_pos) < 50 and count < 20:
-            print(len(new_pos), end=' ')
+            # print(len(new_pos), end=' ')
             joint1 = target_space[r.randint(0, (len(target_space)-1))][1]
             joint2 = target_space[r.randint(0, (len(target_space)-1))][1]
 
@@ -131,7 +132,7 @@ class IKTable:
                     count = 0
                     break
             count += 1
-        print()
+        # print()
 
         # savep1 = [j[1] for j in target_space]
         # savep2 = [j[1] for j in new_pos]
@@ -149,6 +150,7 @@ class IKSimulator:
         self.iktable = IKTable()
         # self.iktable = IKTable('dense')
         # self.iktable = IKTable('full_jointonly')
+        self.diff_thres = 0.001 #0.1cm
         self.robot = Robot()
         self.algo = algo
 
@@ -382,13 +384,21 @@ class IKSimulator:
         time = []
         jo_diff = namedtuple('jo_diff', ['joint', 'diff'])
         posture = []
-        for p_type in nearby_postures:
-            p_type = p_type[0]
-            s = d.datetime.now()
-
+        for type_list in nearby_postures:
+            p_type = type_list[0]
             origin_d = np.linalg.norm(p_type[0][6] - target_pos)
 
-            if self.algo == 'pure':
+            s = d.datetime.now()
+
+            if self.algo == 'inter':
+                if len(type_list) > 1:
+                    origin_d = min([np.linalg.norm(np.array(post[0][6])-target_pos) for post in type_list])
+                    s = d.datetime.now()
+                    tmp_joint, diff = self.inter_posture(type_list, target_pos)
+                else:
+                    tmp_joint = p_type[1]
+                    diff = origin_d
+            elif self.algo == 'pure':
                 tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
             elif self.algo == 'vp_v1':
                 tmp_joint, diff = self.vector_portion_v1([p_type[0][6], p_type[1]], target_pos)
@@ -411,10 +421,10 @@ class IKSimulator:
 
             origin_diff.append(origin_d)
 
-            for i in range(7):
-                movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
+            # for i in range(7):
+            #     movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
-            if diff > 0.001:#0.5cm
+            if diff > self.diff_thres:
                 n += 1
                 # origin_diff.append(diff)
 
@@ -433,11 +443,76 @@ class IKSimulator:
         message['worse_num'] = n
         # message['origin diff:'] = np.sort(origin_diff)
         message['avg. time'] = np.mean(np.array(time))
-        for i in range(7):
-            movements[i] = np.mean(movements[i])
-        message['movements'] = movements
+        # for i in range(7):
+        #     movements[i] = np.mean(movements[i])
+        # message['movements'] = movements
 
         return posture, message
+
+    def inter_posture(self, posture, target_pos):
+        target_pos = np.array(target_pos)
+        diff = np.linalg.norm(posture[0][0][6] - target_pos)
+        tmp_joint = posture[0][1]
+        for ind in list(combinations(range(len(posture)), 2)):
+            if np.equal(posture[ind[0]][1], posture[ind[1]][1]).all():
+                continue
+            joint_int, diff_int = self.interpolate(posture[ind[0]], posture[ind[1]], target_pos)
+            if diff_int <= diff:
+                diff = diff_int
+                tmp_joint = joint_int
+
+            # joint_approx, diff_approx = self.approx_iter(posture[ind[0]], posture[ind[1]], target_pos)
+            # if diff_approx <= diff:
+                # diff = diff_approx
+                # tmp_joint = joint_approx
+
+            if diff < self.diff_thres:
+                break
+
+        return tmp_joint, diff
+
+    def approx_iter(self, post_1, post_2, target_pos):
+        s = d.datetime.now()
+
+        w1 = 0.5
+        offset = 0.24
+        diff = np.linalg.norm(np.array(post_1[0][6]) - target_pos)
+        tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+
+        while offset > 0.001:
+            reverse = 0
+            while reverse < 2:
+                w1 += offset
+                # print(offset)
+                if w1 > 1 or w1 < 0:
+                    w1 -= offset
+                    print('out!')
+                    break
+                pre_joint = tmp_joint
+                tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+                pre_diff = diff
+                diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
+                if diff >= pre_diff:
+                    offset *= -1
+                    reverse += 1
+            else:
+                w1 += offset
+                tmp_joint = pre_joint
+                diff = pre_diff
+
+            offset *= abs(offset)
+
+        e = d.datetime.now()
+        print(e-s)
+        return tmp_joint, diff
+
+    def interpolate(self, post_1, post_2, target_pos):
+        full = np.array(post_2[0][6]) - np.array(post_1[0][6])
+        w1 = np.dot(target_pos - np.array(post_1[0][6]), full) / (np.linalg.norm(full) ** 2)
+        tmp_joint = [q1*w1 + q2*(1-w1) for q1, q2 in zip(post_1[1], post_2[1])]
+        diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
+
+        return tmp_joint, diff
 
     def approximation(self, imitating_joint, target_pos, moving_joint=[i for i in range(6)]):
         # 0.007915
@@ -486,13 +561,12 @@ class IKSimulator:
     def vector_portion_v1(self, p_type, target_pos):
         # moves = [0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0]
         moves = [(1 * m.pi/180)]*7  #0.017453292519943295
-        threshold = 0.001
 
         tmp_joint = c.deepcopy(p_type[1])
         diff = np.linalg.norm(p_type[0] - target_pos)
         # vectors = []
         loop = 0
-        while diff > threshold and loop < 20:
+        while diff > self.diff_thres and loop < 20:
             loop += 1
             joint2move = 0
             max = 0
@@ -517,7 +591,6 @@ class IKSimulator:
         # moves = np.array([0.00753605, 0.01589324, 0.0483029, 0.03467266, 0.71936916, 0.16382559, 0.0])
         # print(p_type)
         moves = np.array([(1 * m.pi/180)]*7)  #0.017453292519943295
-        threshold = 0.001
 
         tmp_joint = c.deepcopy(p_type[1])
         pre_diff = 1
@@ -526,7 +599,7 @@ class IKSimulator:
         # tmp_joint, diff = self.approximation(tmp_joint, target_pos, moving_joint=[0])
 
         jmp = 0
-        while jmp < 2 and abs(pre_diff-diff) > 0.001 and diff > threshold :
+        while jmp < 2 and abs(pre_diff-diff) > 0.001 and diff > self.diff_thres :
             joint2move = [[0,0] for _ in range(3)]
             vectors = [0]
 
