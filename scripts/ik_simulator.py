@@ -383,11 +383,12 @@ class IKSimulator:
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 
-        message['result_post'] = len(self.posture_comparison_all_joint_sorted(posture))
         end = d.datetime.now()
 
-        message['total time'] = end-start
-        print(' total time: ', message['total time'])
+        if posture:
+            message['result_post'] = len(self.posture_comparison_all_joint_sorted(posture))
+            message['total time'] = end-start
+        print(' total time: ', end-start)
 
         return message
         # return posture, message
@@ -430,36 +431,32 @@ class IKSimulator:
             e = d.datetime.now()
 
             posture.append([diff, tmp_joint])
-            # posture.append(tmp_joint)
             time.append(e-s)
-
             origin_diff.append(origin_d)
-
             # for i in range(7):
             #     movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
             if diff > self.diff_thres*10:
                 n += 1
-                # origin_diff.append(diff)
-
-            # break
-
+            # else:
+            #     posture.append([diff, tmp_joint])
 
         message = {}
-        message['target'] = target_pos
-        message['posture'] = len(posture)
-        message['origin_diff'] = np.mean(origin_diff)
-        message['mean_diff'] = np.mean(np.array([p[0] for p in posture]))
-        # message['origin_std'] = np.std(np.array(origin_diff))
-        # message['std_error'] = np.std(np.array([p.diff for p in posture]))
-        message['worst_diff'] = max([p[0] for p in posture])
-        message['worst%'] = n/len(posture)
-        message['worse_num'] = n
-        # message['origin diff:'] = np.sort(origin_diff)
-        message['avg. time'] = np.mean(np.array(time))
-        # for i in range(7):
-        #     movements[i] = np.mean(movements[i])
-        # message['movements'] = movements
+        if posture:
+            message['target'] = target_pos
+            message['posture'] = len(posture)
+            message['origin_diff'] = np.mean(origin_diff)
+            message['mean_diff'] = np.mean(np.array([p[0] for p in posture]))
+            # message['origin_std'] = np.std(np.array(origin_diff))
+            # message['std_error'] = np.std(np.array([p.diff for p in posture]))
+            message['worst_diff'] = max([p[0] for p in posture])
+            message['worst%'] = n/len(posture)
+            message['worse_num'] = n
+            # message['origin diff:'] = np.sort(origin_diff)
+            message['avg. time'] = np.mean(np.array(time))
+            # for i in range(7):
+            #     movements[i] = np.mean(movements[i])
+            # message['movements'] = movements
 
         return posture, message
 

@@ -45,7 +45,7 @@ def show_avg(filename):
             continue
         # improvement = m['origin_diff']-m['mean_diff']
         # if m['origin_diff'] >= 0.06:
-        # if m['worst_diff'] < 0.03:
+        # if m['worst_diff'] < 0.005:
         if True:
             for k, v in m.items():
                 mes[k].append(v)
@@ -65,12 +65,12 @@ def show_avg(filename):
             continue
         elif k == 'worst_diff':
             result[k] = np.max(v)
-        # elif k == 'posture' or k == 'worse_num' or k == 'avg. time' or k == 'total time':
+        # elif k == 'posture' or k == 'worse_num' or k == 'avg. time' or k == 'total time' or k == 'result_post':
         #     result[k] = np.mean(v, axis=0)
-        elif k == 'posture' :
+        elif k == 'posture':
             result['pos_min'] = np.min(v)
             result[k] = np.mean(v, axis=0)
-        elif k == 'worse_num' or k == 'avg. time' or k == 'total time':
+        elif k == 'worse_num' or k == 'avg. time' or k == 'total time' or k == 'result_post':
             result[k] = np.mean(v, axis=0)
         else:
             result[k] = np.average(v, axis=0, weights=mes['posture'])

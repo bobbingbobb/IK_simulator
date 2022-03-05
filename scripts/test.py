@@ -539,3 +539,7 @@ def transforming():
 #     if file.startswith("dense") and file.endswith(".dat"):
 #         dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
 # print(dataset)
+
+ori = 0.0243
+mean = 0.00020821713411517991
+print(round((ori-mean)/ori*100, 2))
