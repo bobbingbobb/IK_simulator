@@ -541,5 +541,5 @@ def transforming():
 # print(dataset)
 
 ori = 0.0243
-mean = 0.00020821713411517991
+mean = 1.14778123274226e-05
 print(round((ori-mean)/ori*100, 2))

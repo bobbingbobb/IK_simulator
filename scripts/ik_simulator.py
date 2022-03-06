@@ -37,13 +37,13 @@ class IKTable:
     def query(self, target):
         target = pos_alignment(target)
 
-        result = self.dot_query(target)
-        if len(result) < 20:
-            print('no')
-            result = self.query_neighbor(target)
+        # result = self.dot_query(target)
+        # if len(result) < 20:
+        #     print('no')
+        #     result = self.query_neighbor(target)
 
-        # self.range = 0.003
-        # result = self.query_neighbor(target)
+        self.range = 0.003
+        result = self.query_neighbor(target)
 
         return result
 
@@ -158,11 +158,11 @@ class IKTable:
 
 class IKSimulator:
     def __init__(self, algo='pure'):
-        self.iktable = IKTable()
-        self.diff_thres = 0.0005 #0.05cm
+        # self.iktable = IKTable()
+        # self.diff_thres = 0.0005 #0.05cm
 
-        # self.iktable = IKTable('dense')
-        # self.diff_thres = 0.0001 #0.01cm
+        self.iktable = IKTable('dense')
+        self.diff_thres = 0.0001 #0.01cm
 
         # self.iktable = IKTable('full_jointonly')
         self.robot = Robot()
@@ -436,7 +436,7 @@ class IKSimulator:
             # for i in range(7):
             #     movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
-            if diff > self.diff_thres*10:
+            if diff > self.diff_thres*3:
                 n += 1
             # else:
             #     posture.append([diff, tmp_joint])

@@ -19,12 +19,12 @@ def runner(ik_simulator, iter, filename):
     message = []
     mes = {}
     for i in range(iter):
-        x = round(r.uniform(-0.855, 0.855), 4)
-        y = round(r.uniform(-0.855, 0.855), 4)
-        z = round(r.uniform(-0.36, 1.19), 4)
-        # x = round(r.uniform(0.2, 0.25), 4)
-        # y = round(r.uniform(0.45, 0.5), 4)
-        # z = round(r.uniform(0.3, 0.35), 4)
+        # x = round(r.uniform(-0.855, 0.855), 4)
+        # y = round(r.uniform(-0.855, 0.855), 4)
+        # z = round(r.uniform(-0.36, 1.19), 4)
+        x = round(r.uniform(0.2, 0.25), 4)
+        y = round(r.uniform(0.45, 0.5), 4)
+        z = round(r.uniform(0.3, 0.35), 4)
         target = [x, y, z]
         print(str(i+1)+': '+str(target))
         result = ik_simulator.find_all_posture(target)
@@ -115,38 +115,38 @@ if __name__ == '__main__':
 
 
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='inter'), 500, 'inter_clean_500')
+    # runner(IKSimulator(algo='inter'), 300, 'inter_clean_300')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
     #
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='pure'), 500, 'pure_clean_500')
+    # runner(IKSimulator(algo='pure'), 300, 'pure_clean_300')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
     #
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v1'), 500, 'vp_v1_clean_500')
+    # runner(IKSimulator(algo='vp_v1'), 300, 'vp_v1_clean_300')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
     #
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='vp_v2'), 500, 'vp_v2_clean_500')
+    # runner(IKSimulator(algo='vp_v2'), 300, 'vp_v2_clean_300')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
     #
     # s = d.datetime.now()
-    # runner(IKSimulator(algo='ikpy'), 500, 'ikpy_clean_500')
+    # runner(IKSimulator(algo='ikpy'), 300, 'ikpy_clean_300')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner(IKSimulator(algo='inter'), 100, 'test')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner(IKSimulator(algo='inter'), 100, 'test')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
     ik_simulator = IKSimulator()
-    # show_avg('inter_1000')
-    show_avg('test')
+    show_avg('inter_clean_500')
+    # show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
     # show_avg('500_006restrict_result_vp_v2')
