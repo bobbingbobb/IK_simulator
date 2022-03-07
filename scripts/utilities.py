@@ -75,7 +75,7 @@ def show_avg(filename):
         else:
             result[k] = np.average(v, axis=0, weights=mes['posture'])
         # print(v)
-    result['worst%'] = (1 - result['worst%']) * 100
+    # result['worst%'] = (1 - result['worst%']) * 100
     result['improve'] = (1 - ((result['origin_diff']-result['mean_diff'])/result['origin_diff'])) * 100
 
     messenger(result)

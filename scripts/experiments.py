@@ -16,9 +16,9 @@ chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_
 
 
 def fully_covered(iter):
-    # iktable = IKTable('raw_data_7j_20')
-    # iktable = IKTable('dense')
-    iktable = IKTable('full_jointonly_fixed1')
+    # iktable = IKTable('rtree_20')
+    iktable = IKTable('dense')
+    # iktable = IKTable('full_jointonly_fixed1')
     for t in iktable.table:
         print(t.bounds)
 
@@ -34,12 +34,12 @@ def fully_covered(iter):
             # x = round(r.uniform(-0.855, 0.855), 4)
             # y = round(r.uniform(-0.855, 0.855), 4)
             # z = round(r.uniform(-0.36, 1.19), 4)
-            # x = round(r.uniform(0.2, 0.25), 4)
-            # y = round(r.uniform(0.45, 0.5), 4)
-            # z = round(r.uniform(0.3, 0.35), 4)
-            x = round(r.uniform(0.2, 0.21), 4)
-            y = round(r.uniform(0.4, 0.41), 4)
-            z = round(r.uniform(0.3, 0.31), 4)
+            x = round(r.uniform(0.2, 0.25), 4)
+            y = round(r.uniform(0.45, 0.5), 4)
+            z = round(r.uniform(0.3, 0.35), 4)
+            # x = round(r.uniform(0.2, 0.21), 4)
+            # y = round(r.uniform(0.4, 0.41), 4)
+            # z = round(r.uniform(0.3, 0.31), 4)
 
             result = iktable.dot_query([x, y, z])
             if len(result):#in range
@@ -100,13 +100,26 @@ def current_ik_speed(iter):
     print(mes)
     print(np.mean(np.array(time)))
 
+def draw(dataset, name):
+    from matplotlib import pyplot as plt
+
+    data = np.load(RESULT_FOLDER+dataset+'/'+name+'.npy', allow_pickle=True)
+    deviation = [p[0] for d in data for p in d]
+    print(len(deviation))
+    print(deviation[0])
+    print(deviation[-1])
+
+    plt.figure(1)
+    plt.scatter('deviation', 'num', data = deviation)
+    plt.show()
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
-    fully_covered(10)
+    # fully_covered(1)
     # current_ik_speed(1000)
-
+    draw('rtree_20', 'inter_300_post')
 
     print('duration: ', d.datetime.now()-start)
     print('end')

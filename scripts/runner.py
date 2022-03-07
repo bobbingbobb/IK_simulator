@@ -161,8 +161,8 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
 
-    # ik_simulator = IKSimulator()
-    # show_avg(dataset+'/'+'vp_v2_1000')
+    ik_simulator = IKSimulator()
+    show_avg(dataset+'/'+'vp_v2_500_findlen')
     # show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
