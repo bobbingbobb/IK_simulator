@@ -20,6 +20,9 @@ class IKTable:
 
         self.robot = Robot()
         self.range = 0.05
+        if filename == 'dense':
+            self.range = 0.003
+
 
     def _load_dataset(self, filename):
         print('loading...')
@@ -29,21 +32,22 @@ class IKTable:
         dataset = []
         for file in os.listdir(RAW_DATA_FOLDER):
             if file.startswith(filename) and file.endswith(".dat"):
+                print(file)
                 dataset.append(index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(file)), properties=p))
 
-        print('loaded. duration: ', d.datetime.now()-start)
+        print(filename+' loaded. duration: ', d.datetime.now()-start)
         return dataset
 
     def query(self, target):
         target = pos_alignment(target)
 
-        # result = self.dot_query(target)
-        # if len(result) < 20:
-        #     print('no')
-        #     result = self.query_neighbor(target)
+        result = self.dot_query(target)
+        if len(result) < 20:
+            print('no')
+            result = self.query_neighbor(target)
 
-        self.range = 0.003
-        result = self.query_neighbor(target)
+        # self.range = 0.003
+        # result = self.query_neighbor(target)
 
         return result
 
@@ -157,12 +161,17 @@ class IKTable:
 
 
 class IKSimulator:
-    def __init__(self, algo='pure'):
+    def __init__(self, algo='pure', dataset='raw_data_7j_20'):
         # self.iktable = IKTable()
-        # self.diff_thres = 0.0005 #0.05cm
 
-        self.iktable = IKTable('dense')
-        self.diff_thres = 0.0001 #0.01cm
+        self.iktable = IKTable(dataset)
+
+        if dataset == 'raw_data_7j_20':
+            self.diff_thres = 0.0005 #0.05cm
+        elif dataset == 'dense':
+            self.diff_thres = 0.0001 #0.01cm
+        else:
+            self.diff_thres = 0.0005 #0.05cm
 
         # self.iktable = IKTable('full_jointonly')
         self.robot = Robot()
@@ -379,7 +388,7 @@ class IKSimulator:
 
         nearby_postures = self.find(target_pos)
         if not nearby_postures:
-            return 0
+            return 0, 0
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
         # messenger(message)
 
@@ -390,8 +399,8 @@ class IKSimulator:
             message['total time'] = end-start
         print(' total time: ', end-start)
 
-        return message
-        # return posture, message
+        # return message
+        return posture, message
 
     def posture_iter_machine(self, nearby_postures, target_pos, insert=False):
         n = 0.0
@@ -413,22 +422,29 @@ class IKSimulator:
                 else:
                     tmp_joint = p_type[1]
                     diff = origin_d
+                e = d.datetime.now()
             elif self.algo == 'pure':
                 tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
+                e = d.datetime.now()
             elif self.algo == 'vp_v1':
                 tmp_joint, diff = self.vector_portion_v1([p_type[0][6], p_type[1]], target_pos)
+                e = d.datetime.now()
             elif self.algo == 'vp_v2':
                 tmp_joint, diff = self.vector_portion_v2([p_type[0][6], p_type[1]], target_pos)
                 tmp_joint, diff = self.pure_approx(tmp_joint, target_pos)
+                e = d.datetime.now()
             elif self.algo == 'ikpy':
-                tmp_joint, diff = self.ikpy_run(p_type[1], target_pos)
-            else:
-                tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
+                # tmp_joint, diff = self.ikpy_run(p_type[1], target_pos)
+                s = d.datetime.now()
+                tmp_joint = self.ikpy_run(p_type[1], target_pos)
+                e = d.datetime.now()
+                diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
 
             # for i in range(50):
             #     tmp_joint, diff = self.pure_approx(p_type[1], target_pos)
 
-            e = d.datetime.now()
+            # if not self.algo == 'ikpy':
+            #     e = d.datetime.now()
 
             posture.append([diff, tmp_joint])
             time.append(e-s)
@@ -436,8 +452,9 @@ class IKSimulator:
             # for i in range(7):
             #     movements[i].append(abs(p_type[1][i]-tmp_joint[i]))
 
-            if diff > self.diff_thres*3:
-                n += 1
+            # if diff > self.diff_thres*3:
+            # if diff > self.diff_thres*10:
+            #     n += 1
             # else:
             #     posture.append([diff, tmp_joint])
 
@@ -450,8 +467,8 @@ class IKSimulator:
             # message['origin_std'] = np.std(np.array(origin_diff))
             # message['std_error'] = np.std(np.array([p.diff for p in posture]))
             message['worst_diff'] = max([p[0] for p in posture])
-            message['worst%'] = n/len(posture)
-            message['worse_num'] = n
+            # message['worst%'] = n/len(posture)
+            # message['worse_num'] = n
             # message['origin diff:'] = np.sort(origin_diff)
             message['avg. time'] = np.mean(np.array(time))
             # for i in range(7):
@@ -661,9 +678,8 @@ class IKSimulator:
 
     def ikpy_run(self, joint, target_pos):
         tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0, 0])[1:8]
-        diff = np.linalg.norm(self.fk(tmp_joint) - target_pos)
 
-        return tmp_joint, diff
+        return tmp_joint#, diff
 
 if __name__ == '__main__':
     print('start')

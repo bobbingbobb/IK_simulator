@@ -540,6 +540,8 @@ def transforming():
 #         dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
 # print(dataset)
 
-ori = 0.0243
-mean = 1.14778123274226e-05
+ori = 0.00137
+mean = 0.0005236075107600494
 print(round((ori-mean)/ori*100, 2))
+
+print(os.path.join(RESULT_FOLDER,'123','fff'))
