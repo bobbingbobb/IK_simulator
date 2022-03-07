@@ -544,4 +544,5 @@ ori = 0.00137
 mean = 0.0005236075107600494
 print(round((ori-mean)/ori*100, 2))
 
-print(os.path.join(RESULT_FOLDER,'123','fff'))
+data = np.load('../data/result/dense/inter_300_post.npy')
+print(len(data))

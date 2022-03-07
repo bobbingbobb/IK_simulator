@@ -70,12 +70,12 @@ def show_avg(filename):
         elif k == 'posture':
             result['pos_min'] = np.min(v)
             result[k] = np.mean(v, axis=0)
-        elif k == 'worse_num' or k == 'avg. time' or k == 'total time' or k == 'result_post':
+        elif k == 'worse_num' or k == 'avg. time' or k == 'total time' or k == 'result_post' or k == 'input_post':
             result[k] = np.mean(v, axis=0)
         else:
             result[k] = np.average(v, axis=0, weights=mes['posture'])
         # print(v)
-    # result['worst%'] = (1 - result['worst%']) * 100
+    result['worst%'] = (1 - result['worst%']) * 100
     result['improve'] = (1 - ((result['origin_diff']-result['mean_diff'])/result['origin_diff'])) * 100
 
     messenger(result)

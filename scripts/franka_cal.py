@@ -421,8 +421,8 @@ def ikpy_test():
     print([p[3] for p in chain.forward_kinematics([0, *work_joints, 0, 0])[:3]])
 
     s = d.datetime.now()
-    # result = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
-    result = chain.inverse_kinematics(target, initial_position=[0, *inifar1, 0, 0])[1:8]
+    result = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
+    # result = chain.inverse_kinematics(target, initial_position=[0, *inifar1, 0, 0])[1:8]
 
     e = d.datetime.now()
     print(e-s)
@@ -466,7 +466,7 @@ if __name__ == '__main__':
     joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
     pos_b = [ 0.5471, -0.0024,  0.6091]
 
-
+    ikpy_test()
 
     # ik_simulator = IKSimulator(algo='ikpy')
     # x = round(r.uniform(-0.855, 0.855), 4)
@@ -484,6 +484,6 @@ if __name__ == '__main__':
     #     print_points(result, target)
         # int_approx(result, target)
 
-    run_within(1)
+    # run_within(1)
 
     # dense_test(target, 1)

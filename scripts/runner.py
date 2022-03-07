@@ -33,6 +33,11 @@ def runner(algo, dataset, iter, name):
         z = round(r.uniform(res[4], res[5]), 4)
         target = [x, y, z]
         print(str(i+1)+': '+str(target))
+    #     ori, ne = ik_simulator.find(target)
+    #     message.append(ori)
+    #     post.append(ne)
+    # print(np.mean(message), np.mean(post))
+
         posture, result = ik_simulator.find_all_posture(target)
         if result:
             message.append(result)
@@ -42,7 +47,7 @@ def runner(algo, dataset, iter, name):
             mes['posture'] = 0
             message.append(c.deepcopy(mes))
         np.save(filename, message)
-        np.save(filename+'_post', post)
+        # np.save(filename+'_post', post)
 
 
     # for i, target in enumerate(t20):
@@ -125,38 +130,39 @@ if __name__ == '__main__':
     # dataset = 'dense'
     dataset = 'rtree_20'
 
-    s = d.datetime.now()
-    runner('inter', dataset, 300, 'inter_300')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner('pure', dataset, 300, 'pure_300')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner('vp_v1', dataset, 300, 'vp_v1_300')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner('vp_v2', dataset, 300, 'vp_v2_300')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
-    s = d.datetime.now()
-    runner('ikpy', dataset, 100, 'ikpy_100')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
-
     # s = d.datetime.now()
-    # runner('inter', dataset, 10, 'test')
+    # runner('inter', dataset, 300, 'inter_300')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner('pure', dataset, 300, 'pure_300')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner('vp_v1', dataset, 300, 'vp_v1_300')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner('vp_v2', dataset, 300, 'vp_v2_300')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+    #
+    # s = d.datetime.now()
+    # runner('ikpy', dataset, 100, 'ikpy_100')
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
+    # s = d.datetime.now()
+    # runner('inter', dense, 300, 'test')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
+
+
     # ik_simulator = IKSimulator()
-    # show_avg(dataset+'/'+'inter_300')
+    # show_avg(dataset+'/'+'vp_v2_1000')
     # show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')

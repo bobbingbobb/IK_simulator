@@ -191,7 +191,7 @@ class IKSimulator:
         # return self.iktable.query(target_pos)
         pos_info = self.iktable.query(target_pos)
         if not pos_info:
-            return 0
+            return 0, 0
         print('find', len(pos_info))
         # nearby_postures = self.posture_comparison(pos_info)
         # nearby_postures = self.posture_comparison_all_joint(pos_info)#index
@@ -200,7 +200,7 @@ class IKSimulator:
         # nearby_postures = []
         # nearby_postures.append(self.posture_comparison_all_joint(pos_info))
         # nearby_postures.append(self.posture_comparison_all_joint_sorted(pos_info))
-        return nearby_postures
+        return nearby_postures, len(pos_info)
 
     def posture_comparison(self, pos_info):
         thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
@@ -386,7 +386,7 @@ class IKSimulator:
     def find_all_posture(self, target_pos):
         start = d.datetime.now()
 
-        nearby_postures = self.find(target_pos)
+        nearby_postures, findlen = self.find(target_pos)
         if not nearby_postures:
             return 0, 0
         posture, message = self.posture_iter_machine(nearby_postures, target_pos)
@@ -395,6 +395,7 @@ class IKSimulator:
         end = d.datetime.now()
 
         if posture:
+            message['input_post'] = findlen
             message['result_post'] = len(self.posture_comparison_all_joint_sorted(posture))
             message['total time'] = end-start
         print(' total time: ', end-start)
