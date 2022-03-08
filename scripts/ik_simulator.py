@@ -266,6 +266,7 @@ class IKSimulator:
 
         return nearby_postures
 
+    #index
     def posture_comparison_all_joint_sorted_pure(self, target_space):
         thres = 0.5
         nearby_postures = []

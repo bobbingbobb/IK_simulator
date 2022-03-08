@@ -95,6 +95,7 @@ def current_ik_speed(iter):
     mes = {}
     mes['deviation'] = np.mean(dev)
     mes['failed'] = n
+    mes['worst'] = max(dev)
     mes['avg. time'] = np.mean(np.array(time))
 
     print(mes)
@@ -113,13 +114,77 @@ def draw(dataset, name):
     plt.scatter('deviation', 'num', data = deviation)
     plt.show()
 
+def posture_num(iter):
+    start = d.datetime.now()
+    from ikpy.chain import Chain
+    import ikpy.utils.plot as plot_utils
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+    robot = Robot()
+
+    thres = 0.5
+    q = np.zeros(7)
+    target = [0.0, 0.0, 0.0]
+    posture = []
+
+    for x in range(-855, 855, 100):
+        target[0] = x/1000
+        for y in range(-855, 855, 100):
+            target[1] = y/1000
+            for z in range(-360, 1190, 100):
+                target[2] = z/1000
+                p_list = []
+                for i in range(iter):
+                    print(i+1, target)
+                    post = []
+                    end = 0
+                    pout = 0
+                    while end < 100 and pout < 10:
+
+                        for j in range(6):
+                            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+
+                        try:
+                            joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                            if np.linalg.norm(robot.fk_dh(joint)[0] - target) > 0.05:
+                                print(target, len(post))
+                                pout += 1
+                                continue
+
+                            for type in post:
+                                for j_joint, j_type in zip(joint, type):
+                                    if abs(j_joint-j_type) >= thres:
+                                        break
+                                else:
+                                    break
+                            else:
+                                post.append(joint)
+                                end = 0
+
+                            end += 1
+
+                        except ValueError:
+                            print('Error raised')
+                            continue
+
+                    p_list.append(len(post))
+                num = np.mean(p_list)
+                print(num)
+                if num:
+                    posture.append([target, num])
+
+    np.save(RESULT_FOLDER+'posture_num', posture)
+    end = d.datetime.now()
+    print('done. duration: ', end-start)
+
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
     # fully_covered(1)
     # current_ik_speed(1000)
-    draw('rtree_20', 'inter_300_post')
+    posture_num(5)
+    # draw('rtree_20', 'inter_300_post')
 
     print('duration: ', d.datetime.now()-start)
     print('end')
