@@ -529,10 +529,10 @@ def transforming():
 
 # transforming()
 
-# property = index.Property(dimension=3)
-# idx = index.Index(RAW_DATA_FOLDER+'full_jointonly', properties=property)
-# print(idx.bounds)
-# idx.close()
+property = index.Property(dimension=3)
+idx = index.Index(RAW_DATA_FOLDER+'raw_data_7j_30', properties=property)
+print(idx)
+idx.close()
 
 # dataset = []
 # for file in os.listdir(RAW_DATA_FOLDER):
@@ -540,9 +540,9 @@ def transforming():
 #         dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
 # print(dataset)
 
-ori = 0.00137
-mean = 0.0005236075107600494
-print(round((ori-mean)/ori*100, 2))
+# ori = 0.00137
+# mean = 0.0005236075107600494
+# print(round((ori-mean)/ori*100, 2))
 
-data = np.load('../data/result/dense/inter_300_post.npy')
-print(len(data))
+# data = np.load('../data/result/dense/inter_300_post.npy')
+# print(len(data))

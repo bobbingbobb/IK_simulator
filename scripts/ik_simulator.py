@@ -20,7 +20,7 @@ class IKTable:
 
         self.robot = Robot()
         self.range = 0.05
-        if filename == 'dense':
+        if filename == 'dense' or filename == 'full_jointonly_fixed1':
             self.range = 0.003
 
 
@@ -694,8 +694,9 @@ if __name__ == '__main__':
     # table = IKTable('raw_data_7j_30')
     # print(table.query_neighbor(target))
 
-    ik_simulator = IKSimulator(algo='ikpy')
-    print(ik_simulator.ikpy_run([0.0]*7, target))
+    ik_simulator = IKSimulator(algo='ikpy', dataset='full_jointonly_fixed1')
+    ik_simulator.find([0.2, 0.4, 0.3])
+    # messenger(ik_simulator.find_all_posture([0.2000, 0.4500, 0.3000])[1])
     # result = ik_simulator.find(target)
     # print(result)
     # print(len(result[0]))

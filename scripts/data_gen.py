@@ -253,9 +253,9 @@ def high_dense_gen(iter, name, xs, ys, zs):
     for i in range(iter):
         s = d.datetime.now()
         q = np.zeros(7)
-        for j in range(6):
-            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
-        print(i, q)
+        # for j in range(6):
+        #     q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+        # print(i, q)
         target = [0.0, 0.0, 0.0]
 
         for x in range(xs, xs+50, 1):
@@ -263,28 +263,38 @@ def high_dense_gen(iter, name, xs, ys, zs):
             for y in range(ys, ys+50, 1):
                 target[1] = y/10000
                 for z in range(zs, zs+50, 1):
+                    error = True
                     target[2] = z/10000
-                    try:
-                        joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
-                        position, vec_ee = robot.fk_jo(joint)
-                        for p in position:
-                            p = pos_alignment(p)
 
-                        pos_info = (position, joint, vec_ee)
-                        idx.insert(id, position[6].tolist(), obj=pos_info)
-                        # idx.insert(id, c.copy(target), obj=joint)
+                    while error:
+                        for j in range(6):
+                            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+                        try:
+                            joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                            position, vec_ee = robot.fk_jo(joint)
+                            # position, _ = robot.fk_jo(joint)
+                            if not target == [round(p, 4) for p in position[6]]:
+                                # print(target, position[6])
+                                continue
+                            for p in position:
+                                p = pos_alignment(p)
 
-                        id += 1
-                    except ValueError:
-                        print('Error raised')
-                        continue
+                            pos_info = (position, joint, vec_ee)
+                            idx.insert(id, position[6].tolist(), obj=pos_info)
+                            # idx.insert(id, c.copy(target), obj=joint)
+
+                            id += 1
+                            error = False
+                        except ValueError:
+                            print('Error raised')
+                            continue
 
 
         print(d.datetime.now()-s)
         if (i+1)%100 == 0 and not (i+1 == iter):
             idx.close()
-            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.idx', RAW_DATA_FOLDER+str(i+1)+'.idx')
-            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.dat', RAW_DATA_FOLDER+str(i+1)+'.dat')
+            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.idx', RAW_DATA_FOLDER+name+str(i+1)+'.idx')
+            shutil.copyfile(RAW_DATA_FOLDER+name+'_'+str(iter)+'.dat', RAW_DATA_FOLDER+name+str(i+1)+'.dat')
             end = d.datetime.now()
             print(str(i+1)+' saved. duration: ', end-start)
             idx = index.Index(RAW_DATA_FOLDER+name+'_'+str(iter), properties=property)
@@ -292,17 +302,81 @@ def high_dense_gen(iter, name, xs, ys, zs):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
+def high_dense_multipost(name, xs, ys, zs, ran):
+    start = d.datetime.now()
+    from ikpy.chain import Chain
+    import ikpy.utils.plot as plot_utils
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+    robot = Robot()
+
+    thres = 0.5
+    id = 0
+    property = index.Property(dimension=3)
+    idx = index.Index(RAW_DATA_FOLDER+name, properties=property)
+
+    q = np.zeros(7)
+    target = [0.0, 0.0, 0.0]
+
+    for x in range(xs, (xs+ran), 1):
+        target[0] = x/10000
+        for y in range(ys, (ys+ran), 1):
+            target[1] = y/10000
+            for z in range(zs, (zs+ran), 1):
+                target[2] = z/10000
+                post = []
+                end = 0
+                while end < 100:
+                    for j in range(6):
+                        q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+                    try:
+                        joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                        position, vec_ee = robot.fk_jo(joint)
+                        if not target == [round(p, 4) for p in position[6]]:
+                            print(target, len(post))
+                            continue
+
+                        for type in post:
+                            for j_joint, j_type in zip(joint, type):
+                                if abs(j_joint-j_type) >= thres:
+                                    break
+                            else:
+                                break
+                        else:
+                            for p in position:
+                                p = pos_alignment(p)
+                            pos_info = (position, joint, vec_ee)
+                            idx.insert(id, position[6].tolist(), obj=pos_info)
+                            post.append(joint)
+                            end = 0
+                            id += 1
+
+                        end += 1
+                    except ValueError:
+                        print('Error raised')
+                        continue
+
+    idx.close()
+    end = d.datetime.now()
+    print('done. duration: ', end-start)
+
 if __name__ == '__main__':
     pass
-    # dc = DataCollection(scale=20)
-    # print(dc.without_colliding_detect('raw_data_7j_20'))
+    # dc = DataCollection(scale=30)
+    # print(dc.hdf5_store('raw_data_7j_30'))
 
     # robot = Robot()
     # print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
 
     # from multiprocessing import Process, Pool
     # pool = Pool()
-    # pool.starmap(high_dense_gen, ((100, '0dense'), (100, '1dense'), (100, '2dense'), (100, '3dense')))
+    # i = 1
+    # pool.starmap(high_dense_gen, ((i, '0full_jointonly', 2000, 4000, 3000), (i, '1full_jointonly', 2050, 4000, 3000), (i, '2full_jointonly', 2000, 4050, 3000), (i, '3full_jointonly', 2050, 4050, 3000)))
+    # pool.starmap(high_dense_gen, ((i, '4full_jointonly', 2000, 4000, 3050), (i, '5full_jointonly', 2050, 4000, 3050), (i, '6full_jointonly', 2000, 4050, 3050), (i, '7full_jointonly', 2050, 4050, 3050)))
 
-    # high_dense_gen(100, 'dense')
-    # high_dense_gen(1, 'full_jointonly', 2000, 4000, 3000)
+    high_dense_multipost('full_post_1', 2000, 4500, 3000, 4)
+    # high_dense_gen(1, '0full_jointonly', 2050, 4050, 3050)
+
+    # high_dense_gen(100, '0dense_')
+    # high_dense_gen(100, '1dense_')
+    # high_dense_gen(100, '2dense_')
+    # high_dense_gen(100, '3dense_')

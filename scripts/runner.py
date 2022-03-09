@@ -26,6 +26,8 @@ def runner(algo, dataset, iter, name):
         res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
     elif dataset == 'dense':
         res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
+    elif dataset == 'full_jointonly_fixed1':
+        res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
     filename = RESULT_FOLDER+dataset+'/'+name
     for i in range(iter):
         x = round(r.uniform(res[0], res[1]), 4)
@@ -128,7 +130,8 @@ if __name__ == '__main__':
     # print(ik_simulator.find(target))
 
     # dataset = 'dense'
-    dataset = 'rtree_20'
+    # dataset = 'rtree_20'
+    dataset = 'full_jointonly_fixed1'
 
     # s = d.datetime.now()
     # runner('inter', dataset, 300, 'inter_300')
@@ -155,14 +158,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    # s = d.datetime.now()
-    # runner('inter', dense, 300, 'test')
-    # e = d.datetime.now()
-    # print('full process duration: ', e-s)
+    s = d.datetime.now()
+    runner('inter', dataset, 1, 'test')
+    e = d.datetime.now()
+    print('full process duration: ', e-s)
 
 
     ik_simulator = IKSimulator()
-    show_avg(dataset+'/'+'vp_v2_500_findlen')
+    show_avg(dataset+'/'+'test')
     # show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')
