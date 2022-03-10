@@ -103,17 +103,28 @@ def current_ik_speed(iter):
 
 def draw(dataset, name):
     from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    fig = plt.figure()
+    ax2 = Axes3D(fig)
+
+
 
     # data = np.load(RESULT_FOLDER+dataset+'/'+name+'.npy', allow_pickle=True)
     data = np.load(RESULT_FOLDER+'posture_num_1.npy', allow_pickle=True)
-    deviation = [p[0] for d in data for p in d]
-    print(len(deviation))
-    print(deviation[0])
-    print(deviation[-1])
+    print(data)
+    pos = np.array([p[0] for p in data]).T
+    print(pos)
 
-    plt.figure(1)
-    plt.scatter('deviation', 'num', data = deviation)
-    plt.show()
+    ax2.scatter3D(pos[0], pos[1], pos[2], c='grey')
+    # deviation = [p[0] for d in data for p in d]
+    # print(len(deviation))
+    # print(deviation[0])
+    # print(deviation[-1])
+
+    # plt.figure(1)
+    # plt.scatter('deviation', 'num', data = deviation)
+    # plt.show()
 
 def posture_num(iter):
     start = d.datetime.now()
@@ -171,7 +182,7 @@ def posture_num(iter):
                 num = np.mean(p_list)
                 print(num)
                 if num:
-                    posture.append([target, num])
+                    posture.append([c.copy(target), num])
 
         np.save(RESULT_FOLDER+'posture_num_'+str(iter), posture)
     end = d.datetime.now()
@@ -184,8 +195,8 @@ if __name__ == '__main__':
 
     # fully_covered(1)
     # current_ik_speed(1000)
-    posture_num(1)
-    # draw('rtree_20', 'inter_300_post')
+    # posture_num(1)
+    draw('rtree_20', 'inter_300_post')
 
     print('duration: ', d.datetime.now()-start)
     print('end')
