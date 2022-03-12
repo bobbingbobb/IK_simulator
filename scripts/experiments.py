@@ -111,12 +111,26 @@ def draw(dataset, name):
 
 
     # data = np.load(RESULT_FOLDER+dataset+'/'+name+'.npy', allow_pickle=True)
-    data = np.load(RESULT_FOLDER+'posture_num_1.npy', allow_pickle=True)
-    print(data)
+    data = np.load(RESULT_FOLDER+'posture_num_1.npy', allow_pickle=True)[::4]
+    # print(data.shape)
     pos = np.array([p[0] for p in data]).T
-    print(pos)
+    color = [p[1] for p in data]
+    # color = [p[1] if p[1]<300 else 300 for p in data]
 
-    ax2.scatter3D(pos[0], pos[1], pos[2], c='grey')
+    # color = max(color)
+    # print(pos)
+
+    jo = np.array([[ 0.00000000e+00,  0.00000000e+00,  1.40000000e-01],
+                   [ 0.00000000e+00,  0.00000000e+00,  3.33000000e-01],
+                   [ 0.00000000e+00, -1.18178416e-17,  5.26000000e-01],
+                   [ 8.25000000e-02, -1.18178416e-17,  6.49000000e-01],
+                   [ 2.07000000e-01, -6.76617357e-18,  7.31500000e-01],
+                   [ 4.66500000e-01, -2.26559658e-17,  7.31500000e-01],
+                   [ 5.54500000e-01, -2.92078262e-17,  6.24500000e-01]])
+    jo = jo.T
+
+    plt.colorbar(ax2.scatter3D(pos[0], pos[1], pos[2], cmap='Blues', c=color))
+    ax2.scatter3D(jo[0], jo[1], jo[2], c='red')
     # deviation = [p[0] for d in data for p in d]
     # print(len(deviation))
     # print(deviation[0])
@@ -124,7 +138,7 @@ def draw(dataset, name):
 
     # plt.figure(1)
     # plt.scatter('deviation', 'num', data = deviation)
-    # plt.show()
+    plt.show()
 
 def posture_num(iter):
     start = d.datetime.now()

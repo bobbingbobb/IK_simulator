@@ -364,8 +364,8 @@ if __name__ == '__main__':
     # dc = DataCollection(scale=30)
     # print(dc.hdf5_store('raw_data_7j_30'))
 
-    # robot = Robot()
-    # print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
+    robot = Robot()
+    print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
 
     # from multiprocessing import Process, Pool
     # pool = Pool()
@@ -373,7 +373,7 @@ if __name__ == '__main__':
     # pool.starmap(high_dense_gen, ((i, '0full_jointonly', 2000, 4000, 3000), (i, '1full_jointonly', 2050, 4000, 3000), (i, '2full_jointonly', 2000, 4050, 3000), (i, '3full_jointonly', 2050, 4050, 3000)))
     # pool.starmap(high_dense_gen, ((i, '4full_jointonly', 2000, 4000, 3050), (i, '5full_jointonly', 2050, 4000, 3050), (i, '6full_jointonly', 2000, 4050, 3050), (i, '7full_jointonly', 2050, 4050, 3050)))
 
-    high_dense_multipost('full_post_1', 2000, 4500, 3000, 4)
+    # high_dense_multipost('full_post_1', 2000, 4500, 3000, 4)
     # high_dense_gen(1, '0full_jointonly', 2050, 4050, 3050)
 
     # high_dense_gen(100, '0dense_')
