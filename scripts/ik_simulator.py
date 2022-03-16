@@ -41,13 +41,17 @@ class IKTable:
     def query(self, target):
         target = pos_alignment(target)
 
-        result = self.dot_query(target)
-        if len(result) < 20:
-            print('no')
-            result = self.query_neighbor(target)
+        # result = self.dot_query(target)
+        # if len(result) < 20:
+        #     print('no')
+        #     result = self.query_neighbor(target)
 
         # self.range = 0.003
         # result = self.query_neighbor(target)
+
+        result = []
+        for table in self.table:
+            result += [item.object for item in table.nearest(c.deepcopy(target), 1, objects=True)]
 
         return result
 
@@ -179,7 +183,7 @@ class IKSimulator:
 
         from ikpy.chain import Chain
         import ikpy.utils.plot as plot_utils
-        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True])
+        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
 
     def fk(self, joints, insert=False):
         if insert:
@@ -193,6 +197,8 @@ class IKSimulator:
         if not pos_info:
             return 0, 0
         print('find', len(pos_info))
+        # return pos_info
+
         # nearby_postures = self.posture_comparison(pos_info)
         # nearby_postures = self.posture_comparison_all_joint(pos_info)#index
         nearby_postures = [[pos_info[i_type] for i_type in inds] for inds in self.posture_comparison_all_joint_sorted(pos_info)]#index
@@ -679,7 +685,7 @@ class IKSimulator:
         return tmp_joint, diff
 
     def ikpy_run(self, joint, target_pos):
-        tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0, 0])#[1:8]
+        tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])[1:8]
 
         return tmp_joint#, diff
 
@@ -696,7 +702,9 @@ if __name__ == '__main__':
 
     ik_simulator = IKSimulator(algo='ikpy', dataset='rtree_20')
     # ik_simulator.find([0.2, 0.4, 0.3])
-    print(ik_simulator.fk(ik_simulator.ikpy_run([0.0,0.0,0.0,0.0,0.0,0.0,0.0],[ 0.4665, 0.0,  0.7315])))
+    result = ik_simulator.ikpy_run([0.0,0.0,0.0,0.0,0.0,0.0,0.0],[ 0.4665, 0.0,  0.7315])
+    print(result)
+    print(ik_simulator.fk(result))
     # print(ik_simulator.fk(ik_simulator.ikpy_run([10,10,10,10,10,10,10],[0.2, 0.4, 0.3])))
     # print(ik_simulator.fk(ik_simulator.ikpy_run([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397],[0.2, 0.4, 0.3])))
     # messenger(ik_simulator.find_all_posture([0.2000, 0.4500, 0.3000])[1])

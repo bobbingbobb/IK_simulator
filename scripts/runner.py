@@ -129,9 +129,9 @@ if __name__ == '__main__':
     # print(ik_simulator.find([-0.5906, 0.0, -0.1446]))
     # print(ik_simulator.find(target))
 
+    dataset = 'rtree_20'
     # dataset = 'dense'
-    # dataset = 'rtree_20'
-    dataset = 'full_jointonly_fixed1'
+    # dataset = 'full_jointonly_fixed1'
 
     # s = d.datetime.now()
     # runner('inter', dataset, 300, 'inter_300')
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     # print('full process duration: ', e-s)
 
     s = d.datetime.now()
-    runner('inter', dataset, 1, 'test')
+    runner('ikpy', dataset, 1, 'test')
     e = d.datetime.now()
     print('full process duration: ', e-s)
 

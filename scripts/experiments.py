@@ -202,6 +202,52 @@ def posture_num(iter):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
+def query_time():
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+    dataset = 'rtree_20'
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    iktable = IKTable(dataset)
+
+
+    if dataset == 'rtree_20':
+        res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
+    elif dataset == 'dense':
+        res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
+    elif dataset == 'full_jointonly_fixed1':
+        res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
+    # filename = RESULT_FOLDER+dataset+'/'+name
+
+    x = round(r.uniform(res[0], res[1]), 4)
+    y = round(r.uniform(res[2], res[3]), 4)
+    z = round(r.uniform(res[4], res[5]), 4)
+    target = [x, y, z]
+
+
+    s = d.datetime.now()
+    joint = iktable.query(target)[0][1]
+    result = ik_simulator.ikpy_run(joint, target)
+    e = d.datetime.now()
+    query = e - s
+    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+
+    s = d.datetime.now()
+    joint = ik_simulator.find(target)[0][0][0][1] #classify
+    result = ik_simulator.ikpy_run(joint, target)
+    e = d.datetime.now()
+    classify = e - s
+    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+
+    s = d.datetime.now()
+    joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    result = chain.inverse_kinematics(target)[1:8]
+    e = d.datetime.now()
+    ikpy = e - s
+    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+
+    print(query)
+    print(classify)
+    print(ikpy)
 
 if __name__ == '__main__':
     print('start')
@@ -210,7 +256,8 @@ if __name__ == '__main__':
     # fully_covered(1)
     # current_ik_speed(1000)
     # posture_num(1)
-    draw('rtree_20', 'inter_300_post')
+    # draw('rtree_20', 'inter_300_post')
+    query_time()
 
     print('duration: ', d.datetime.now()-start)
     print('end')

@@ -409,12 +409,21 @@ def ikpy_test():
     from ikpy.link import DHLink as Link
     import ikpy.utils.plot as plot_utils
 
-    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
+    j = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+    result = chain.inverse_kinematics([ 0.4665, 0.0,  0.7315], initial_position=[0, *j, 0])[1:8]
+    # result = chain.inverse_kinematics([0.2, 0.4, 0.3])[1:8]
+    print(result)
+    print([p[3] for p in chain.forward_kinematics([0, *result, 0])[:3]])
+
+
+    # work_joints = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+    # print([p[3] for p in chain.forward_kinematics([0, *work_joints, 0])[:3]])
 
     robot = Robot()
-
-    dhlink = Link(robot.dh)
+    print(robot.fk_dh(result)[0])
+    # dhlink = Link(robot.dh)
 
     # target = [0.5545, 0.0, 0.6245]
     #
@@ -445,6 +454,22 @@ def ikpy_test():
     #
     # e = d.datetime.now()
     # print(e-s)
+
+def ikpy_draw():
+    from ikpy.chain import Chain
+    from ikpy.link import DHLink as Link
+    import ikpy.utils.plot as plot_utils
+
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+
+
+    import matplotlib.pyplot
+    from mpl_toolkits.mplot3d import Axes3D
+    ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+
+    chain.plot(chain.inverse_kinematics([0.2, 0.2, 0.2]), ax)
+    matplotlib.pyplot.show()
 
 def dense_test(target, iter):
     iktable = IKTable('dense')
