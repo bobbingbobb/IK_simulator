@@ -64,7 +64,7 @@ class Robot:
                 #todo: extend to customized ee offset
                 #todo: fitting the euler angle presentation
         '''
-        self.dh[:,0] = joints
+        self.dh[:len(joints),0] = joints
 
         fk_mat = np.eye(4)
         for i in range(self.joint_num):
@@ -365,7 +365,8 @@ if __name__ == '__main__':
     # print(dc.hdf5_store('raw_data_7j_30'))
 
     robot = Robot()
-    print(robot.fk_jo([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]))
+    robot.joint_num = 6
+    print(robot.fk_dh([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679]))
 
     # from multiprocessing import Process, Pool
     # pool = Pool()

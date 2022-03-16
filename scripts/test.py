@@ -530,7 +530,7 @@ def transforming():
 # transforming()
 
 property = index.Property(dimension=3)
-idx = index.Index(RAW_DATA_FOLDER+'raw_data_7j_30', properties=property)
+idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)
 print(idx)
 idx.close()
 

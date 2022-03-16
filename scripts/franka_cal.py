@@ -406,40 +406,45 @@ def run_within(iter):
 
 def ikpy_test():
     from ikpy.chain import Chain
+    from ikpy.link import DHLink as Link
     import ikpy.utils.plot as plot_utils
 
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False, False])
     # print(chain)
 
-    target = [0.5545, 0.0, 0.6245]
+    robot = Robot()
 
-    ini1 = [-0.3,  0.8,  0.7, -0.5,  0.2,  0. ,  0. ]
-    ini2 = [ 2.2,  0.3, -2.3, -2. ,  2.2,  2.5,  0. ]
-    inifar1 = [ -2.2,  0.0, 0.0, -0.3 ,  1.5,  0.2,  0. ]
+    dhlink = Link(robot.dh)
 
-    work_joints = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
-    print([p[3] for p in chain.forward_kinematics([0, *work_joints, 0, 0])[:3]])
-
-    s = d.datetime.now()
-    result = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
-    # result = chain.inverse_kinematics(target, initial_position=[0, *inifar1, 0, 0])[1:8]
-
-    e = d.datetime.now()
-    print(e-s)
-
-    result = chain.inverse_kinematics(target, initial_position=[0, *ini1, 0, 0])[1:8]
-    # print(result)
-    print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
-
-    s = d.datetime.now()
-    print(s-e)
-
-    result = chain.inverse_kinematics(target, initial_position=[0, *ini2, 0, 0])[1:8]
-    # print(result)
-    print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
-
-    e = d.datetime.now()
-    print(e-s)
+    # target = [0.5545, 0.0, 0.6245]
+    #
+    # ini1 = [-0.3,  0.8,  0.7, -0.5,  0.2,  0. ,  0. ]
+    # ini2 = [ 2.2,  0.3, -2.3, -2. ,  2.2,  2.5,  0. ]
+    # inifar1 = [ -2.2,  0.0, 0.0, -0.3 ,  1.5,  0.2,  0. ]
+    #
+    # work_joints = [0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397]
+    # print([p[3] for p in chain.forward_kinematics([0, *work_joints, 0, 0])[:3]])
+    #
+    # s = d.datetime.now()
+    # result = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
+    # # result = chain.inverse_kinematics(target, initial_position=[0, *inifar1, 0, 0])[1:8]
+    #
+    # e = d.datetime.now()
+    # print(e-s)
+    #
+    # result = chain.inverse_kinematics(target, initial_position=[0, *ini1, 0, 0])[1:8]
+    # # print(result)
+    # print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
+    #
+    # s = d.datetime.now()
+    # print(s-e)
+    #
+    # result = chain.inverse_kinematics(target, initial_position=[0, *ini2, 0, 0])[1:8]
+    # # print(result)
+    # print([p[3] for p in chain.forward_kinematics([0, *result, 0, 0])[:3]])
+    #
+    # e = d.datetime.now()
+    # print(e-s)
 
 def dense_test(target, iter):
     iktable = IKTable('dense')

@@ -14,7 +14,7 @@ from data_gen import Robot, DataCollection
 
 
 class IKTable:
-    def __init__(self, filename='raw_data_7j_20'):
+    def __init__(self, filename='rtree_20'):
 
         self.table = self._load_dataset(filename)
 
@@ -179,7 +179,7 @@ class IKSimulator:
 
         from ikpy.chain import Chain
         import ikpy.utils.plot as plot_utils
-        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+        self.chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True])
 
     def fk(self, joints, insert=False):
         if insert:
@@ -679,7 +679,7 @@ class IKSimulator:
         return tmp_joint, diff
 
     def ikpy_run(self, joint, target_pos):
-        tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0, 0])[1:8]
+        tmp_joint = self.chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0, 0])#[1:8]
 
         return tmp_joint#, diff
 
@@ -694,8 +694,11 @@ if __name__ == '__main__':
     # table = IKTable('raw_data_7j_30')
     # print(table.query_neighbor(target))
 
-    ik_simulator = IKSimulator(algo='ikpy', dataset='full_jointonly_fixed1')
-    ik_simulator.find([0.2, 0.4, 0.3])
+    ik_simulator = IKSimulator(algo='ikpy', dataset='rtree_20')
+    # ik_simulator.find([0.2, 0.4, 0.3])
+    print(ik_simulator.fk(ik_simulator.ikpy_run([0.0,0.0,0.0,0.0,0.0,0.0,0.0],[ 0.4665, 0.0,  0.7315])))
+    # print(ik_simulator.fk(ik_simulator.ikpy_run([10,10,10,10,10,10,10],[0.2, 0.4, 0.3])))
+    # print(ik_simulator.fk(ik_simulator.ikpy_run([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397],[0.2, 0.4, 0.3])))
     # messenger(ik_simulator.find_all_posture([0.2000, 0.4500, 0.3000])[1])
     # result = ik_simulator.find(target)
     # print(result)
