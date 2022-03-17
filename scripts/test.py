@@ -526,7 +526,7 @@ def transforming():
         idx.close()
     target_idx.close()
 
-transforming()
+# transforming()
 
 # property = index.Property(dimension=3)
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)

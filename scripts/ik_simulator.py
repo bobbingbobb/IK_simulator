@@ -196,7 +196,7 @@ class IKSimulator:
         pos_info = self.iktable.query(target_pos)
         if not pos_info:
             return 0, 0
-        print('find', len(pos_info))
+        # print('find', len(pos_info))
         # return pos_info
 
         # nearby_postures = self.posture_comparison(pos_info)

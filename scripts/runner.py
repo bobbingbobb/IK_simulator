@@ -34,6 +34,7 @@ def runner(algo, dataset, iter, name):
         y = round(r.uniform(res[2], res[3]), 4)
         z = round(r.uniform(res[4], res[5]), 4)
         target = [x, y, z]
+        print(target)
         print(str(i+1)+': '+str(target))
     #     ori, ne = ik_simulator.find(target)
     #     message.append(ori)
@@ -158,14 +159,14 @@ if __name__ == '__main__':
     # e = d.datetime.now()
     # print('full process duration: ', e-s)
 
-    s = d.datetime.now()
-    runner('ikpy', dataset, 1, 'test')
-    e = d.datetime.now()
-    print('full process duration: ', e-s)
+    # s = d.datetime.now()
+    # runner('ikpy', dataset, 10, 'test')
+    # e = d.datetime.now()
+    # print('full process duration: ', e-s)
 
 
     ik_simulator = IKSimulator()
-    show_avg(dataset+'/'+'test')
+    show_avg(dataset+'/'+'ikpy_clean_500')
     # show_avg('test')
     # show_avg('ikpy_100')
     # show_avg('100_006restrict_non_result_vp_v2')

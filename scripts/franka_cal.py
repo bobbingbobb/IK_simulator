@@ -412,7 +412,7 @@ def ikpy_test():
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
     j = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-    result = chain.inverse_kinematics([ 0.4665, 0.0,  0.7315], initial_position=[0, *j, 0])[1:8]
+    result = chain.inverse_kinematics([0.5, 0.0, 0.6], initial_position=[0, *j, 0])[1:8]
     # result = chain.inverse_kinematics([0.2, 0.4, 0.3])[1:8]
     print(result)
     print([p[3] for p in chain.forward_kinematics([0, *result, 0])[:3]])
@@ -458,18 +458,52 @@ def ikpy_test():
 def ikpy_draw():
     from ikpy.chain import Chain
     from ikpy.link import DHLink as Link
-    import ikpy.utils.plot as plot_utils
 
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
 
-
-    import matplotlib.pyplot
+    from matplotlib.animation import FuncAnimation
+    import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
 
-    chain.plot(chain.inverse_kinematics([0.2, 0.2, 0.2]), ax)
-    matplotlib.pyplot.show()
+    fig = plt.figure(figsize=(10,10))
+    # fig.set_size_inches(10, 10, True)
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim([-0.855, 0.855])
+    ax.set_ylim([-0.855, 0.855])
+    ax.set_zlim([-0.36, 1.19])
+
+    def init():
+        # label = ax.text(.5, .5, '', fontsize=15)
+        rob = chain.plot([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], ax)
+        return rob
+
+    def update(i):
+        print('upup')
+        t = [0.2092, -0.8056, 0.1131]
+        ax.clear()
+        ax.set_xlim([-0.855, 0.855])
+        ax.set_ylim([-0.855, 0.855])
+        ax.set_zlim([-0.36, 1.19])
+        ax.scatter3D(t[0], t[1], t[2], c='red')
+        diff = np.linalg.norm([p[3] for p in chain.forward_kinematics([0.0, *joint_list[i], 0.0])[:3]]-np.array(t))
+        ax.text(0.5,0.5,2.1, str(i), fontsize=15)
+        ax.text(0.5,0.5,2, str(diff), fontsize=15)
+        ax.set_ylabel(str(t), fontsize=15)
+        return chain.plot([0.0+i*0.05]*9, ax)
+
+
+    name = 'move'
+    k = 0
+    filename = name+str(k)+'.gif'
+    while os.path.exists(filename):
+        k += 1
+        filename = name+str(k)+'.gif'
+
+
+    ani = FuncAnimation(fig, update, frames = 10, interval = 200, init_func=init, blit=False)
+    # ani.save(filename, writer='imagemagick', fps=0.5)
+    plt.show()
 
 def dense_test(target, iter):
     iktable = IKTable('dense')
@@ -496,7 +530,8 @@ if __name__ == '__main__':
     joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
     pos_b = [ 0.5471, -0.0024,  0.6091]
 
-    ikpy_test()
+    # ikpy_test()
+    ikpy_draw()
 
     # ik_simulator = IKSimulator(algo='ikpy')
     # x = round(r.uniform(-0.855, 0.855), 4)

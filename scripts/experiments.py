@@ -202,13 +202,12 @@ def posture_num(iter):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
-def query_time():
+def query_time(iter):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
     dataset = 'rtree_20'
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
     iktable = IKTable(dataset)
-
 
     if dataset == 'rtree_20':
         res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
@@ -218,36 +217,68 @@ def query_time():
         res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
     # filename = RESULT_FOLDER+dataset+'/'+name
 
-    x = round(r.uniform(res[0], res[1]), 4)
-    y = round(r.uniform(res[2], res[3]), 4)
-    z = round(r.uniform(res[4], res[5]), 4)
-    target = [x, y, z]
+    time_c = []
+    oridiff_c = []
+    num_c = []
 
+    time_i = []
+    oridiff_i = []
+    num_i = []
 
-    s = d.datetime.now()
-    joint = iktable.query(target)[0][1]
-    result = ik_simulator.ikpy_run(joint, target)
-    e = d.datetime.now()
-    query = e - s
-    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+    for _ in range(iter):
+        x = round(r.uniform(res[0], res[1]), 4)
+        y = round(r.uniform(res[2], res[3]), 4)
+        z = round(r.uniform(res[4], res[5]), 4)
+        target = [x, y, z]
+        # target = [-0.1025, 0.2812, -0.2359]
 
-    s = d.datetime.now()
-    joint = ik_simulator.find(target)[0][0][0][1] #classify
-    result = ik_simulator.ikpy_run(joint, target)
-    e = d.datetime.now()
-    classify = e - s
-    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+        # s = d.datetime.now()
+        # joint = iktable.query(target)[0][1]
+        # result, q_n = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        # e = d.datetime.now()
+        # query = e - s
+        # q_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        # q_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
 
-    s = d.datetime.now()
-    joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    result = chain.inverse_kinematics(target)[1:8]
-    e = d.datetime.now()
-    ikpy = e - s
-    print(np.linalg.norm(ik_simulator.fk(joint)-np.array(target)))
+        s = d.datetime.now()
+        joint = ik_simulator.find(target)[0][0][0][1] #classify
+        result, c_n = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        e = d.datetime.now()
+        classify = e - s
+        c_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        c_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
 
-    print(query)
-    print(classify)
-    print(ikpy)
+        s = d.datetime.now()
+        joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        result, i_n = chain.inverse_kinematics(target)
+        e = d.datetime.now()
+        ikpy = e - s
+        i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
+
+        s = d.datetime.now()
+        joint = [0.0, 0.0, 0.0, -1.5, 0.0, 1.88, 0.0]
+        result, m_n = chain.inverse_kinematics(target)
+        e = d.datetime.now()
+        mid = e - s
+        m_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        m_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
+
+        # print(query, q_n, q_diff)
+        # print(classify, c_n, c_diff)
+        if not i_n == m_n:
+            print(ikpy, i_n, i_diff)
+            print(mid, m_n, m_diff)
+
+        # if m_diff < 1e-6:
+        #     pass
+        #
+        # if c_n < i_n:
+        #     print(target)
+        #     print(c_diff, m_diff)
+            # time_c.append(classify)
+            # oridiff_c.append(c_oridiff)
+            # num_c.append(c_n)
 
 if __name__ == '__main__':
     print('start')
@@ -257,7 +288,7 @@ if __name__ == '__main__':
     # current_ik_speed(1000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
-    query_time()
+    query_time(100)
 
     print('duration: ', d.datetime.now()-start)
     print('end')
