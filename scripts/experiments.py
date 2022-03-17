@@ -202,10 +202,9 @@ def posture_num(iter):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
-def query_time(iter):
+def query_time(dataset, iter, name):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
-    dataset = 'rtree_20'
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
     iktable = IKTable(dataset)
 
@@ -215,7 +214,7 @@ def query_time(iter):
         res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
     elif dataset == 'full_jointonly_fixed1':
         res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
-    # filename = RESULT_FOLDER+dataset+'/'+name
+    filename = RESULT_FOLDER+dataset+'/'+str(iter)+'_'+name
 
     time_c = []
     oridiff_c = []
@@ -256,29 +255,37 @@ def query_time(iter):
         i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
 
-        s = d.datetime.now()
-        joint = [0.0, 0.0, 0.0, -1.5, 0.0, 1.88, 0.0]
-        result, m_n = chain.inverse_kinematics(target)
-        e = d.datetime.now()
-        mid = e - s
-        m_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
-        m_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
-
         # print(query, q_n, q_diff)
         # print(classify, c_n, c_diff)
-        if not i_n == m_n:
-            print(ikpy, i_n, i_diff)
-            print(mid, m_n, m_diff)
+        # print(ikpy, i_n, i_diff)
 
-        # if m_diff < 1e-6:
-        #     pass
-        #
         # if c_n < i_n:
         #     print(target)
         #     print(c_diff, m_diff)
-            # time_c.append(classify)
-            # oridiff_c.append(c_oridiff)
-            # num_c.append(c_n)
+
+        if c_diff < 1e-6:
+            time_c.append(classify)
+            oridiff_c.append(c_oridiff)
+            num_c.append(c_n)
+
+        if i_diff < 1e-6:
+            time_i.append(ikpy)
+            oridiff_i.append(i_oridiff)
+            num_i.append(i_n)
+
+    message = {}
+    message['classify'] = len(time_c)
+    message['ikpy'] = len(time_i)
+    message['time_c'] = np.mean(time_c)
+    message['time_i'] = np.mean(time_i)
+    message['oridiff_c'] = np.mean(oridiff_c)
+    message['oridiff_i'] = np.mean(oridiff_i)
+    message['num_c'] = np.mean(num_c)
+    message['num_i'] = np.mean(num_i)
+
+    # np.save(filename, message)
+    print(str(iter)+'_'+name)
+    messenger(message)
 
 if __name__ == '__main__':
     print('start')
@@ -288,7 +295,7 @@ if __name__ == '__main__':
     # current_ik_speed(1000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
-    query_time(100)
+    query_time('rtree_20', 10, '1e6')
 
     print('duration: ', d.datetime.now()-start)
     print('end')
