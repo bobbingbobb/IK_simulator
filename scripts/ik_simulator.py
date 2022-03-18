@@ -29,12 +29,13 @@ class IKTable:
         start = d.datetime.now()
 
         p = index.Property(dimension=3)
-        dataset = []
-        for file in os.listdir(RAW_DATA_FOLDER):
-            if file.startswith(filename) and file.endswith(".dat"):
-                print(file)
-                dataset.append(index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(file)), properties=p))
+        # dataset = []
+        # for file in os.listdir(RAW_DATA_FOLDER):
+        #     if file.startswith(filename) and file.endswith(".dat"):
+        #         print(file)
+        #         dataset.append(index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(file)), properties=p))
 
+        dataset = index.Index(os.path.join(RAW_DATA_FOLDER, name_alignment(filename)), properties=p)
         print(filename+' loaded. duration: ', d.datetime.now()-start)
         return dataset
 
@@ -49,9 +50,7 @@ class IKTable:
         # self.range = 0.003
         # result = self.query_neighbor(target)
 
-        result = []
-        for table in self.table:
-            result += [item.object for item in table.nearest(c.deepcopy(target), 1, objects=True)]
+        result = [item.object for item in self.table.nearest(c.deepcopy(target), 1, objects=True)][:1]
 
         return result
 
@@ -92,9 +91,11 @@ class IKTable:
         return neighbor_space
 
     def dot_query(self, target):
-        result = []
-        for table in self.table:
-            result += [item.object for item in table.intersection(c.deepcopy(target), objects=True)]
+        # result = []
+        # for table in self.table:
+        #     result += [item.object for item in table.intersection(c.deepcopy(target), objects=True)]
+
+        return [item.object for item in self.table.intersection(c.deepcopy(target), objects=True)]
 
         return result
 
@@ -103,19 +104,21 @@ class IKTable:
         range = self.range / 2.0
         # range = self.range
 
-        result = []
-        for table in self.table:
-            result += [item.object for item in table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
+        # result = []
+        # for table in self.table:
+        #     result += [item.object for item in table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
+        result = [item.object for item in self.table.intersection([t+offset for offset in (-range, range) for t in target], objects=True)]
 
         if len(result) < 20:
-            result = []
-            for table in self.table:
-                result += [item.object for item in table.nearest(c.deepcopy(target), 50, objects=True)]
+            # result = []
+            # for table in self.table:
+            #     result += [item.object for item in table.nearest(c.deepcopy(target), 50, objects=True)]
+            result = [item.object for item in self.table.nearest(c.deepcopy(target), 50, objects=True)]
 
         return result
 
     def insert(self, pos_info):
-        self.table[0].insert(r.randint(0, 100000), pos_info[0][6].tolist(), obj=pos_info)
+        self.table.insert(r.randint(0, 100000), pos_info[0][6].tolist(), obj=pos_info)
 
     def delete(self, target):
         pass
@@ -165,7 +168,7 @@ class IKTable:
 
 
 class IKSimulator:
-    def __init__(self, algo='pure', dataset='raw_data_7j_20'):
+    def __init__(self, algo='pure', dataset='rtree_20'):
         # self.iktable = IKTable()
 
         self.iktable = IKTable(dataset)

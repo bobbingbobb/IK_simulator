@@ -528,10 +528,32 @@ def transforming():
 
 # transforming()
 
-# property = index.Property(dimension=3)
+property = index.Property(dimension=3)
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)
-# print(idx)
+# print(idx.get_size())
 # idx.close()
+idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
+# print(idx.get_size())
+# idx.close()
+# res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
+res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
+time = []
+# cc = idx.nearest([0.2305, 0.41, 0.3125])
+for _ in range(100):
+    x = round(r.uniform(res[0], res[1]), 4)
+    y = round(r.uniform(res[2], res[3]), 4)
+    z = round(r.uniform(res[4], res[5]), 4)
+    target = [x, y, z]
+    # target = [0.2305, 0.41, 0.3125]
+    s = d.datetime.now()
+    # cc = [item.object for item in idx.nearest(target, 1, objects=True)][0]
+    cc = idx.nearest(target)
+    # print(d.datetime.now()-s)
+    time.append(d.datetime.now()-s)
+# print(idx)
+idx.close()
+print(np.mean(time))
+
 
 # dataset = []
 # for file in os.listdir(RAW_DATA_FOLDER):
@@ -542,6 +564,3 @@ def transforming():
 # ori = 0.00137
 # mean = 0.0005236075107600494
 # print(round((ori-mean)/ori*100, 2))
-
-# data = np.load('../data/result/dense/inter_300_post.npy')
-# print(len(data))
