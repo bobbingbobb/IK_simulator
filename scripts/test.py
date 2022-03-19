@@ -6,7 +6,9 @@ import os
 import datetime as d
 import random as r
 from rtree import index
+import cProfile as cp
 
+from ikpy.chain import Chain
 
 from scipy.spatial import KDTree
 from data_gen import Robot
@@ -122,24 +124,7 @@ c = [22.2,.22,-22.1]
 # else:
 #     print('f')
 
-a = [1,2,3]
-b = [-3,-4,-5]
-# print(a[:1]+a[2:])
-
-# print(np.mean([1,2,3], axis=0))
-# print(np.subtract(a,b))
-
-a = [[1,8,3],[3,3,3],[1,2,3]]
-# a = [[1,3],[2,3],[3,3]]
-
-# print(np.dot(a, np.linalg.inv(a)))
-# print(np.dot(b, a))
-#
-# print((np.array(c)>5).any())
-# print(np.absolute(c))
-
-
-tree = KDTree(a, leafsize=2, balanced_tree=True)
+# tree = KDTree(a, leafsize=2, balanced_tree=True)
 # print(tree.query_ball_point([3,3,2], 0.0003))
 
 vectors = [[0.001017, 0.018661, 0.0], [0.006918, 0.005827, -0.013618], [0.002694, 0.015783, -0.003783], [0.001464, 0.002767, 0.013237], [-0.001235, -0.004304, -0.000281], [0.004531, -0.001224, -0.001164]]
@@ -532,14 +517,32 @@ property = index.Property(dimension=3)
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)
 # print(idx.get_size())
 # idx.close()
-idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
+# idx = index.Index(RAW_DATA_FOLDER+'raw_data_7j_30', properties=property)
 # print(idx.get_size())
 # idx.close()
-# res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
+# # res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
+# idx = index.Index(RAW_DATA_FOLDER+'full_jointonly_8', properties=property)
+# print(idx.get_size())
+# idx.close()
+# idx = index.Index(RAW_DATA_FOLDER+'full_jointonly_1', properties=property)
+# print(idx.get_size())
+# idx.close()
+# # res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
+# idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
+# print(idx.get_size())
+# idx.close()
+# idx = index.Index(RAW_DATA_FOLDER+'dense_650s', properties=property)
+# print(idx.get_size())
+# idx.close()
+idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
 res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
+
+# print(idx.get_size())
+# idx.close()
 time = []
 # cc = idx.nearest([0.2305, 0.41, 0.3125])
-for _ in range(100):
+
+for _ in range(1000):
     x = round(r.uniform(res[0], res[1]), 4)
     y = round(r.uniform(res[2], res[3]), 4)
     z = round(r.uniform(res[4], res[5]), 4)
@@ -547,12 +550,18 @@ for _ in range(100):
     # target = [0.2305, 0.41, 0.3125]
     s = d.datetime.now()
     # cc = [item.object for item in idx.nearest(target, 1, objects=True)][0]
+    # cp.run('idx.nearest(target)')
+    # cp.run('idx.nearest(target)')
     cc = idx.nearest(target)
     # print(d.datetime.now()-s)
+    # print(len(list(cc)))
     time.append(d.datetime.now()-s)
 # print(idx)
 idx.close()
 print(np.mean(time))
+
+# robot = Robot()
+# cp.run('robot.fk_dh([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397])')
 
 
 # dataset = []
@@ -561,6 +570,7 @@ print(np.mean(time))
 #         dataset.append(os.path.join(RAW_DATA_FOLDER, name_alignment(file)))
 # print(dataset)
 
-# ori = 0.00137
-# mean = 0.0005236075107600494
-# print(round((ori-mean)/ori*100, 2))
+
+# chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+# joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# cp.run('chain.inverse_kinematics(target, initial_position=[0, *joint, 0])')

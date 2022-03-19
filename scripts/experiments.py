@@ -245,7 +245,6 @@ def query_time(dataset, iter, threshold):
         qs = d.datetime.now()
         # joint = ik_simulator.iktable.query(target)[0][1]
         joint = [item.object for item in idx.nearest(c.deepcopy(target), 1, objects=True)][0][1]
-        print(joint)
         qe = d.datetime.now()
         query = qe - qs
         result, ne_n, nearby = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
@@ -319,7 +318,7 @@ def query_time(dataset, iter, threshold):
     # message['num_c'] = np.mean(num_c)
     message['num_i'] = np.mean(num_i)
 
-    np.save(filename, message)
+    # np.save(filename, message)
     messenger(message)
 
 if __name__ == '__main__':

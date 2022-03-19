@@ -241,7 +241,7 @@ def high_dense_gen(iter, name, xs, ys, zs):
     start = d.datetime.now()
     from ikpy.chain import Chain
     import ikpy.utils.plot as plot_utils
-    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     robot = Robot()
 
     id = 0
@@ -270,7 +270,7 @@ def high_dense_gen(iter, name, xs, ys, zs):
                         for j in range(6):
                             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
                         try:
-                            joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                            joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0])[1:8]
                             position, vec_ee = robot.fk_jo(joint)
                             # position, _ = robot.fk_jo(joint)
                             if not target == [round(p, 4) for p in position[6]]:
@@ -306,7 +306,7 @@ def high_dense_multipost(name, xs, ys, zs, ran):
     start = d.datetime.now()
     from ikpy.chain import Chain
     import ikpy.utils.plot as plot_utils
-    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0], active_links_mask=[False, True, True, True, True, True, True, True, False, False])
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     robot = Robot()
 
     thres = 0.5
@@ -329,7 +329,7 @@ def high_dense_multipost(name, xs, ys, zs, ran):
                     for j in range(6):
                         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
                     try:
-                        joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
+                        joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0])[1:8]
                         position, vec_ee = robot.fk_jo(joint)
                         if not target == [round(p, 4) for p in position[6]]:
                             print(target, len(post))
@@ -359,14 +359,31 @@ def high_dense_multipost(name, xs, ys, zs, ran):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
+def dataset_check():
+    start = d.datetime.now()
+
+    id = 0
+    property = index.Property(dimension=3)
+    target_idx = index.Index(RAW_DATA_FOLDER+'dense_new', properties=property)
+    idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
+
+    for item in idx.intersection([0.2, 0.45, 0.3, 0.25, 0.5, 0.35], objects=True):
+        target_idx.insert(id, item.object[0][6].tolist(), obj=item.object)
+        id += 1
+
+    idx.close()
+    target_idx.close()
+    end = d.datetime.now()
+    print('done. duration: ', end-start)
+
 if __name__ == '__main__':
     pass
     # dc = DataCollection(scale=30)
     # print(dc.hdf5_store('raw_data_7j_30'))
 
-    robot = Robot()
-    robot.joint_num = 6
-    print(robot.fk_dh([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679]))
+    # robot = Robot()
+    # robot.joint_num = 6
+    # print(robot.fk_dh([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679]))
 
     # from multiprocessing import Process, Pool
     # pool = Pool()
@@ -381,3 +398,5 @@ if __name__ == '__main__':
     # high_dense_gen(100, '1dense_')
     # high_dense_gen(100, '2dense_')
     # high_dense_gen(100, '3dense_')
+
+    dataset_check()
