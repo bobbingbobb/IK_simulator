@@ -361,13 +361,19 @@ def high_dense_multipost(name, xs, ys, zs, ran):
 
 def dataset_check():
     start = d.datetime.now()
+    idx = index.Index(RAW_DATA_FOLDER+'raw_data_7j_20', properties=index.Property(dimension=3))
 
-    id = 0
-    property = index.Property(dimension=3)
-    target_idx = index.Index(RAW_DATA_FOLDER+'dense_new', properties=property)
-    idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
+    id = 1
+    # property = index.Property(dimension=3, leaf_capacity=100, index_capacity=10000, point_pool_capacity=20, region_pool_capacity=100, fill_factor=0.9)
+    # property = index.Property(dimension=3, leaf_capacity=100, index_capacity=10000, fill_factor=0.9)
+    property = index.Property(dimension=3, fill_factor=0.9)
+    target_idx = index.Index(RAW_DATA_FOLDER+'rtree_20_new', properties=property)
 
-    for item in idx.intersection([0.2, 0.45, 0.3, 0.25, 0.5, 0.35], objects=True):
+    # print(len(list(idx.intersection([-0.855, -0.855, -0.36, 0.855, 0.855, 1.19], objects=True))))
+
+    # for item in idx.intersection([0.2, 0.45, 0.3, 0.25, 0.5, 0.35], objects=True):
+    # for item in idx.intersection([-0.855, -0.855, -0.36, 0.855, 0.855, 1.19], objects=True):
+    for item in idx.nearest([0.0, 0.0, 0.0], idx.get_size(), objects=True):
         target_idx.insert(id, item.object[0][6].tolist(), obj=item.object)
         id += 1
 

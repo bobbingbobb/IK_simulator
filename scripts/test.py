@@ -514,30 +514,32 @@ def transforming():
 # transforming()
 
 property = index.Property(dimension=3)
-# idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)
+
+idx = index.Index(RAW_DATA_FOLDER+'rtree_20_new', properties=property)
 # print(idx.get_size())
 # idx.close()
-# idx = index.Index(RAW_DATA_FOLDER+'raw_data_7j_30', properties=property)
+# idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)
+# print(idx.properties)
 # print(idx.get_size())
 # idx.close()
-# # res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
+res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
 # idx = index.Index(RAW_DATA_FOLDER+'full_jointonly_8', properties=property)
 # print(idx.get_size())
 # idx.close()
 # idx = index.Index(RAW_DATA_FOLDER+'full_jointonly_1', properties=property)
 # print(idx.get_size())
 # idx.close()
-# # res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
+# res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
 # idx = index.Index(RAW_DATA_FOLDER+'dense', properties=property)
 # print(idx.get_size())
 # idx.close()
 # idx = index.Index(RAW_DATA_FOLDER+'dense_650s', properties=property)
 # print(idx.get_size())
 # idx.close()
-idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
-res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
+# idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
+# res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
 
-# print(idx.get_size())
+print(idx.get_size())
 # idx.close()
 time = []
 # cc = idx.nearest([0.2305, 0.41, 0.3125])
@@ -556,7 +558,6 @@ for _ in range(1000):
     # print(d.datetime.now()-s)
     # print(len(list(cc)))
     time.append(d.datetime.now()-s)
-# print(idx)
 idx.close()
 print(np.mean(time))
 

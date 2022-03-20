@@ -17,40 +17,45 @@ import ikpy.utils.plot as plot_utils
 chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], last_link_vector=[0, 0, 0])#, active_links_mask=[False, True, True, True, True, True, True, True, False, False])
 
 
-def fully_covered(iter):
+def fully_covered(iter, dataset):
     # iktable = IKTable('rtree_20')
     # iktable = IKTable('dense')
-    iktable = IKTable('full_jointonly_0')
-    for t in iktable.table:
-        print(t.bounds)
+    # iktable = IKTable('full_jointonly_0')
+    # for t in iktable.table:
+    #     print(t.bounds)
+    p = index.Property(dimension=3)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
+    res = idx.bounds
+    print(res)
 
     avg = []
     n_avg = []
     dev = []
     pos = []
+    time = []
     for i in range(iter):
         counter = 0
         n_counter = 0
         for _ in range(1000):
 
-            # x = round(r.uniform(-0.855, 0.855), 4)
-            # y = round(r.uniform(-0.855, 0.855), 4)
-            # z = round(r.uniform(-0.36, 1.19), 4)
-            # x = round(r.uniform(0.2, 0.25), 4)
-            # y = round(r.uniform(0.45, 0.5), 4)
-            # z = round(r.uniform(0.3, 0.35), 4)
-            x = round(r.uniform(0.2, 0.21), 4)
-            y = round(r.uniform(0.4, 0.41), 4)
-            z = round(r.uniform(0.3, 0.31), 4)
+            x = round(r.uniform(res[0], res[3]), 4)
+            y = round(r.uniform(res[1], res[4]), 4)
+            z = round(r.uniform(res[2], res[5]), 4)
+            target = [x, y, z]
 
-            result = iktable.dot_nuery([x, y, z])
+            qs = d.datetime.now()
+            # result = iktable.dot_query([x, y, z])
+            qu_res = idx.intersection(c.copy(target), objects=True)
+            qe = d.datetime.now()
+            time.append(qe-qs)
+            result = [item.object for item in qu_res]
             if len(result):#in range
                 pos.append(len(result))
                 counter += 1
                 # print(result)
             else:
                 n_counter += 1
-                dev.append(np.linalg.norm(np.array(list(iktable.table[0].nearest([x, y, z], objects=True))[0].bounds[::2]) - np.array([x, y, z])))
+                dev.append(np.linalg.norm(np.array(list(idx.nearest(c.copy(target), objects=True))[0].bounds[::2]) - np.array([x, y, z])))
             # break
         # break
         print(i+1, counter)
@@ -63,6 +68,7 @@ def fully_covered(iter):
     mes['n_avg'] = np.mean(n_avg)
     mes['len'] = np.mean(dev)
     mes['worst'] = max(dev) if dev else 0
+    mes['time'] = np.mean(time)
     messenger(mes)
 
 def current_ik_speed(iter):
@@ -211,13 +217,20 @@ def query_time(dataset, iter, threshold):
     p = index.Property(dimension=3)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
 
-    if dataset == 'rtree_20':
-        res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
-    elif dataset == 'dense':
-        res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
-    elif dataset == 'full_jointonly_fixed1':
-        res = [0.2, 0.215, 0.4, 0.415, 0.3, 0.315]
-    filename = RESULT_FOLDER+dataset+'/'+'compare_'+str(iter)+'_'+str(threshold).replace('.','')
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+        else:
+            dsf = 'rtree_30/'
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        dsf = 'full/'
+
+    filename = RESULT_FOLDER+dsf+'compare_'+str(iter)+'_'+str(threshold).replace('.','')
     print(dataset+'_'+str(iter)+'_'+str(threshold))
 
     time_q = []
@@ -235,18 +248,21 @@ def query_time(dataset, iter, threshold):
     num_i = []
 
     for _ in range(iter):
-        x = round(r.uniform(res[0], res[1]), 4)
-        y = round(r.uniform(res[2], res[3]), 4)
-        z = round(r.uniform(res[4], res[5]), 4)
+        x = round(r.uniform(res[0], res[3]), 4)
+        y = round(r.uniform(res[1], res[4]), 4)
+        z = round(r.uniform(res[2], res[5]), 4)
         target = [x, y, z]
         # target = [0.2731, 0.175, -0.2938]
         # print(target)
 
         qs = d.datetime.now()
         # joint = ik_simulator.iktable.query(target)[0][1]
-        joint = [item.object for item in idx.nearest(c.deepcopy(target), 1, objects=True)][0][1]
+        qu_res = idx.nearest(c.copy(target), 1, objects=True)
         qe = d.datetime.now()
         query = qe - qs
+        if query.seconds > 0.1:
+            print(target, query)
+        joint = [item.object for item in qu_res][0][1]
         result, ne_n, nearby = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
         ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
         ne_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
@@ -318,23 +334,102 @@ def query_time(dataset, iter, threshold):
     # message['num_c'] = np.mean(num_c)
     message['num_i'] = np.mean(num_i)
 
-    # np.save(filename, message)
+    np.save(filename, message)
     messenger(message)
+
+def high_dof(iter):
+    import matplotlib.pyplot as plot
+    from mpl_toolkits.mplot3d import Axes3D
+
+    chain7 = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    chain14 = Chain.from_urdf_file('r14.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+    chain21 = Chain.from_urdf_file('r21.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+
+    ax7 = plot.figure().add_subplot(111, projection='3d')
+    ax14 = plot.figure().add_subplot(111, projection='3d')
+    ax21 = plot.figure().add_subplot(111, projection='3d')
+
+    #[0.7, 0.2, 0.78]
+    j7 = [0.0, 0.27652140349562254, 0.8704641584835802, 0.06782049223495643, -0.3213171734843666, 0.1727183460132466, 2.7667813391516516, 0.0, 0.0]
+    j14 = [0.0, 0.06632988629569544, -0.2917465506362559, 0.06825891094064396, -0.06990415588549642, 0.07652681581560554, 0.6017582258330717, -0.03922156394774332, -0.03922156396941397, 0.3817166794904284, -0.029813456735899958, -0.22871894020033187, -0.02276925727560057, -0.010381784247426801, 0.0, 0.0]
+    j21 = [0.0, 0.05514057365720671, 0.13332624870099305, 0.0540710354292708, -0.09048538501735272, 0.052882618312408765, 0.17473155679380234, -0.03595756654828185, -0.0359575665541964, 0.01765394871247536, -0.03566214397981995, -0.07100282873931658, -0.04144924648592892, 0.27965720914084974, 0.020324249396459132, 0.02032424956687202, 0.1711373436278372, 0.017819999023847885, -0.151512567595255, 0.014225983542822595, 0.052718683702658614, 0.0, 0.0]
+
+    # target = [0.7, 0.2, 0.78]
+    target = [0.702, 0.2, 0.778]
+    # target = [0.71, 0.203, 0.786]
+    res = [-0.55, -0.55, -0.1, 0.55, 0.55, 0.9]
+
+    dev = []
+    time_n = []
+    num_n = []
+
+    time_i = []
+    num_i = []
+
+    for _ in range(iter):
+        x = round(r.uniform(res[0], res[3]), 4)
+        y = round(r.uniform(res[1], res[4]), 4)
+        z = round(r.uniform(res[2], res[5]), 4)
+        otarget = [x, y, z]
+        # print(otarget)
+        rp = np.array([r.random() for _ in range(3)])
+        rp *= (0.007/sum(rp))
+        target = otarget + rp
+        # print(target)
+
+        ntime_tmp = []
+        nnum_tmp = []
+        itime_tmp = []
+        inum_tmp = []
+
+        oresult, oi_7, otime_7 = chain7.inverse_kinematics(otarget, initial_position=[0.0]*(7+2))
+        iresult, ii_7, itime_7 = chain7.inverse_kinematics(target, initial_position=[0.0]*(7+2))
+        result, i_7, time_7 = chain7.inverse_kinematics(target, initial_position=oresult)
+        # print(i_7, time_7)
+        # print(oi_7, otime_7)
+        # chain7.plot(result, ax7)
+        # ax7.scatter3D(target[0], target[1], target[2], c='red')
+
+        print()
+
+        oresult, oi_14, otime_14 = chain14.inverse_kinematics(otarget, initial_position=[0.0]*(14+2))
+        iresult, ii_14, itime_14 = chain14.inverse_kinematics(target, initial_position=[0.0]*(14+2))
+        result, i_14, time_14 = chain14.inverse_kinematics(target, initial_position=oresult)
+        print(i_14, time_14)
+        print(oi_14, otime_14)
+        chain14.plot(result, ax14)
+        ax14.scatter3D(target[0], target[1], target[2], c='red')
+
+        print()
+
+        oresult, oi_21, otime_21 = chain21.inverse_kinematics(otarget, initial_position=[0.0]*(21+2))
+        iresult, ii_21, itime_21 = chain21.inverse_kinematics(target, initial_position=[0.0]*(21+2))
+        result, i_21, time_21 = chain21.inverse_kinematics(target, initial_position=oresult)
+        print(i_21, time_21)
+        print(oi_21, otime_21)
+        # print(result.tolist())
+        chain21.plot(result, ax21)
+        ax21.scatter3D(target[0], target[1], target[2], c='red')
+
+        # plot.show()
 
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
-    # dataset = 'rtree_20'
+    # dataset = 'rtree_30'
+    # dataset = 'rtree_20_new'
     dataset = 'dense'
+    # dataset = 'full_jointonly_8'
 
-    # fully_covered(1)
+    # fully_covered(1, dataset)
     # current_ik_speed(1000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
-    query_time(dataset, 1000, 1e-6)
+    # query_time(dataset, 10000, 1e-4)
+    high_dof(1)
 
-    # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_1000_00001'+'.npy', allow_pickle=True)
+    # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
     # messenger(message.item())
 
     print('duration: ', d.datetime.now()-start)
