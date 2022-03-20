@@ -530,8 +530,8 @@ if __name__ == '__main__':
     joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
     pos_b = [ 0.5471, -0.0024,  0.6091]
 
-    # ikpy_test()
-    ikpy_draw()
+    ikpy_test()
+    # ikpy_draw()
 
     # ik_simulator = IKSimulator(algo='ikpy')
     # x = round(r.uniform(-0.855, 0.855), 4)

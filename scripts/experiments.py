@@ -337,6 +337,133 @@ def query_time(dataset, iter, threshold):
     np.save(filename, message)
     messenger(message)
 
+def secondary_compare(dataset, iter, threshold):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    p = index.Property(dimension=3)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
+
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+        else:
+            dsf = 'rtree_30/'
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        dsf = 'full/'
+
+    filename = RESULT_FOLDER+dsf+'compare_'+str(iter)+'_'+str(threshold).replace('.','')
+    print(dataset+'_'+str(iter)+'_'+str(threshold))
+
+    time_q = []
+
+    time_n = []
+    oridiff_n = []
+    num_n = []
+
+    time_c = []
+    oridiff_c = []
+    num_c = []
+
+    time_i = []
+    oridiff_i = []
+    num_i = []
+
+    for _ in range(iter):
+        x = round(r.uniform(res[0], res[3]), 4)
+        y = round(r.uniform(res[1], res[4]), 4)
+        z = round(r.uniform(res[2], res[5]), 4)
+        target = [x, y, z]
+        # target = [0.2731, 0.175, -0.2938]
+        # print(target)
+
+        qs = d.datetime.now()
+        # joint = ik_simulator.iktable.query(target)[0][1]
+        qu_res = idx.nearest(c.copy(target), 1, objects=True)
+        qe = d.datetime.now()
+        query = qe - qs
+        if query.seconds > 0.1:
+            print(target, query)
+        joint = [item.object for item in qu_res][0][1]
+        result, ne_n, nearby = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        ne_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
+
+        # s = d.datetime.now()
+        # joint = ik_simulator.find(target)[0][0][0][1] #classify
+        result, c_n, classify = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        # e = d.datetime.now()
+        # classify = e - s
+        c_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        c_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
+
+        # s = d.datetime.now()
+        joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        result, i_n, ikpy = chain.inverse_kinematics(target, [0.0, 0.0, 1], orientation_mode='all', initial_position=[0, *joint, 0])
+        # e = d.datetime.now()
+        # ikpy = e - s
+        i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
+        i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
+
+        # print(nearby, ne_n, ne_diff)
+        # print(classify, c_n, c_diff)
+        # print(ikpy, i_n, i_diff)
+        # print()
+
+        # if c_n < i_n:
+        #     print(target)
+        #     print(c_diff, m_diff)
+
+        if ne_diff < threshold:
+            time_n.append(nearby)
+            oridiff_n.append(ne_oridiff)
+            num_n.append(ne_n)
+
+        # if c_diff < threshold:
+        #     time_c.append(classify)
+        #     oridiff_c.append(c_oridiff)
+        #     num_c.append(c_n)
+
+        if i_diff < threshold:
+            time_i.append(ikpy)
+            oridiff_i.append(i_oridiff)
+            num_i.append(i_n)
+
+        time_q.append(query)
+
+        # if ne_diff < threshold and i_diff < threshold:
+    #     time_n.append(nearby)
+    #     oridiff_n.append(ne_oridiff)
+    #     num_n.append(ne_n)
+    #     time_i.append(ikpy)
+    #     oridiff_i.append(i_oridiff)
+    #     num_i.append(i_n)
+    #
+    # filename = filename+'_all'
+
+    message = {}
+    message['nearby'] = len(time_n)
+    # message['classify'] = len(time_c)
+    message['ikpy'] = len(time_i)
+    message['query'] = np.mean(time_q)
+    message['time_n'] = np.mean(time_n)
+    # message['time_c'] = np.mean(time_c)
+    message['time_i'] = np.mean(time_i)
+    message['oridiff_n'] = np.mean(oridiff_n)
+    # message['oridiff_c'] = np.mean(oridiff_c)
+    message['oridiff_i'] = np.mean(oridiff_i)
+    message['num_n'] = np.mean(num_n)
+    # message['num_c'] = np.mean(num_c)
+    message['num_i'] = np.mean(num_i)
+
+    np.save(filename, message)
+    messenger(message)
+
 def high_dof(iter):
     import matplotlib.pyplot as plot
     from mpl_toolkits.mplot3d import Axes3D
@@ -362,7 +489,6 @@ def high_dof(iter):
     dev = []
     time_n = []
     num_n = []
-
     time_i = []
     num_i = []
 
@@ -385,33 +511,59 @@ def high_dof(iter):
         oresult, oi_7, otime_7 = chain7.inverse_kinematics(otarget, initial_position=[0.0]*(7+2))
         iresult, ii_7, itime_7 = chain7.inverse_kinematics(target, initial_position=[0.0]*(7+2))
         result, i_7, time_7 = chain7.inverse_kinematics(target, initial_position=oresult)
+        ntime_tmp.append(time_7)
+        nnum_tmp.append(i_7)
+        itime_tmp.append(itime_7)
+        inum_tmp.append(ii_7)
         # print(i_7, time_7)
         # print(oi_7, otime_7)
+        # print()
         # chain7.plot(result, ax7)
         # ax7.scatter3D(target[0], target[1], target[2], c='red')
-
-        print()
 
         oresult, oi_14, otime_14 = chain14.inverse_kinematics(otarget, initial_position=[0.0]*(14+2))
         iresult, ii_14, itime_14 = chain14.inverse_kinematics(target, initial_position=[0.0]*(14+2))
         result, i_14, time_14 = chain14.inverse_kinematics(target, initial_position=oresult)
-        print(i_14, time_14)
-        print(oi_14, otime_14)
-        chain14.plot(result, ax14)
-        ax14.scatter3D(target[0], target[1], target[2], c='red')
-
-        print()
+        ntime_tmp.append(time_14)
+        nnum_tmp.append(i_14)
+        itime_tmp.append(itime_14)
+        inum_tmp.append(ii_14)
+        # print(i_14, time_14)
+        # print(oi_14, otime_14)
+        # print()
+        # chain14.plot(result, ax14)
+        # ax14.scatter3D(target[0], target[1], target[2], c='red')
 
         oresult, oi_21, otime_21 = chain21.inverse_kinematics(otarget, initial_position=[0.0]*(21+2))
         iresult, ii_21, itime_21 = chain21.inverse_kinematics(target, initial_position=[0.0]*(21+2))
         result, i_21, time_21 = chain21.inverse_kinematics(target, initial_position=oresult)
-        print(i_21, time_21)
-        print(oi_21, otime_21)
-        # print(result.tolist())
-        chain21.plot(result, ax21)
-        ax21.scatter3D(target[0], target[1], target[2], c='red')
+        ntime_tmp.append(time_21)
+        nnum_tmp.append(i_21)
+        itime_tmp.append(itime_21)
+        inum_tmp.append(ii_21)
+        # print(i_21, time_21)
+        # print(oi_21, otime_21)
+        # chain21.plot(result, ax21)
+        # ax21.scatter3D(target[0], target[1], target[2], c='red')
 
         # plot.show()
+
+        dev.append(np.linalg.norm(np.array(target)-np.array(otarget)))
+        time_n.append(ntime_tmp)
+        num_n.append(nnum_tmp)
+        time_i.append(itime_tmp)
+        num_i.append(inum_tmp)
+
+    message = {}
+    message['dev'] = np.mean(dev)
+    for i in range(3):
+        message[str((i+1)*7)+'time_n'] = np.mean(np.array(time_n).T[i])
+        message[str((i+1)*7)+'time_i'] = np.mean(np.array(time_i).T[i])
+        message[str((i+1)*7)+'num_n'] = np.mean(np.array(num_n).T[i])
+        message[str((i+1)*7)+'num_i'] = np.mean(np.array(num_i).T[i])
+
+    np.save(RESULT_FOLDER+'high_dof_'+str(iter), messenger)
+    messenger(message)
 
 if __name__ == '__main__':
     print('start')
@@ -427,7 +579,7 @@ if __name__ == '__main__':
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
     # query_time(dataset, 10000, 1e-4)
-    high_dof(1)
+    high_dof(10000)
 
     # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
     # messenger(message.item())
