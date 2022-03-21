@@ -362,6 +362,7 @@ def secondary_compare(dataset, iter, threshold):
     print(dataset+'_'+str(iter)+'_'+str(threshold))
 
     time_q = []
+    time_c = []
     time_s = []
     post_num = []
 
@@ -389,15 +390,32 @@ def secondary_compare(dataset, iter, threshold):
         target_pos, target_ori = robot.fk_dh(q)
 
         s = d.datetime.now()
-        query, p_num = ik_simulator.find(target_pos.tolist()) #classify
+        # pos_info = [item.object for item in idx.intersection([t+offset for offset in (-0.025, 0.025) for t in target_pos], objects=True)]
+        # if len(pos_info) < 20:
+        #     pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)] if len(pos_info) < 20 else pos_info
+
+        # pos_info = ik_simulator.iktable.rtree_query(target_pos.tolist())
+
+        pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
+        e = d.datetime.now()
+        query = e - s
+
+        s = d.datetime.now()
+        nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
+        e = d.datetime.now()
+        classify = e - s
+
+        post_num.append(len(nearby_postures))
+        # print(len(nearby_postures))
+
+        s = d.datetime.now()
         ori_tmp = 0
-        post_num.append(p_num)
-        for i, post in enumerate(query):
-            likeliness = np.dot(post[0][2], target_ori)
+        for i, post in enumerate(nearby_postures):
+            likeliness = np.dot(post[2], target_ori)
             if likeliness > ori_tmp:
             # if likeliness > 0.95:
                 ori_tmp = likeliness
-                joint = post[0][1]
+                joint = post[1]
                 # post_num.append(i)
                 # break
         e = d.datetime.now()
@@ -415,6 +433,8 @@ def secondary_compare(dataset, iter, threshold):
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
         if ne_diff < threshold:
+            time_q.append(query)
+            time_c.append(classify)
             time_s.append(outter_task)
             time_n.append(nearby)
             oridiff_n.append(ne_oridiff)
@@ -431,11 +451,12 @@ def secondary_compare(dataset, iter, threshold):
     message = {}
     message['nearby'] = len(time_n)
     message['ikpy'] = len(time_i)
-    message['outter_task'] = np.mean(time_s)
     message['post_num'] = np.mean(post_num)
     message['likeliness'] = np.mean(ee_dev)
     message['olikeliness'] = np.mean(ori_dev)
-    # message['query'] = np.mean(time_q)
+    message['time_q'] = np.mean(time_q)
+    message['time_c'] = np.mean(time_c)
+    message['time_s'] = np.mean(time_s)
     message['time_n'] = np.mean(time_n)
     message['time_i'] = np.mean(time_i)
     message['oridiff_n'] = np.mean(oridiff_n)
@@ -562,7 +583,7 @@ if __name__ == '__main__':
     # draw('rtree_20', 'inter_300_post')
     # query_time(dataset, 10000, 1e-4)
     # high_dof(10000)
-    secondary_compare(dataset, 1000, 1e-4)
+    secondary_compare(dataset, 10000, 1e-4)
 
     # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
     # messenger(message.item())
