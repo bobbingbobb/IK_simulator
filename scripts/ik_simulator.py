@@ -50,7 +50,9 @@ class IKTable:
         # self.range = 0.003
         # result = self.query_neighbor(target)
 
-        result = [item.object for item in self.table.nearest(c.deepcopy(target), 1, objects=True)][:1]
+        result = self.rtree_query(target)
+
+        # result = [item.object for item in self.table.nearest(c.deepcopy(target), 1, objects=True)][:1]
 
         return result
 
@@ -173,9 +175,9 @@ class IKSimulator:
 
         self.iktable = IKTable(dataset)
 
-        if dataset == 'raw_data_7j_20':
+        if dataset.startswith('rtree'):
             self.diff_thres = 0.0005 #0.05cm
-        elif dataset == 'dense':
+        elif dataset.startswith('dense'):
             self.diff_thres = 0.0001 #0.01cm
         else:
             self.diff_thres = 0.0005 #0.05cm

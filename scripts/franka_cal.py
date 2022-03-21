@@ -473,35 +473,45 @@ def ikpy_draw():
     ax.set_ylim([-0.855, 0.855])
     ax.set_zlim([-0.36, 1.19])
 
-    def init():
-        # label = ax.text(.5, .5, '', fontsize=15)
-        rob = chain.plot([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], ax)
-        return rob
+    robot = Robot()
+    q = np.zeros(7)
+    for j in range(6):
+        q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+    # q = [-0.5752418298051594, 1.6540422876180259, 0.69785970882804, -1.5602466042589442, -1.6204321055314392, 3.1352281333038188, 0.0]
+    target_pos, target_ori = robot.fk_dh(q)
+    chain.plot(chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z')[0], ax)
+    # chain.plot(chain.inverse_kinematics([0.5, 0.0, 0.5], [0, 1.0, 0.0], orientation_mode='X')[0], ax)
+    chain.plot([0.0, *q, 0.0],ax)
 
-    def update(i):
-        print('upup')
-        t = [0.2092, -0.8056, 0.1131]
-        ax.clear()
-        ax.set_xlim([-0.855, 0.855])
-        ax.set_ylim([-0.855, 0.855])
-        ax.set_zlim([-0.36, 1.19])
-        ax.scatter3D(t[0], t[1], t[2], c='red')
-        diff = np.linalg.norm([p[3] for p in chain.forward_kinematics([0.0, *joint_list[i], 0.0])[:3]]-np.array(t))
-        ax.text(0.5,0.5,2.1, str(i), fontsize=15)
-        ax.text(0.5,0.5,2, str(diff), fontsize=15)
-        ax.set_ylabel(str(t), fontsize=15)
-        return chain.plot([0.0+i*0.05]*9, ax)
-
-
-    name = 'move'
-    k = 0
-    filename = name+str(k)+'.gif'
-    while os.path.exists(filename):
-        k += 1
-        filename = name+str(k)+'.gif'
-
-
-    ani = FuncAnimation(fig, update, frames = 10, interval = 200, init_func=init, blit=False)
+    # def init():
+    #     # label = ax.text(.5, .5, '', fontsize=15)
+    #     rob = chain.plot([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], ax)
+    #     return rob
+    #
+    # def update(i):
+    #     print('upup')
+    #     t = [0.2092, -0.8056, 0.1131]
+    #     ax.clear()
+    #     ax.set_xlim([-0.855, 0.855])
+    #     ax.set_ylim([-0.855, 0.855])
+    #     ax.set_zlim([-0.36, 1.19])
+    #     ax.scatter3D(t[0], t[1], t[2], c='red')
+    #     diff = np.linalg.norm([p[3] for p in chain.forward_kinematics([0.0, *joint_list[i], 0.0])[:3]]-np.array(t))
+    #     ax.text(0.5,0.5,2.1, str(i), fontsize=15)
+    #     ax.text(0.5,0.5,2, str(diff), fontsize=15)
+    #     ax.set_ylabel(str(t), fontsize=15)
+    #     return chain.plot([0.0+i*0.05]*9, ax)
+    #
+    #
+    # name = 'move'
+    # k = 0
+    # filename = name+str(k)+'.gif'
+    # while os.path.exists(filename):
+    #     k += 1
+    #     filename = name+str(k)+'.gif'
+    #
+    #
+    # ani = FuncAnimation(fig, update, frames = 10, interval = 200, init_func=init, blit=False)
     # ani.save(filename, writer='imagemagick', fps=0.5)
     plt.show()
 
@@ -530,8 +540,8 @@ if __name__ == '__main__':
     joint_b:list = [ 2.2,  0.3, -2.3, -2. , -2.8,  2.5,  0. ]
     pos_b = [ 0.5471, -0.0024,  0.6091]
 
-    ikpy_test()
-    # ikpy_draw()
+    # ikpy_test()
+    ikpy_draw()
 
     # ik_simulator = IKSimulator(algo='ikpy')
     # x = round(r.uniform(-0.855, 0.855), 4)
