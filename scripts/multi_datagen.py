@@ -131,7 +131,7 @@ def multi_collect(j1_range, filename='raw_data'):
     start = d.datetime.now()
 
     robot = Robot()
-    scale = 12
+    scale = 0.2
     id = 1
     joint = np.zeros(7)
 
@@ -140,7 +140,7 @@ def multi_collect(j1_range, filename='raw_data'):
     idx = index.Index(filename, properties=p)
 
     for j1 in j1_range:
-        joint[0] = j1/10.0
+        joint[0] = j1
         for j2 in range(int(robot.joints[1].min*10), int(robot.joints[1].max*10), int(scale*10)):
             joint[1] = j2/10.0
             for j3 in range(int(robot.joints[2].min*10), int(robot.joints[2].max*10), int(scale*10)):
@@ -162,16 +162,17 @@ def multi_collect(j1_range, filename='raw_data'):
                             pos_info = (position, joint, vec_ee)
                             idx.insert(id, position[6].tolist(), obj=pos_info)
 
+                            print(joint)
                             id += 1
-                        # idx.close()
-                        # return 0
-            # print(d.datetime.now()-start)
-            idx.close()
-            shutil.copyfile(filename+'.idx', filename+'_1'+'.idx')
-            shutil.copyfile(filename+'.dat', filename+'_1'+'.dat')
-            end = d.datetime.now()
-            print(str(i+1)+' saved. duration: ', end-start)
-            idx = index.Index(filename, properties=p)
+                    # idx.close()
+                    # return 0
+            print(d.datetime.now()-start)
+        idx.close()
+        shutil.copyfile(filename+'.idx', filename+'_1'+'.idx')
+        shutil.copyfile(filename+'.dat', filename+'_1'+'.dat')
+        end = d.datetime.now()
+        print(str(j2/10.0)+' saved. duration: ', end-start)
+        idx = index.Index(filename, properties=p)
 
     end = d.datetime.now()
     print('done. duration: ', end-start)
@@ -256,6 +257,7 @@ if __name__ == '__main__':
         work.append((j1_range[i:i+2], str(int(i/2))+'rtree_10'))
     print(tuple(work))
 
+    # multi_collect([1.98, 2.29], '8rtree_10')
     pool.starmap(multi_collect, tuple(work))
 
     i = 4
