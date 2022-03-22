@@ -341,19 +341,6 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # pc = posture_comparison(pj[:1000], robot)
 # print(len(pc))
 
-# js = []
-# for i,v in enumerate(pc):
-#     if (len(v)>7):
-#         print(i)
-#         js.append([j[1] for j in v])
-# print(js)
-#
-# np.save('js', js, allow_pickle=True)
-# np.save('example', pc, allow_pickle=True)
-
-# js = np.load('example.npy', allow_pickle=True)
-# print(np.mean([len(j) for j in js]))
-
 # ex = np.load('example.npy', allow_pickle=True)
 # print(ex[12])
 # for i,v in enumerate(ex):
@@ -386,47 +373,6 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 # print(np.linalg.norm([0.316, 0.0825]))#j1 - j3 range
 # print(np.linalg.norm([0.384, 0.0825]))#j3 - j5 range
 
-# from rtree import index
-# p = index.Property()
-# p.dimension = 3
-# idx = index.Index('rtree', properties=index.Property(dimension = 3))
-# # idx = index.Index('rtree')
-#
-#
-# # test_pos = []
-# # for i in range(5):
-# #     x = round(r.uniform(-0.855, 0.855), 4)
-# #     y = round(r.uniform(-0.855, 0.855), 4)
-# #     z = round(r.uniform(-0.36, 1.19), 4)
-# #
-# #     test_pos.append([x, y, z])
-# #     print(test_pos[-1])
-# #     # idx.insert(i, [x, y, z], obj=[x, y, z])
-# print('start')
-# target = [0.554499999999596, -2.7401472130806895e-17, 0.6245000000018803]
-#
-# st = d.datetime.now()
-# print(idx.properties)
-# print(idx.get_size())
-# # idx.delete(0, [-0.6937, -0.2616, 0.6251])
-# # idx.insert(0, [-0.6937, -0.2616, 0.6251], obj=[-0.6937, -0.2616, 0.6251])
-# # print(idx.get_bounds)
-#
-# print([it.object for it in idx.nearest(target, 1, objects=True)])
-# print(idx.nearest(target, 1, objects=True))
-# # print(len([it.object for it in idx.intersection([t+offset for offset in (-0.05, 0.05) for t in target], objects=True)]))
-# # print(len([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)])) #all
-# # print([it.object for it in idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19), objects=True)]) #all
-# print(list(idx.intersection((-0.855, -0.855, -0.36, 0.855, 0.855, 1.19)))) #all
-# # print(list(idx.nearest((0.5, 0, 0.6), 30)))
-# # print(list(idx.intersection((0.5, 0, 0.6, 0.7, 0.4, 0.7))))
-# print(d.datetime.now() - st)
-#
-# idx.close()
-
-# k = np.load(RAW_DATA_FOLDER+'raw_data_7j_30')
-# print(len(k))
-
 # with h5py.File(RAW_DATA_FOLDER+'raw_data_7j_30.hdf5', 'r') as f:
 #     f = f['franka_data']
 #     # print(f.attrs['shift'])
@@ -444,33 +390,6 @@ test = [[[ 0.    ,  0.    ,  0.14  ],
 #
 #     # print(list(idx.nearest(pos_ind[0].tolist(), 3)))
 #     # print(list(idx.intersection(pos_ind[10].tolist())))
-
-# idx.insert(1, (0.6, 0 ,0.3))
-# idx.insert(2, (0.5, 0 ,0.3))
-# idx.insert(3, (0.4, 0 ,0.3))
-# idx.insert(4, (0.3, 0 ,0.3))
-# idx.insert(5, (0.2, 0 ,0.3))
-
-# print(list(idx.nearest((0.4, 0 ,0.3), 3)))
-
-# print(int(m.log(1,100))+1)
-# print(int(m.log(2,100))+1)
-# print(int(m.log(99,100))+1)
-# print(int(m.log(100,100))+1)
-# print(int(m.log(101,100))+1)
-
-# class test:
-#     def __init__(self):
-#         pass
-#
-#     def __call__(self):
-#         print('asd')
-#
-#     def asd(self):
-#         return self
-# t = test()
-# print(t)
-# print(t.asd())
 
 # f = np.load(RAW_DATA_FOLDER+'raw_data_7j_30.npz')
 # data = [d[6] for d in f['positions']]
@@ -544,22 +463,22 @@ print(idx.get_size())
 time = []
 # cc = idx.nearest([0.2305, 0.41, 0.3125])
 
-for _ in range(1000):
-    x = round(r.uniform(res[0], res[1]), 4)
-    y = round(r.uniform(res[2], res[3]), 4)
-    z = round(r.uniform(res[4], res[5]), 4)
-    target = [x, y, z]
-    # target = [0.2305, 0.41, 0.3125]
-    s = d.datetime.now()
-    # cc = [item.object for item in idx.nearest(target, 1, objects=True)][0]
-    # cp.run('idx.nearest(target)')
-    # cp.run('idx.nearest(target)')
-    cc = idx.nearest(target)
-    # print(d.datetime.now()-s)
-    # print(len(list(cc)))
-    time.append(d.datetime.now()-s)
-idx.close()
-print(np.mean(time))
+# for _ in range(1000):
+#     x = round(r.uniform(res[0], res[1]), 4)
+#     y = round(r.uniform(res[2], res[3]), 4)
+#     z = round(r.uniform(res[4], res[5]), 4)
+#     target = [x, y, z]
+#     # target = [0.2305, 0.41, 0.3125]
+#     s = d.datetime.now()
+#     # cc = [item.object for item in idx.nearest(target, 1, objects=True)][0]
+#     # cp.run('idx.nearest(target)')
+#     # cp.run('idx.nearest(target)')
+#     cc = idx.nearest(target)
+#     # print(d.datetime.now()-s)
+#     # print(len(list(cc)))
+#     time.append(d.datetime.now()-s)
+# idx.close()
+# print(np.mean(time))
 
 # robot = Robot()
 # cp.run('robot.fk_dh([0.0, 0.0, 0.0, -1.57079632679, 0.0, 1.57079632679, 0.785398163397])')
@@ -573,5 +492,6 @@ print(np.mean(time))
 
 
 # chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+# print(len(chain))
 # joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # cp.run('chain.inverse_kinematics(target, initial_position=[0, *joint, 0])')

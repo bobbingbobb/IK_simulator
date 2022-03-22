@@ -11,6 +11,9 @@ from utilities import *
 from data_gen import Robot, DataCollection
 from ik_simulator import IKTable, IKSimulator
 
+import matplotlib.pyplot as plot
+from mpl_toolkits.mplot3d import Axes3D
+
 from ikpy.chain import Chain
 import ikpy.utils.plot as plot_utils
 
@@ -263,7 +266,7 @@ def query_time(dataset, iter, threshold):
         if query.seconds > 0.1:
             print(target, query)
         joint = [item.object for item in qu_res][0][1]
-        result, ne_n, nearby = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        result, ne_n, nearby, n_stat = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
         ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
         ne_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
 
@@ -277,7 +280,7 @@ def query_time(dataset, iter, threshold):
 
         # s = d.datetime.now()
         joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        result, i_n, ikpy = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
+        result, i_n, ikpy, i_stat = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
         # e = d.datetime.now()
         # ikpy = e - s
         i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
@@ -421,14 +424,14 @@ def secondary_compare(dataset, iter, threshold):
         e = d.datetime.now()
         outter_task = e - s
 
-        result, ne_n, nearby = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
+        result, ne_n, nearby, ne_stat = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
         # result, ne_n, nearby = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='X', initial_position=[0, *joint, 0])
         ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         ne_pos, ne_ori = robot.fk_dh(result[1:8])
         ne_diff = np.linalg.norm(ne_pos-np.array(target_pos))
 
         joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        result, i_n, ikpy = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='all', initial_position=[0, *joint, 0])
+        result, i_n, ikpy, i_stat = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='all', initial_position=[0, *joint, 0])
         i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
@@ -468,16 +471,15 @@ def secondary_compare(dataset, iter, threshold):
     messenger(message)
 
 def high_dof(iter):
-    import matplotlib.pyplot as plot
-    from mpl_toolkits.mplot3d import Axes3D
 
     chain7 = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     chain14 = Chain.from_urdf_file('r14.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
     chain21 = Chain.from_urdf_file('r21.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+    chain42 = Chain.from_urdf_file('r42.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
 
-    ax7 = plot.figure().add_subplot(111, projection='3d')
-    ax14 = plot.figure().add_subplot(111, projection='3d')
-    ax21 = plot.figure().add_subplot(111, projection='3d')
+    chain = [chain7, chain14, chain21, chain42]
+
+    ax = [plot.figure().add_subplot(111, projection='3d') for _ in range(len(chain))]
 
     #[0.7, 0.2, 0.78]
     j7 = [0.0, 0.27652140349562254, 0.8704641584835802, 0.06782049223495643, -0.3213171734843666, 0.1727183460132466, 2.7667813391516516, 0.0, 0.0]
@@ -492,78 +494,93 @@ def high_dof(iter):
     dev = []
     time_n = []
     num_n = []
+    stat_n = []
     time_i = []
     num_i = []
+    stat_i = []
 
     for _ in range(iter):
-        x = round(r.uniform(res[0], res[3]), 4)
-        y = round(r.uniform(res[1], res[4]), 4)
-        z = round(r.uniform(res[2], res[5]), 4)
-        otarget = [x, y, z]
-        # print(otarget)
-        rp = np.array([r.random() for _ in range(3)])
-        rp *= (0.007/sum(rp))
-        target = otarget + rp
-        # print(target)
+
+        rp = np.array([r.uniform(-1, 1) for _ in range(3)])
+        rp *= (0.02/np.linalg.norm(rp))
 
         ntime_tmp = []
         nnum_tmp = []
+        nstat_tmp = []
         itime_tmp = []
         inum_tmp = []
+        istat_tmp = []
 
-        oresult, oi_7, otime_7 = chain7.inverse_kinematics(otarget, initial_position=[0.0]*(7+2))
-        iresult, ii_7, itime_7 = chain7.inverse_kinematics(target, initial_position=[0.0]*(7+2))
-        result, i_7, time_7 = chain7.inverse_kinematics(target, initial_position=oresult)
-        ntime_tmp.append(time_7)
-        nnum_tmp.append(i_7)
-        itime_tmp.append(itime_7)
-        inum_tmp.append(ii_7)
-        # print(i_7, time_7)
-        # print(oi_7, otime_7)
-        # print()
-        # chain7.plot(result, ax7)
-        # ax7.scatter3D(target[0], target[1], target[2], c='red')
+        for i in range(4):
+            # mul = 1
+            mul = int((len(chain[i])-2)/7)
 
-        oresult, oi_14, otime_14 = chain14.inverse_kinematics(otarget, initial_position=[0.0]*(14+2))
-        iresult, ii_14, itime_14 = chain14.inverse_kinematics(target, initial_position=[0.0]*(14+2))
-        result, i_14, time_14 = chain14.inverse_kinematics(target, initial_position=oresult)
-        ntime_tmp.append(time_14)
-        nnum_tmp.append(i_14)
-        itime_tmp.append(itime_14)
-        inum_tmp.append(ii_14)
-        # print(i_14, time_14)
-        # print(oi_14, otime_14)
-        # print()
-        # chain14.plot(result, ax14)
-        # ax14.scatter3D(target[0], target[1], target[2], c='red')
+            # x = round(r.uniform(res[0]*mul, res[3]*mul), 4)
+            # y = round(r.uniform(res[1]*mul, res[4]*mul), 4)
+            # z = round(r.uniform(res[2]*mul, res[5]*mul), 4)
+            # otarget = [x, y, z]
+            # # print(otarget)
+            # target = otarget + rp
+            # # print(target)
 
-        oresult, oi_21, otime_21 = chain21.inverse_kinematics(otarget, initial_position=[0.0]*(21+2))
-        iresult, ii_21, itime_21 = chain21.inverse_kinematics(target, initial_position=[0.0]*(21+2))
-        result, i_21, time_21 = chain21.inverse_kinematics(target, initial_position=oresult)
-        ntime_tmp.append(time_21)
-        nnum_tmp.append(i_21)
-        itime_tmp.append(itime_21)
-        inum_tmp.append(ii_21)
-        # print(i_21, time_21)
-        # print(oi_21, otime_21)
-        # chain21.plot(result, ax21)
-        # ax21.scatter3D(target[0], target[1], target[2], c='red')
+            stat = 1
+            while stat:
+                radius = 0.7*mul
+                x = round(r.uniform(-radius, radius), 4)
+                radius -= x
+                y = round(r.uniform(-radius, radius), 4)
+                radius -= y
+                z = round(r.uniform(-radius+0.6, radius+0.2), 4)
+                otarget = [x, y, z]
+                target = otarget + rp
+
+                oresult, oi, otime, stat = chain[i].inverse_kinematics(otarget, initial_position=[0.0]*len(chain[i]))
+
+            iresult, ii, itime, istat = chain[i].inverse_kinematics(target, initial_position=[0.0]*len(chain[i]))
+            result, ni, ntime, nstat = chain[i].inverse_kinematics(target, initial_position=oresult)
+            ntime_tmp.append(ntime)
+            nnum_tmp.append(ni)
+            itime_tmp.append(itime)
+            inum_tmp.append(ii)
+            if not stat:
+                nstat_tmp.append(True if not nstat else False)
+                istat_tmp.append(True if not istat else False)
+            else:
+                nstat_tmp.append(False)
+                istat_tmp.append(False)
+
+
+            # stretch = [0.0, 0.0, 0.0, 0.0, 0.0, 3.14, 0.0]*mul
+            # print([round(p, 4) for p in chain[i].forward_kinematics([0.0, *stretch, 0.0])[:3, 3]])
+
+            # print(ni, ntime)
+            # print(oi, otime)
+            # print()
+            # chain[i].plot([0.0, *stretch, 0.0], ax[i])
+            # chain[i].plot(oresult, ax[i])
+            # chain[i].plot(iresult, ax[i])
+            # chain[i].plot(nresult, ax[i])
+            # ax[i].scatter3D(target[0], target[1], target[2], c='red')
 
         # plot.show()
 
-        dev.append(np.linalg.norm(np.array(target)-np.array(otarget)))
+        dev.append(np.linalg.norm(rp))
         time_n.append(ntime_tmp)
         num_n.append(nnum_tmp)
+        stat_n.append(nstat_tmp)
         time_i.append(itime_tmp)
         num_i.append(inum_tmp)
+        stat_i.append(istat_tmp)
 
     message = {}
     message['dev'] = np.mean(dev)
-    for i in range(3):
-        message[str((i+1)*7)+'time_n'] = np.mean(np.array(time_n).T[i])
-        message[str((i+1)*7)+'time_i'] = np.mean(np.array(time_i).T[i])
-        message[str((i+1)*7)+'num_n'] = np.mean(np.array(num_n).T[i])
-        message[str((i+1)*7)+'num_i'] = np.mean(np.array(num_i).T[i])
+    for i, c in enumerate(chain):
+        message[str(len(c)-2)+'success_n'] = len(np.array(stat_n).T[i][np.array(stat_n).T[i]])
+        message[str(len(c)-2)+'success_i'] = len(np.array(stat_i).T[i][np.array(stat_i).T[i]])
+        message[str(len(c)-2)+'time_n'] = np.array(time_n).T[i][np.array(stat_n).T[i]].mean()
+        message[str(len(c)-2)+'time_i'] = np.array(time_i).T[i][np.array(stat_i).T[i]].mean()
+        message[str(len(c)-2)+'num_n'] = np.array(num_n).T[i][np.array(stat_n).T[i]].mean()
+        message[str(len(c)-2)+'num_i'] = np.array(num_i).T[i][np.array(stat_i).T[i]].mean()
 
     np.save(RESULT_FOLDER+'high_dof_'+str(iter), messenger)
     messenger(message)
@@ -582,8 +599,8 @@ if __name__ == '__main__':
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
     # query_time(dataset, 10000, 1e-4)
-    # high_dof(10000)
-    secondary_compare(dataset, 10000, 1e-4)
+    high_dof(10000)
+    # secondary_compare(dataset, 10000, 1e-4)
 
     # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
     # messenger(message.item())
