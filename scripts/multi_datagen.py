@@ -162,7 +162,6 @@ def multi_collect(j1_range, filename='raw_data'):
                             pos_info = (position, joint, vec_ee)
                             idx.insert(id, position[6].tolist(), obj=pos_info)
 
-                            print(joint)
                             id += 1
                     # idx.close()
                     # return 0
