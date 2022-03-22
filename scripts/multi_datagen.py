@@ -132,12 +132,13 @@ def multi_collect(j1_range, filename='raw_data'):
 
     robot = Robot()
     scale = 0.2
+    scale = 20
     id = 1
     joint = np.zeros(7)
 
     # rtree preparing
-    p = index.Property(dimension=3, fill_factor=0.9)
-    idx = index.Index(filename, properties=p)
+    property = index.Property(dimension=3, fill_factor=0.9)
+    idx = index.Index(filename, properties=property)
 
     for j1 in j1_range:
         joint[0] = j1
@@ -170,9 +171,10 @@ def multi_collect(j1_range, filename='raw_data'):
         shutil.copyfile(filename+'.idx', filename+'_1'+'.idx')
         shutil.copyfile(filename+'.dat', filename+'_1'+'.dat')
         end = d.datetime.now()
-        print(str(j2/10.0)+' saved. duration: ', end-start)
-        idx = index.Index(filename, properties=p)
+        print(str(j1/10.0)+' saved. duration: ', end-start)
+        idx = index.Index(filename, properties=property)
 
+    idx.close()
     end = d.datetime.now()
     print('done. duration: ', end-start)
     return filename
