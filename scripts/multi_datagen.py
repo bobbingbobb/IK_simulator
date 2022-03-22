@@ -132,7 +132,6 @@ def multi_collect(j1_range, filename='raw_data'):
 
     robot = Robot()
     scale = 0.2
-    scale = 20
     id = 1
     joint = np.zeros(7)
 
