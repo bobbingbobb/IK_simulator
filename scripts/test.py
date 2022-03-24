@@ -408,7 +408,7 @@ target = [0.5545, 0.0, 0.6245]
 # print(np.dot(a[0], a[1]))
 
 def transforming():
-    property = index.Property(dimension=3)
+    property = index.Property(dimension=3, fill_factor=0.9)
     target_idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
     id = target_idx.get_size()
     print(id)
@@ -432,7 +432,7 @@ def transforming():
 
 # transforming()
 
-property = index.Property(dimension=3)
+property = index.Property(dimension=3, fill_factor=0.9)
 
 idx = index.Index('data/8rtree_10', properties=property)
 # print(idx.get_size())

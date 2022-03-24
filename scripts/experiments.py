@@ -73,6 +73,48 @@ def fully_covered(iter, dataset):
     mes['time'] = np.mean(time)
     messenger(mes)
 
+def ik_iteration(iter):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    robot = Robot()
+    iteration = []
+    deviation = []
+    dev = [0.05, 0.02, 0.01, 0.005, 0.003, 0.001, 0.0001, 0.0]
+    origin = robot.fk_dh([0]*7)[0]
+
+    for _ in range(iter):
+        stat = 1
+        while stat:
+            x = round(r.uniform(-0.855, 0.855), 4)
+            y = round(r.uniform(-0.855, 0.855), 4)
+            z = round(r.uniform(-0.36, 1.19), 4)
+            target = [x, y, z]
+            diff = np.linalg.norm(np.array(origin) - np.array(target))
+            # if diff < 0.05:
+            #     continue
+            tmp_joint, num, time, stat, joint_list = chain.inverse_kinematics(target)
+        # print(len(joint_list))
+        deviation.append(diff)
+        i = 0
+        it = []
+        for dis in dev:
+            tmp = 0
+            while i < len(joint_list) and np.linalg.norm(robot.fk_dh(joint_list[i])[0] - np.array(target)) > dis:
+                tmp += 1
+                i += 1
+            it.append(tmp)
+        iteration.append(it)
+
+    # np.save(RESULT_FOLDER+str(iter)+'iteration_dis', [dev, iteration])
+
+    iteration = np.array(iteration).T
+    message = {}
+    message['diff'] = np.mean(deviation)
+    for i in range(len(dev)):
+        message[str(dev[i])] = np.mean(iteration[i])
+    messenger(message)
+    np.save(RESULT_FOLDER+str(iter)+'iteration_dis', message)
+
+
 def current_ik_speed(iter):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     time = []
@@ -83,8 +125,8 @@ def current_ik_speed(iter):
     for j in range(6):
         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
 
-    for dis in range(10):
-        dis /= 10000
+    for dis in range(50):
+        dis /= 5000
         print(dis)
         for _ in range(iter):
             stat = 1
@@ -105,7 +147,7 @@ def current_ik_speed(iter):
             if not nstat:
                 dev.append(dis)
                 time.append(ni)
-    np.save(RESULT_FOLDER+'distribution_range_iter_3', [time, dev])
+    np.save(RESULT_FOLDER+'distribution_range_iter_4', [time, dev])
 
     #     s = d.datetime.now()
     #     tmp_joint, ni, ntime, nstat = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
@@ -134,34 +176,38 @@ def draw_line():
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    data = np.load(RESULT_FOLDER+'distribution_range_iter_1.npy', allow_pickle=True)
+    data = np.load(RESULT_FOLDER+'distribution_range_iter_4.npy', allow_pickle=True)
     print(len(data[1]))
     i = 0
     iter = []
     dev = []
 
-    # for dis in range(99):
-    #     tmp = []
-    #     while round(data[1][i],4) == dis/1000:
-    #         tmp.append(data[0][i])
-    #         i += 1
-    #     dev.append(dis/1000)
-    #     iter.append(np.mean(tmp))
-
-    ra = 0.0
-    i_dis = np.argsort(data[1])
-    while i < len(i_dis):
-        tmp_i = []
-        tmp_d = []
-        ra += 0.005
-        while data[1][i_dis[i]] < ra:
-            tmp_i.append(data[0][i_dis[i]])
-            tmp_d.append(data[1][i_dis[i]])
+    for dis in range(50):
+        dis /= 5000
+        tmp = []
+        while round(data[1][i],4) == dis:
+            tmp.append(data[0][i])
             i += 1
-            if i == len(i_dis):
+            if i == len(data[0]):
                 break
-        iter.append(np.mean(tmp_i))
-        dev.append(np.mean(tmp_d))
+        dev.append(dis)
+        iter.append(np.mean(tmp))
+        print(len(tmp))
+
+    # ra = 0.0
+    # i_dis = np.argsort(data[1])
+    # while i < len(i_dis):
+    #     tmp_i = []
+    #     tmp_d = []
+    #     ra += 0.005
+    #     while data[1][i_dis[i]] < ra:
+    #         tmp_i.append(data[0][i_dis[i]])
+    #         tmp_d.append(data[1][i_dis[i]])
+    #         i += 1
+    #         if i == len(i_dis):
+    #             break
+    #     iter.append(np.mean(tmp_i))
+    #     dev.append(np.mean(tmp_d))
 
     # print(iter)
     # print(dev)
@@ -173,7 +219,7 @@ def draw_line():
     plt.xlabel("iter (num)")
     plt.ylabel("dev (m)")
     plt.title('distance vs iteration')
-    # plt.savefig(RESULT_FOLDER+'dist_iter_1.png')
+    plt.savefig(RESULT_FOLDER+'dist_iter_4.png')
     plt.show()
 
 def draw(dataset, name):
@@ -657,12 +703,13 @@ if __name__ == '__main__':
 
     # fully_covered(1, dataset)
     # current_ik_speed(100)
+    ik_iteration(10000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
     # query_time(dataset, 10000, 1e-4)
     # high_dof(1000)
     # secondary_compare(dataset, 10000, 1e-4)
-    draw_line()
+    # draw_line()
 
     # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
     # message = np.load(RESULT_FOLDER+'high_dof_10000'+'.npy', allow_pickle=True)
