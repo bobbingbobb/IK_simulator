@@ -495,3 +495,14 @@ time = []
 # print(len(chain))
 # joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # cp.run('chain.inverse_kinematics(target, initial_position=[0, *joint, 0])')
+
+
+
+# with open('r84.urdf', 'r') as f:
+#     text = f.read()
+# for i in range(42):
+#     text = text.replace('panda_joint'+str(i)+'\"', 'panda_joint'+str(i+42)+'\"')
+#     text = text.replace('panda_link'+str(i)+'\"', 'panda_link'+str(i+42)+'\"')
+#
+# with open('r84.urdf', 'w') as file:
+#     file.write(text)
