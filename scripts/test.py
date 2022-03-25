@@ -409,14 +409,28 @@ target = [0.5545, 0.0, 0.6245]
 
 def transforming():
     property = index.Property(dimension=3, fill_factor=0.9)
-    target_idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
+    target_idx = index.Index(RAW_DATA_FOLDER+'rtree_10', properties=property)
     id = target_idx.get_size()
     print(id)
     total_size = id
 
-    for i in range(1):
-        # filename = RAW_DATA_FOLDER+str(i)+'full_jointonly_1'
-        filename = RAW_DATA_FOLDER+'dense_650s'
+    for i in range(8):
+        filename = RAW_DATA_FOLDER+'data/'+str(i)+'rtree_10'
+        # filename = RAW_DATA_FOLDER+'dense_650s'
+        print(filename)
+        idx = index.Index(filename, properties=property)
+
+        for item in idx.nearest([0.2, 0.45, 0.3], idx.get_size(), objects=True):
+            target_idx.insert(id, item.bounds[::2], obj=item.object)
+            id += 1
+
+        print(i, idx.get_size())
+        total_size += idx.get_size()
+        print(target_idx.get_size(), total_size)
+        idx.close()
+    for i in range(8):
+        filename = RAW_DATA_FOLDER+'data/'+str(i)+'rtree_10_1'
+        # filename = RAW_DATA_FOLDER+'dense_650s'
         print(filename)
         idx = index.Index(filename, properties=property)
 
@@ -430,11 +444,11 @@ def transforming():
         idx.close()
     target_idx.close()
 
-# transforming()
+transforming()
 
 property = index.Property(dimension=3, fill_factor=0.9)
 
-idx = index.Index('data/8rtree_10', properties=property)
+idx = index.Index(RAW_DATA_FOLDER+'rtree_10', properties=property)
 # print(idx.get_size())
 # idx.close()
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)
@@ -459,7 +473,8 @@ res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
 # res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
 
 print(idx.get_size())
-# idx.close()
+print(idx.bounds)
+idx.close()
 time = []
 # cc = idx.nearest([0.2305, 0.41, 0.3125])
 
