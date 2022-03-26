@@ -91,7 +91,7 @@ def ik_iteration(iter):
             diff = np.linalg.norm(np.array(origin) - np.array(target))
             # if diff < 0.05:
             #     continue
-            tmp_joint, num, time, stat, joint_list = chain.inverse_kinematics(target)
+            tmp_joint, time, stat, joint_list = chain.inverse_kinematics(target)
         # print(len(joint_list))
         deviation.append(diff)
         i = 0
@@ -113,7 +113,6 @@ def ik_iteration(iter):
         message[str(dev[i])] = np.mean(iteration[i])
     messenger(message)
     np.save(RESULT_FOLDER+str(iter)+'iteration_dis', message)
-
 
 def current_ik_speed(iter):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
@@ -323,10 +322,11 @@ def posture_num(iter):
     end = d.datetime.now()
     print('done. duration: ', end-start)
 
-def query_time(dataset, iter, threshold):
+def query_time(dataset, iter):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    robot = Robot()
     p = index.Property(dimension=3)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
 
@@ -343,112 +343,52 @@ def query_time(dataset, iter, threshold):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
         dsf = 'full/'
 
-    filename = RESULT_FOLDER+dsf+'1compare_'+str(iter)+'_'+str(threshold).replace('.','')
-    print(dataset+'_'+str(iter)+'_'+str(threshold))
+    filename = RESULT_FOLDER+dsf+'querytime'+str(iter)
+    print(dataset+'_'+str(iter))
 
-    time_q = []
-
-    time_n = []
-    oridiff_n = []
-    num_n = []
-
-    time_c = []
-    oridiff_c = []
-    num_c = []
-
-    time_i = []
-    oridiff_i = []
-    num_i = []
+    time_all = []
+    pos_all = []
+    time_50 = []
+    time_1 = []
 
     for _ in range(iter):
         x = round(r.uniform(res[0], res[3]), 4)
         y = round(r.uniform(res[1], res[4]), 4)
         z = round(r.uniform(res[2], res[5]), 4)
         target = [x, y, z]
-        # target = [0.2731, 0.175, -0.2938]
-        # print(target)
 
-        qs = d.datetime.now()
-        # joint = ik_simulator.iktable.query(target)[0][1]
-        qu_res = idx.nearest(c.copy(target), 1, objects=True)
-        qe = d.datetime.now()
-        query = qe - qs
-        if query.seconds > 0.1:
-            print(target, query)
-        joint = [item.object for item in qu_res][0][1]
-        result, nearby, ne_stat, nej_list = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
-        ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
-        ne_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
-        ne_n = len(nej_list)
+        # q = np.zeros(7)
+        # for j in range(6):
+        #     q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+        # # print(q)
+        # target = robot.fk_dh(q)[0].tolist()
 
-        # # s = d.datetime.now()
-        # # joint = ik_simulator.find(target)[0][0][0][1] #classify
-        # result, classify, c_stat, cj_list = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
-        # # e = d.datetime.now()
-        # # classify = e - s
-        # c_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
-        # c_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
-        # c_n = len(cj_list)
+        s = d.datetime.now()
+        pos_info = ik_simulator.iktable.rtree_query(target)
+        e = d.datetime.now()
+        query_all = e-s
+        pos_all.append(len(pos_info))
 
-        # # s = d.datetime.now()
-        # joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        # result, ikpy, i_stat, ij_list = chain.inverse_kinematics(target, initial_position=[0, *joint, 0])
-        # # e = d.datetime.now()
-        # # ikpy = e - s
-        # i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target))
-        # i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target))
-        # i_n = len(ij_list)
+        s = d.datetime.now()
+        pos_info = [item.object for item in idx.nearest(target, 50, objects=True)]
+        e = d.datetime.now()
+        query_50 = e - s
 
-        # print(nearby, ne_n, ne_diff)
-        # print(classify, c_n, c_diff)
-        # print(ikpy, i_n, i_diff)
-        # print()
+        s = d.datetime.now()
+        pos_info = idx.nearest(target, 1, objects=True)
+        e = d.datetime.now()
+        query_1 = e - s
 
-        # if c_n < i_n:
-        #     print(target)
-        #     print(c_diff, m_diff)
+        time_all.append(query_all)
+        time_50.append(query_50)
+        time_1.append(query_1)
 
-        if not ne_stat:
-            time_n.append(nearby)
-            oridiff_n.append(ne_oridiff)
-            num_n.append(ne_n)
-
-        # if not c_stat:
-        #     time_c.append(classify)
-        #     oridiff_c.append(c_oridiff)
-        #     num_c.append(c_n)
-
-        # if not i_stat:
-        #     time_i.append(ikpy)
-        #     oridiff_i.append(i_oridiff)
-        #     num_i.append(i_n)
-
-        time_q.append(query)
-
-        # if ne_diff < threshold and i_diff < threshold:
-    #     time_n.append(nearby)
-    #     oridiff_n.append(ne_oridiff)
-    #     num_n.append(ne_n)
-    #     time_i.append(ikpy)
-    #     oridiff_i.append(i_oridiff)
-    #     num_i.append(i_n)
-    #
-    # filename = filename+'_all'
 
     message = {}
-    message['nearby'] = len(time_n)
-    # message['classify'] = len(time_c)
-    # message['ikpy'] = len(time_i)
-    message['query'] = np.mean(time_q)
-    message['time_n'] = np.mean(time_n)
-    # message['time_c'] = np.mean(time_c)
-    # message['time_i'] = np.mean(time_i)
-    message['oridiff_n'] = np.mean(oridiff_n)
-    # message['oridiff_c'] = np.mean(oridiff_c)
-    # message['oridiff_i'] = np.mean(oridiff_i)
-    message['num_n'] = np.mean(num_n)
-    # message['num_c'] = np.mean(num_c)
-    # message['num_i'] = np.mean(num_i)
+    message['query_all'] = np.mean(time_all)
+    message['query_50'] = np.mean(time_50)
+    message['query_1'] = np.mean(time_1)
+    message['pos_all'] = np.mean(pos_all)
 
     np.save(filename, message)
     messenger(message)
@@ -474,7 +414,7 @@ def secondary_compare(dataset, iter, threshold):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
         dsf = 'full/'
 
-    filename = RESULT_FOLDER+dsf+'secondary_'+str(iter)+'_'+str(threshold).replace('.','')
+    filename = RESULT_FOLDER+dsf+'50secondary_'+str(iter)+'_'+str(threshold).replace('.','')
     print(dataset+'_'+str(iter)+'_'+str(threshold))
 
     time_q = []
@@ -484,35 +424,42 @@ def secondary_compare(dataset, iter, threshold):
 
     time_n = []
     oridiff_n = []
+    diff_n = []
     num_n = []
     ee_dev = []
     ori_dev = []
 
     time_i = []
     oridiff_i = []
+    diff_i = []
     num_i = []
 
+    time_no = []
+    oridiff_no = []
+    num_no = []
+
+    # qq = [[2.261452851613893, 1.2678638162730076, 0.5167773944514868, -0.8406070742899003, -0.10517209706492414, 1.1394790032667186, 0.0],\
+    #       [2.4210027739579743, 1.3009966570761633, -1.42905396272644, -2.544041138299412, 0.9251163541744827, 2.6155393190302805, 0.0],\
+    #       [-0.23549414942291902, 0.832423206187018, -2.647052510679955, -2.90748471768531, -1.9811254084542207, 2.6563330044414837, 0.0],\
+    #       [-1.7102280285609228, 0.3044722893296248, -2.4956445713066047, -2.2429764453197514, -2.2437051753305766, 0.45326282452969463, 0.0],\
+    #       [-0.6129173193870816, -1.1511205746000033, 2.6250537551939215, -2.979698403115334, -2.0753946826766727, 0.3023112367356362, 0.0],\
+    #       [2.331212320860088, 0.3967371837919469, 2.0213161785110842, -0.6174748070755989, -1.6121575299591036, 1.2259739205661861, 0.0],\
+    #       [-0.342772043964791, 0.32317127974206317, -1.3184599282339045, -0.9066461347123194, -1.32182111821633, 3.5273453253785036, 0.0],\
+    #       [-1.1476877802361145, -0.3172329305030266, 0.7576410057568856, -1.3571365902173707, -2.6323875770767504, 2.109568969322213, 0.0],\
+    #       [-0.7601296277880292, -1.6528577941914346, 1.1637214811895018, -2.7921499654865096, 2.3360360328300236, 1.9170155932734587, 0.0],\
+    #       [-0.30282087908194955, 1.158792433208708, 0.5818125361881141, -1.1714247790177041, -2.606253919155665, 2.8541282406680093, 0.0]]
+
+    # for q in qq:
     for _ in range(iter):
-        # x = round(r.uniform(res[0], res[3]), 4)
-        # y = round(r.uniform(res[1], res[4]), 4)
-        # z = round(r.uniform(res[2], res[5]), 4)
-        # target_pos = [x, y, z]
-        #
-        # target_ori = np.array([np.random() for _ in range(3)])
-        # target_ori /= np.linalg.norm(target_ori)
         q = np.zeros(7)
         for j in range(6):
             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+        # print(q)
         target_pos, target_ori = robot.fk_dh(q)
 
         s = d.datetime.now()
-        # pos_info = [item.object for item in idx.intersection([t+offset for offset in (-0.025, 0.025) for t in target_pos], objects=True)]
-        # if len(pos_info) < 20:
-        #     pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)] if len(pos_info) < 20 else pos_info
-
-        pos_info = ik_simulator.iktable.rtree_query(target_pos.tolist())
-
-        # pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
+        # pos_info = ik_simulator.iktable.rtree_query(target_pos.tolist())
+        pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
         e = d.datetime.now()
         query = e - s
 
@@ -537,37 +484,47 @@ def secondary_compare(dataset, iter, threshold):
         e = d.datetime.now()
         outter_task = e - s
 
-        result, nearby, ne_stat, nej_list = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
-        # result, ne_n, nearby = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='X', initial_position=[0, *joint, 0])
+        result, nearby, ne_stat, ne_n = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
+        # result, ne_n, nearby = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
         ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         ne_pos, ne_ori = robot.fk_dh(result[1:8])
         ne_diff = np.linalg.norm(ne_pos-np.array(target_pos))
-        ne_n = len(nej_list)
+
+        result, nearori, no_stat, no_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
+        # no_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
+        no_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
         joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        result, ikpy, i_stat, ij_list = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='all', initial_position=[0, *joint, 0])
+        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
         i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
-        i_n = len(ij_list)
 
-        if not ne_stat:
+        if ne_diff < threshold:
             time_q.append(query)
             time_c.append(classify)
             time_s.append(outter_task)
             time_n.append(nearby)
             oridiff_n.append(ne_oridiff)
+            diff_n.append(ne_diff)
             num_n.append(ne_n)
             ori_dev.append(ori_tmp)
             ee_dev.append(np.dot(target_ori, ne_ori))
 
-        if not i_stat:
+        if no_diff < threshold:
+            time_no.append(nearori)
+            num_no.append(no_n)
+
+        if i_diff < threshold:
             time_i.append(ikpy)
             oridiff_i.append(i_oridiff)
+            diff_i.append(i_diff)
             num_i.append(i_n)
 
+    idx.close()
 
     message = {}
     message['nearby'] = len(time_n)
+    message['nearori'] = len(time_no)
     message['ikpy'] = len(time_i)
     message['post_num'] = np.mean(post_num)
     message['likeliness'] = np.mean(ee_dev)
@@ -576,10 +533,14 @@ def secondary_compare(dataset, iter, threshold):
     message['time_c'] = np.mean(time_c)
     message['time_s'] = np.mean(time_s)
     message['time_n'] = np.mean(time_n)
+    message['time_no'] = np.mean(time_no)
     message['time_i'] = np.mean(time_i)
     message['oridiff_n'] = np.mean(oridiff_n)
     message['oridiff_i'] = np.mean(oridiff_i)
+    message['diff_n'] = np.mean(diff_n)
+    message['diff_i'] = np.mean(diff_i)
     message['num_n'] = np.mean(num_n)
+    message['num_no'] = np.mean(num_no)
     message['num_i'] = np.mean(num_i)
 
     np.save(filename, message)
@@ -643,14 +604,14 @@ def high_dof(iter):
                 otarget = [x, y, z]
                 target = otarget + rp
 
-                oresult, otime, stat, oj_list = chain[i].inverse_kinematics(otarget, initial_position=[0.0]*len(chain[i]))
+                oresult, otime, stat, o_n = chain[i].inverse_kinematics(otarget, initial_position=[0.0]*len(chain[i]))
 
-            iresult, itime, istat, ij_list = chain[i].inverse_kinematics(target, initial_position=[0.0]*len(chain[i]))
-            nresult, ntime, nstat, nj_list = chain[i].inverse_kinematics(target, initial_position=oresult)
+            iresult, itime, istat, i_n = chain[i].inverse_kinematics(target, initial_position=[0.0]*len(chain[i]))
+            nresult, ntime, nstat, n_n = chain[i].inverse_kinematics(target, initial_position=oresult)
             ntime_tmp.append(ntime)
-            nnum_tmp.append(len(nj_list))
+            nnum_tmp.append(n_n)
             itime_tmp.append(itime)
-            inum_tmp.append(len(ij_list))
+            inum_tmp.append(i_n)
             if nstat == 2:
                 print(i, chain[i].forward_kinematics(nresult)[:3,3], target, otarget)
             if istat == 2:
@@ -703,6 +664,7 @@ if __name__ == '__main__':
 
     # dataset = 'rtree_30'
     dataset = 'rtree_20'
+    # dataset = 'rtree_10'
     # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
@@ -711,12 +673,19 @@ if __name__ == '__main__':
     # ik_iteration(10000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
-    query_time(dataset, 10000, 1e-4)
+    # query_time(dataset, 10000)
     # high_dof(1000)
-    # secondary_compare(dataset, 2000, 1e-4)
+    secondary_compare(dataset, 10000, 1e-4)
     # draw_line()
 
-    # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_10000_1e-06'+'.npy', allow_pickle=True)
+    # robot = Robot()
+    # q = np.zeros(7)
+    # for _ in range(10):
+    #     for j in range(6):
+    #         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+    #     print(q.tolist())
+
+    # message = np.load(RESULT_FOLDER+dataset+'/'+'secondary_10000_00001'+'.npy', allow_pickle=True)
     # message = np.load(RESULT_FOLDER+'high_dof_10000'+'.npy', allow_pickle=True)
     # messenger(message.item())
 
