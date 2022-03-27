@@ -19,58 +19,52 @@ import ikpy.utils.plot as plot_utils
 
 
 
-def fully_covered(iter, dataset):
-    # iktable = IKTable('rtree_20')
-    # iktable = IKTable('dense')
-    # iktable = IKTable('full_jointonly_0')
-    # for t in iktable.table:
-    #     print(t.bounds)
+def bout_data(iter, dataset):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    robot = Robot()
     p = index.Property(dimension=3, fill_factor=0.9)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
-    res = idx.bounds
-    print(res)
 
-    avg = []
-    n_avg = []
     dev = []
-    pos = []
-    time = []
+    query_num = []
+    post_num = []
+    res_num = []
+
     for i in range(iter):
-        counter = 0
-        n_counter = 0
-        for _ in range(1000):
+        print(i)
+        joints = []
+        q = np.zeros(7)
+        for j in range(6):
+            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+        # print(q)
+        target_pos, target_ori = robot.fk_dh(q)
 
-            x = round(r.uniform(res[0], res[3]), 4)
-            y = round(r.uniform(res[1], res[4]), 4)
-            z = round(r.uniform(res[2], res[5]), 4)
-            target = [x, y, z]
+        pos_info = list(idx.nearest(target_pos.tolist(), 300, objects='raw'))
+        dev.append(np.linalg.norm(pos_info[0][0][6] - target_pos))
+        nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
 
-            qs = d.datetime.now()
-            # result = iktable.dot_query([x, y, z])
-            qu_res = idx.intersection(c.copy(target), objects=True)
-            qe = d.datetime.now()
-            time.append(qe-qs)
-            result = [item.object for item in qu_res]
-            if len(result):#in range
-                pos.append(len(result))
-                counter += 1
-                # print(result)
-            else:
-                n_counter += 1
-                dev.append(np.linalg.norm(np.array(list(idx.nearest(c.copy(target), objects=True))[0].bounds[::2]) - np.array([x, y, z])))
-            # break
-        # break
-        print(i+1, counter)
-        avg.append(counter)
-        n_avg.append(n_counter)
+        for posture in nearby_postures:
+            tmp_joint, diff = ik_simulator.vector_portion_v2([posture[0][6], posture[1]], target_pos)
+            tmp_joint, diff = ik_simulator.pure_approx(tmp_joint, target_pos)
+            # result, ti, stat, num = chain.inverse_kinematics(target_pos, initial_position=[0, *posture[1], 0])
+            # if np.linalg.norm(ik_simulator.fk(result[1:8])-target_pos) < 1e-4:
+            query_num.append(len(pos_info))
+            post_num.append(len(nearby_postures))
+            joints.append([0, tmp_joint])
+            # joints.append([0, result[1:8]])
+
+        res_num.append(len(ik_simulator.posture_comparison_all_joint_sorted(joints)))
 
     mes = {}
-    mes['pos'] = np.mean(pos)
-    mes['avg'] = np.mean(avg)
-    mes['n_avg'] = np.mean(n_avg)
+    mes['dataset'] = dataset
+    # mes['size'] = idx.get_size()
     mes['len'] = np.mean(dev)
-    mes['worst'] = max(dev) if dev else 0
-    mes['time'] = np.mean(time)
+    mes['worst'] = max(dev)
+    mes['query_num'] = np.mean(query_num)
+    mes['post_num'] = np.mean(post_num)
+    mes['res_num'] = np.mean(res_num)
     messenger(mes)
 
 def ik_iteration(iter):
@@ -260,6 +254,7 @@ def draw(dataset, name):
     # plt.scatter('deviation', 'num', data = deviation)
     plt.show()
 
+#abandon
 def posture_num(iter):
     start = d.datetime.now()
     from ikpy.chain import Chain
@@ -332,23 +327,25 @@ def query_time(dataset, iter):
 
     if dataset.startswith('rtree'):
         res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
-        rang = 0.05
         if dataset.startswith('rtree_30'):
             dsf = 'rtree_30/'
+            rang = 0.05
         elif dataset.startswith('rtree_20'):
             dsf = 'rtree_20/'
+            rang = 0.03
         elif dataset.startswith('rtree_10'):
             dsf = 'rtree_10/'
+            rang = 0.01
     elif dataset.startswith('dense'):
         res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
-        rang = 0.003
+        rang = 0.001
         dsf = 'dense/'
     elif dataset.startswith('full'):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
-        rang = 0.003
+        rang = 0.001
         dsf = 'full/'
 
-    filename = RESULT_FOLDER+dsf+'querytime'+str(iter)
+    filename = RESULT_FOLDER+dsf+'351querytime'+str(iter)
     print(dataset+'_'+str(iter))
 
     time_all = []
@@ -369,15 +366,15 @@ def query_time(dataset, iter):
         # # print(q)
         # target = robot.fk_dh(q)[0].tolist()
 
+        tar_coord = [t+offset for offset in (-rang, rang) for t in target]
         s = d.datetime.now()
-        # pos_info = ik_simulator.iktable.rtree_query(target)
-        pos_info = list(idx.intersection([t+offset for offset in (-rang, rang) for t in target]))
+        pos_info = idx.intersection(tar_coord)
         e = d.datetime.now()
         query_all = e-s
-        pos_all.append(len(pos_info))
+        pos_all.append(len(list(pos_info)))
 
         s = d.datetime.now()
-        pos_info = idx.nearest(target, 300)
+        pos_info = idx.nearest(target, 200)
         e = d.datetime.now()
         query_300 = e - s
 
@@ -399,7 +396,7 @@ def query_time(dataset, iter):
 
     message = {}
     message['query_all'] = np.mean(time_all)
-    message['query_300'] = np.mean(time_300)
+    message['query_200'] = np.mean(time_300)
     message['query_50'] = np.mean(time_50)
     message['query_1'] = np.mean(time_1)
     message['pos_all'] = np.mean(pos_all)
@@ -407,7 +404,7 @@ def query_time(dataset, iter):
     np.save(filename, message)
     messenger(message)
 
-def secondary_compare(dataset, iter, threshold):
+def secondary_compare(dataset, iter, threshold, pos_num):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
     # print(chain)
     robot = Robot()
@@ -473,7 +470,8 @@ def secondary_compare(dataset, iter, threshold):
 
         s = d.datetime.now()
         # pos_info = ik_simulator.iktable.rtree_query(target_pos.tolist())
-        pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
+        # pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
+        pos_info = [item.object for item in idx.nearest(target_pos.tolist(), pos_num, objects=True)]
         e = d.datetime.now()
         query = e - s
 
@@ -678,17 +676,21 @@ if __name__ == '__main__':
 
     # dataset = 'rtree_30'
     # dataset = 'rtree_20'
-    # dataset = 'rtree_10'
-    dataset = 'dense'
+    dataset = 'rtree_10'
+    # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
 
-    ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
-    for dsf in ds:
-        query_time(dsf, 100)
+    # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
+    # for dsf in ds:
+    #     query_time(dsf, 100)
 
+    # secondary_compare(dataset, 1000, 1e-4, 50)
+    # secondary_compare(dataset, 1000, 1e-4, 300)
 
-    # fully_covered(1, dataset)
+    # bout_data(1000, dataset)
+    query_time(dataset, 10)
+
     # current_ik_speed(100)
     # ik_iteration(10000)
     # posture_num(1)
@@ -704,8 +706,8 @@ if __name__ == '__main__':
     #         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
     #     print(q.tolist())
 
-    # message = np.load(RESULT_FOLDER+dataset+'/'+'secondary_10000_00001'+'.npy', allow_pickle=True)
-    # message = np.load(RESULT_FOLDER+'high_dof_10000'+'.npy', allow_pickle=True)
+    # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_1000_00001'+'.npy', allow_pickle=True)
+    # message = np.load(RESULT_FOLDER+'10000iteration_dis'+'.npy', allow_pickle=True)
     # messenger(message.item())
 
     print('duration: ', d.datetime.now()-start)

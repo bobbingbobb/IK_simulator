@@ -444,11 +444,11 @@ def transforming():
         idx.close()
     target_idx.close()
 
-transforming()
+# transforming()
 
 property = index.Property(dimension=3, fill_factor=0.9)
 
-idx = index.Index(RAW_DATA_FOLDER+'rtree_10', properties=property)
+idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)
 # print(idx.get_size())
 # idx.close()
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)
@@ -473,7 +473,8 @@ res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
 # res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
 
 print(idx.get_size())
-print(idx.bounds)
+# print(idx.bounds)
+# print(list(idx.nearest([0.0, 0.0, 0.0], 2, objects='raw')))
 idx.close()
 time = []
 # cc = idx.nearest([0.2305, 0.41, 0.3125])
