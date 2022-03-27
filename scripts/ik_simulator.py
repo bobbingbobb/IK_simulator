@@ -28,7 +28,7 @@ class IKTable:
         print('loading...')
         start = d.datetime.now()
 
-        p = index.Property(dimension=3)
+        p = index.Property(dimension=3, fill_factor=0.9)
         # dataset = []
         # for file in os.listdir(RAW_DATA_FOLDER):
         #     if file.startswith(filename) and file.endswith(".dat"):

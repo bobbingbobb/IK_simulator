@@ -25,7 +25,7 @@ def fully_covered(iter, dataset):
     # iktable = IKTable('full_jointonly_0')
     # for t in iktable.table:
     #     print(t.bounds)
-    p = index.Property(dimension=3)
+    p = index.Property(dimension=3, fill_factor=0.9)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
     res = idx.bounds
     print(res)
@@ -327,20 +327,25 @@ def query_time(dataset, iter):
     # print(chain)
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
     robot = Robot()
-    p = index.Property(dimension=3)
+    p = index.Property(dimension=3, fill_factor=0.9)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
 
     if dataset.startswith('rtree'):
         res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
-        if dataset.startswith('rtree_20'):
-            dsf = 'rtree_20/'
-        else:
+        rang = 0.05
+        if dataset.startswith('rtree_30'):
             dsf = 'rtree_30/'
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
     elif dataset.startswith('dense'):
         res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        rang = 0.003
         dsf = 'dense/'
     elif dataset.startswith('full'):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        rang = 0.003
         dsf = 'full/'
 
     filename = RESULT_FOLDER+dsf+'querytime'+str(iter)
@@ -348,6 +353,7 @@ def query_time(dataset, iter):
 
     time_all = []
     pos_all = []
+    time_300 = []
     time_50 = []
     time_1 = []
 
@@ -364,28 +370,36 @@ def query_time(dataset, iter):
         # target = robot.fk_dh(q)[0].tolist()
 
         s = d.datetime.now()
-        pos_info = ik_simulator.iktable.rtree_query(target)
+        # pos_info = ik_simulator.iktable.rtree_query(target)
+        pos_info = list(idx.intersection([t+offset for offset in (-rang, rang) for t in target]))
         e = d.datetime.now()
         query_all = e-s
         pos_all.append(len(pos_info))
 
         s = d.datetime.now()
-        pos_info = [item.object for item in idx.nearest(target, 50, objects=True)]
+        pos_info = idx.nearest(target, 300)
+        e = d.datetime.now()
+        query_300 = e - s
+
+        s = d.datetime.now()
+        pos_info = idx.nearest(target, 50)
         e = d.datetime.now()
         query_50 = e - s
 
         s = d.datetime.now()
-        pos_info = idx.nearest(target, 1, objects=True)
+        pos_info = idx.nearest(target, 1)
         e = d.datetime.now()
         query_1 = e - s
 
         time_all.append(query_all)
+        time_300.append(query_300)
         time_50.append(query_50)
         time_1.append(query_1)
 
 
     message = {}
     message['query_all'] = np.mean(time_all)
+    message['query_300'] = np.mean(time_300)
     message['query_50'] = np.mean(time_50)
     message['query_1'] = np.mean(time_1)
     message['pos_all'] = np.mean(pos_all)
@@ -398,7 +412,7 @@ def secondary_compare(dataset, iter, threshold):
     # print(chain)
     robot = Robot()
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
-    p = index.Property(dimension=3)
+    p = index.Property(dimension=3, fill_factor=0.9)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
 
     if dataset.startswith('rtree'):
@@ -663,19 +677,24 @@ if __name__ == '__main__':
     start = d.datetime.now()
 
     # dataset = 'rtree_30'
-    dataset = 'rtree_20'
+    # dataset = 'rtree_20'
     # dataset = 'rtree_10'
-    # dataset = 'dense'
+    dataset = 'dense'
     # dataset = 'full_jointonly_8'
+
+
+    ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
+    for dsf in ds:
+        query_time(dsf, 100)
+
 
     # fully_covered(1, dataset)
     # current_ik_speed(100)
     # ik_iteration(10000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
-    # query_time(dataset, 10000)
     # high_dof(1000)
-    secondary_compare(dataset, 10000, 1e-4)
+    # secondary_compare(dataset, 1000, 1e-4)
     # draw_line()
 
     # robot = Robot()
