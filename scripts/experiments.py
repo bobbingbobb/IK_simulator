@@ -335,14 +335,14 @@ def query_time(dataset, iter):
             rang = 0.03
         elif dataset.startswith('rtree_10'):
             dsf = 'rtree_10/'
-            rang = 0.01
+            rang = 0.02
     elif dataset.startswith('dense'):
         res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
         rang = 0.001
         dsf = 'dense/'
     elif dataset.startswith('full'):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
-        rang = 0.001
+        rang = 0.0005
         dsf = 'full/'
 
     filename = RESULT_FOLDER+dsf+'351querytime'+str(iter)
@@ -374,7 +374,7 @@ def query_time(dataset, iter):
         pos_all.append(len(list(pos_info)))
 
         s = d.datetime.now()
-        pos_info = idx.nearest(target, 200)
+        pos_info = idx.nearest(target, 300)
         e = d.datetime.now()
         query_300 = e - s
 
@@ -396,7 +396,7 @@ def query_time(dataset, iter):
 
     message = {}
     message['query_all'] = np.mean(time_all)
-    message['query_200'] = np.mean(time_300)
+    message['query_300'] = np.mean(time_300)
     message['query_50'] = np.mean(time_50)
     message['query_1'] = np.mean(time_1)
     message['pos_all'] = np.mean(pos_all)
@@ -409,28 +409,36 @@ def secondary_compare(dataset, iter, threshold, pos_num):
     # print(chain)
     robot = Robot()
     ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
-    p = index.Property(dimension=3, fill_factor=0.9)
-    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
+    property = index.Property(dimension=3, fill_factor=0.9)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=property)
 
     if dataset.startswith('rtree'):
         res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
-        if dataset.startswith('rtree_20'):
-            dsf = 'rtree_20/'
-        else:
+        if dataset.startswith('rtree_30'):
             dsf = 'rtree_30/'
+            rang = 0.05
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+            rang = 0.03
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
+            rang = 0.02
     elif dataset.startswith('dense'):
         res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        rang = 0.001
         dsf = 'dense/'
     elif dataset.startswith('full'):
         res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        rang = 0.0005
         dsf = 'full/'
 
-    filename = RESULT_FOLDER+dsf+'50secondary_'+str(iter)+'_'+str(threshold).replace('.','')
+    filename = RESULT_FOLDER+dsf+'secondary_'+str(iter)+'_'+str(pos_num)
     print(dataset+'_'+str(iter)+'_'+str(threshold))
 
     time_q = []
     time_c = []
     time_s = []
+    query_num = []
     post_num = []
 
     time_n = []
@@ -468,12 +476,25 @@ def secondary_compare(dataset, iter, threshold, pos_num):
         # print(q)
         target_pos, target_ori = robot.fk_dh(q)
 
-        s = d.datetime.now()
-        # pos_info = ik_simulator.iktable.rtree_query(target_pos.tolist())
-        # pos_info = [item.object for item in idx.nearest(target_pos.tolist(), 50, objects=True)]
-        pos_info = [item.object for item in idx.nearest(target_pos.tolist(), pos_num, objects=True)]
-        e = d.datetime.now()
-        query = e - s
+        if pos_num == 'all':
+            tar_coord = [t+offset for offset in (-rang, rang) for t in target_pos]
+            s = d.datetime.now()
+            pos_info = list(idx.intersection(tar_coord, objects='raw'))
+            e = d.datetime.now()
+
+            if len(pos_info) < 20:
+                s = d.datetime.now()
+                pos_info = list(idx.nearest(target_pos.tolist(), 50, objects='raw'))
+                e = d.datetime.now()
+
+            query = e - s
+        else:
+            s = d.datetime.now()
+            pos_info = list(idx.nearest(target_pos.tolist(), pos_num, objects='raw'))
+            e = d.datetime.now()
+            query = e - s
+
+        query_num.append(len(pos_info))
 
         s = d.datetime.now()
         nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
@@ -511,6 +532,10 @@ def secondary_compare(dataset, iter, threshold, pos_num):
         i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
+        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
+        i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
+        i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
+
         if ne_diff < threshold:
             time_q.append(query)
             time_c.append(classify)
@@ -538,6 +563,7 @@ def secondary_compare(dataset, iter, threshold, pos_num):
     message['nearby'] = len(time_n)
     message['nearori'] = len(time_no)
     message['ikpy'] = len(time_i)
+    message['query_num'] = np.mean(query_num)
     message['post_num'] = np.mean(post_num)
     message['likeliness'] = np.mean(ee_dev)
     message['olikeliness'] = np.mean(ori_dev)
@@ -674,22 +700,24 @@ if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
-    # dataset = 'rtree_30'
+    dataset = 'rtree_30'
     # dataset = 'rtree_20'
-    dataset = 'rtree_10'
+    # dataset = 'rtree_10'
     # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
 
     # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
     # for dsf in ds:
-    #     query_time(dsf, 100)
+    #     query_time(dsf, 10000)
 
-    # secondary_compare(dataset, 1000, 1e-4, 50)
-    # secondary_compare(dataset, 1000, 1e-4, 300)
+    secondary_compare(dataset, 1000, 1e-4, 'all')
+    secondary_compare(dataset, 1000, 1e-4, 500)
+    secondary_compare(dataset, 1000, 1e-4, 300)
+    secondary_compare(dataset, 1000, 1e-4, 50)
 
     # bout_data(1000, dataset)
-    query_time(dataset, 10)
+    # query_time(dataset, 10000)
 
     # current_ik_speed(100)
     # ik_iteration(10000)
