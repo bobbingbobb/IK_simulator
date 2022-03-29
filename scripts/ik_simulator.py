@@ -185,7 +185,7 @@ class IKSimulator:
         # self.iktable = IKTable('full_jointonly')
         self.robot = Robot()
         self.algo = algo
-        self.likeliness = 0.2
+        self.likeliness = 0.5
 
         from ikpy.chain import Chain
         import ikpy.utils.plot as plot_utils
@@ -215,28 +215,29 @@ class IKSimulator:
         return nearby_postures, len(pos_info)
 
     def posture_comparison(self, pos_info):
-        thres_3 = np.linalg.norm([0.316, 0.0825])/10.0#j1 - j3 range
-        thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825]))/10.0#j3 - j5 range
+        thres_3 = np.linalg.norm([0.316, 0.0825])*2/10.0#j1 - j3 range 0.065
+        thres_5 = (thres_3 + np.linalg.norm([0.384, 0.0825])*2)/10.0#j3 - j5 range 0.085
 
         nearby_postures = []
         for i_pos in pos_info:
             for type in nearby_postures:
-                if np.dot(i_pos[2], type[0][2]) > 0.8 and \
-                   np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
-                   np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
-                   np.linalg.norm(i_pos[1][2]-type[0][1][2]) < 0.6:
-                    type.append(i_pos)
-                    break
-                # if np.dot(i_pos[2], type[2]) > 0.9 and \
-                #    np.linalg.norm(i_pos[0][3]-type[0][3]) < thres_3 and \
-                #    np.linalg.norm(i_pos[0][5]-type[0][5]) < thres_5:
+                # if np.dot(i_pos[2], type[0][2]) > 0.8 and \
+                #    np.linalg.norm(i_pos[0][3]-type[0][0][3]) < thres_3 and \
+                #    np.linalg.norm(i_pos[0][5]-type[0][0][5]) < thres_5 and \
+                #    np.linalg.norm(i_pos[1][2]-type[0][1][2]) < self.likeliness:
+                #     type.append(i_pos)
                 #     break
+                if np.dot(i_pos[2], type[2]) > 0.9 and \
+                   np.linalg.norm(i_pos[0][3]-type[0][3]) < thres_3 and \
+                   np.linalg.norm(i_pos[0][5]-type[0][5]) < thres_5 and \
+                   np.linalg.norm(i_pos[1][2]-type[1][2]) < self.likeliness:
+                    break
             else:
-                nearby_postures.append([i_pos])
-                # nearby_postures.append(i_pos)
+                # nearby_postures.append([i_pos])
+                nearby_postures.append(i_pos)
 
         # return [np[0] for np in nearby_postures]
-        print(len(nearby_postures))
+        # print(len(nearby_postures))
         return nearby_postures
 
     def posture_comparison_all_joint_sorted(self, target_space):

@@ -121,12 +121,11 @@ def bout_data(iter, dataset):
     post_num = []
     success_num = []
     res_num = []
-    # res_num3 = []
-    # res_num4 = []
 
     for i in range(iter):
         # print(i)
-        joints = []
+        success = 0
+        unique = 0
         q = np.zeros(7)
         for j in range(6):
             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
@@ -137,32 +136,27 @@ def bout_data(iter, dataset):
         if len(pos_info) < 20:
             pos_info = list(idx.nearest(target_pos.tolist(), 50, objects='raw'))
 
-        nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
-        # nb2 = [nearby_postures[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(nearby_postures)]#index
-        # nb3 = [nb2[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(nb2)]#index
-        # nb4 = [nb3[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(nb3)]#index
+        nearby_postures = ik_simulator.posture_comparison(pos_info)#index
+        # nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
 
         query_num.append(len(pos_info))
         post_num.append(len(nearby_postures))
-        # res_num.append(len(nb2))
-        # res_num3.append(len(nb3))
-        # res_num4.append(len(nb4))
 
         for posture in nearby_postures:
             # tmp_joint, diff = ik_simulator.vector_portion_v2([posture[0][6], posture[1]], target_pos)
             # result, diff = ik_simulator.pure_approx(tmp_joint, target_pos)
-            # tmp_pos, tmp_ori = robot.fk_dh(result)
-            # if diff < 1e-3:
-            #     dev.append(diff)
-            #     joints.append([0, result])
+            # tmp_pos, tmp_ori = robot.fk_jo(result)
             result, ti, stat, num = chain.inverse_kinematics(target_pos, initial_position=[0, *posture[1], 0])
-            tmp_pos, tmp_ori = robot.fk_dh(result[1:8])
-            if np.linalg.norm(tmp_pos-target_pos) < 1e-4:
-                joints.append([0, result[1:8]])
-                dev.append(np.linalg.norm(posture[0][6] - target_pos))
+            tmp_pos, tmp_ori = robot.fk_jo(result[1:8])
+            diff = np.linalg.norm(tmp_pos[6]-target_pos)
+            if diff < 1e-4:
+                success += 1
+                dev.append(diff)
                 ee_dev.append(np.dot(tmp_ori, posture[2]))
-        success_num.append(len(joints))
-        res_num.append(len(ik_simulator.posture_comparison_all_joint_sorted(joints)))
+                if len(ik_simulator.posture_comparison([posture, [tmp_pos, result[1:8], tmp_ori]])) < 2:
+                    unique += 1
+        success_num.append(success)
+        res_num.append(unique)
 
     mes = {}
     mes['dataset'] = dataset
@@ -174,8 +168,6 @@ def bout_data(iter, dataset):
     mes['success_num'] = np.mean(success_num)
     mes['res_num'] = np.mean(res_num)
     mes['likeliness'] = np.mean(ee_dev)
-    # mes['res_num3'] = np.mean(res_num3)
-    # mes['res_num4'] = np.mean(res_num4)
 
     np.save(filename, mes)
     messenger(mes)
@@ -935,17 +927,17 @@ if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
-    # dataset = 'rtree_30'
+    dataset = 'rtree_30'
     # dataset = 'rtree_20'
-    dataset = 'rtree_10'
+    # dataset = 'rtree_10'
     # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
 
-    ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
-    for dsf in ds[:3]:
-        # query_time(dsf, 10000)
-        bout_data(1, dsf)
+    # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
+    # for dsf in ds[:3]:
+    #     # query_time(dsf, 10000)
+    #     bout_data(1000, dsf)
 
 
     # secondary_compare(dataset, 100, 1e-4, 'all')
@@ -956,7 +948,7 @@ if __name__ == '__main__':
     # accelerate(dataset, 10000, 1e-4)
 
     # ik_speed(10000, dataset)
-    # bout_data(10, dataset)
+    # bout_data(1000, dataset)
     # query_time(dataset, 10000)
 
     # ik_speed_draw(100)
