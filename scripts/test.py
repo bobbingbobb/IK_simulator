@@ -448,7 +448,8 @@ def transforming():
 
 property = index.Property(dimension=3, fill_factor=0.9)
 
-idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)
+idx = index.Index(RAW_DATA_FOLDER+'rtree_20', properties=property)
+# print(idx.properties)
 # print(idx.get_size())
 # idx.close()
 # idx = index.Index(RAW_DATA_FOLDER+'rtree_30', properties=property)

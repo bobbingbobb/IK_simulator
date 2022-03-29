@@ -18,6 +18,77 @@ from ikpy.chain import Chain
 import ikpy.utils.plot as plot_utils
 
 
+def ik_speed(iter, dataset):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    robot = Robot()
+    p = index.Property(dimension=3, fill_factor=0.9)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
+
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_30'):
+            dsf = 'rtree_30/'
+            rang = 0.05
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+            rang = 0.03
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
+            rang = 0.02
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        rang = 0.001
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        rang = 0.0005
+        dsf = 'full/'
+
+
+    qq = [[2.261452851613893, 1.2678638162730076, 0.5167773944514868, -0.8406070742899003, -0.10517209706492414, 1.1394790032667186, 0.0],\
+          [2.4210027739579743, 1.3009966570761633, -1.42905396272644, -2.544041138299412, 0.9251163541744827, 2.6155393190302805, 0.0],\
+          [-0.23549414942291902, 0.832423206187018, -2.647052510679955, -2.90748471768531, -1.9811254084542207, 2.6563330044414837, 0.0],\
+          [-1.7102280285609228, 0.3044722893296248, -2.4956445713066047, -2.2429764453197514, -2.2437051753305766, 0.45326282452969463, 0.0],\
+          [-0.6129173193870816, -1.1511205746000033, 2.6250537551939215, -2.979698403115334, -2.0753946826766727, 0.3023112367356362, 0.0],\
+          [2.331212320860088, 0.3967371837919469, 2.0213161785110842, -0.6174748070755989, -1.6121575299591036, 1.2259739205661861, 0.0],\
+          [-0.342772043964791, 0.32317127974206317, -1.3184599282339045, -0.9066461347123194, -1.32182111821633, 3.5273453253785036, 0.0],\
+          [-1.1476877802361145, -0.3172329305030266, 0.7576410057568856, -1.3571365902173707, -2.6323875770767504, 2.109568969322213, 0.0],\
+          [-0.7601296277880292, -1.6528577941914346, 1.1637214811895018, -2.7921499654865096, 2.3360360328300236, 1.9170155932734587, 0.0],\
+          [-0.30282087908194955, 1.158792433208708, 0.5818125361881141, -1.1714247790177041, -2.606253919155665, 2.8541282406680093, 0.0]]
+
+
+    methods = ['L-BFGS-B', 'BFGS', 'SLSQP', 'CG',]# 'newton-cg']
+    mes = {}
+    for opm in methods[:1]:
+        time = []
+        iteration = []
+        otime = []
+        oiteration = []
+        for q in qq:
+        # for i in range(iter):
+        #     joints = []
+        #     q = np.zeros(7)
+        #     for j in range(6):
+        #         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+            target_pos, target_ori = robot.fk_dh(q)
+
+            result, ikpy, stat, num = chain.inverse_kinematics(target_pos, initial_position=[0]*9, optimization_method=opm)
+            if np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos)):
+                time.append(ikpy)
+                iteration.append(num)
+            result, oikpy, ostat, onum = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0]*9, optimization_method=opm)
+            if np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos)):
+                otime.append(oikpy)
+                oiteration.append(onum)
+
+        # print(opm, np.mean(time), np.mean(iteration))
+        mes[opm+'_time'] = np.mean(time)
+        mes[opm+'_otime'] = np.mean(otime)
+        mes[opm+'_iter'] = np.mean(iteration)
+        mes[opm+'_oiter'] = np.mean(oiteration)
+    messenger(mes)
 
 def bout_data(iter, dataset):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
@@ -27,13 +98,33 @@ def bout_data(iter, dataset):
     p = index.Property(dimension=3, fill_factor=0.9)
     idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=p)
 
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_30'):
+            dsf = 'rtree_30/'
+            rang = 0.05
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+            rang = 0.03
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
+            rang = 0.02
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        rang = 0.001
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        rang = 0.0005
+        dsf = 'full/'
+
     dev = []
     query_num = []
     post_num = []
     res_num = []
 
     for i in range(iter):
-        print(i)
+        # print(i)
         joints = []
         q = np.zeros(7)
         for j in range(6):
@@ -41,19 +132,22 @@ def bout_data(iter, dataset):
         # print(q)
         target_pos, target_ori = robot.fk_dh(q)
 
-        pos_info = list(idx.nearest(target_pos.tolist(), 300, objects='raw'))
+        pos_info = list(idx.intersection([t+offset for offset in (-rang, rang) for t in target_pos], objects='raw'))
+        if len(pos_info) < 20:
+            pos_info = list(idx.nearest(target_pos.tolist(), 50, objects='raw'))
+
         dev.append(np.linalg.norm(pos_info[0][0][6] - target_pos))
         nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
 
         for posture in nearby_postures:
-            tmp_joint, diff = ik_simulator.vector_portion_v2([posture[0][6], posture[1]], target_pos)
-            tmp_joint, diff = ik_simulator.pure_approx(tmp_joint, target_pos)
-            # result, ti, stat, num = chain.inverse_kinematics(target_pos, initial_position=[0, *posture[1], 0])
-            # if np.linalg.norm(ik_simulator.fk(result[1:8])-target_pos) < 1e-4:
-            query_num.append(len(pos_info))
-            post_num.append(len(nearby_postures))
-            joints.append([0, tmp_joint])
-            # joints.append([0, result[1:8]])
+            # tmp_joint, diff = ik_simulator.vector_portion_v2([posture[0][6], posture[1]], target_pos)
+            # tmp_joint, diff = ik_simulator.pure_approx(tmp_joint, target_pos)
+            result, ti, stat, num = chain.inverse_kinematics(target_pos, initial_position=[0, *posture[1], 0])
+            if np.linalg.norm(ik_simulator.fk(result[1:8])-target_pos) < 1e-4:
+                query_num.append(len(pos_info))
+                post_num.append(len(nearby_postures))
+                # joints.append([0, tmp_joint])
+                joints.append([0, result[1:8]])
 
         res_num.append(len(ik_simulator.posture_comparison_all_joint_sorted(joints)))
 
@@ -457,23 +551,22 @@ def secondary_compare(dataset, iter, threshold, pos_num):
     oridiff_no = []
     num_no = []
 
-    # qq = [[2.261452851613893, 1.2678638162730076, 0.5167773944514868, -0.8406070742899003, -0.10517209706492414, 1.1394790032667186, 0.0],\
-    #       [2.4210027739579743, 1.3009966570761633, -1.42905396272644, -2.544041138299412, 0.9251163541744827, 2.6155393190302805, 0.0],\
-    #       [-0.23549414942291902, 0.832423206187018, -2.647052510679955, -2.90748471768531, -1.9811254084542207, 2.6563330044414837, 0.0],\
-    #       [-1.7102280285609228, 0.3044722893296248, -2.4956445713066047, -2.2429764453197514, -2.2437051753305766, 0.45326282452969463, 0.0],\
-    #       [-0.6129173193870816, -1.1511205746000033, 2.6250537551939215, -2.979698403115334, -2.0753946826766727, 0.3023112367356362, 0.0],\
-    #       [2.331212320860088, 0.3967371837919469, 2.0213161785110842, -0.6174748070755989, -1.6121575299591036, 1.2259739205661861, 0.0],\
-    #       [-0.342772043964791, 0.32317127974206317, -1.3184599282339045, -0.9066461347123194, -1.32182111821633, 3.5273453253785036, 0.0],\
-    #       [-1.1476877802361145, -0.3172329305030266, 0.7576410057568856, -1.3571365902173707, -2.6323875770767504, 2.109568969322213, 0.0],\
-    #       [-0.7601296277880292, -1.6528577941914346, 1.1637214811895018, -2.7921499654865096, 2.3360360328300236, 1.9170155932734587, 0.0],\
-    #       [-0.30282087908194955, 1.158792433208708, 0.5818125361881141, -1.1714247790177041, -2.606253919155665, 2.8541282406680093, 0.0]]
+    qq = [[2.261452851613893, 1.2678638162730076, 0.5167773944514868, -0.8406070742899003, -0.10517209706492414, 1.1394790032667186, 0.0],\
+          [2.4210027739579743, 1.3009966570761633, -1.42905396272644, -2.544041138299412, 0.9251163541744827, 2.6155393190302805, 0.0],\
+          [-0.23549414942291902, 0.832423206187018, -2.647052510679955, -2.90748471768531, -1.9811254084542207, 2.6563330044414837, 0.0],\
+          [-1.7102280285609228, 0.3044722893296248, -2.4956445713066047, -2.2429764453197514, -2.2437051753305766, 0.45326282452969463, 0.0],\
+          [-0.6129173193870816, -1.1511205746000033, 2.6250537551939215, -2.979698403115334, -2.0753946826766727, 0.3023112367356362, 0.0],\
+          [2.331212320860088, 0.3967371837919469, 2.0213161785110842, -0.6174748070755989, -1.6121575299591036, 1.2259739205661861, 0.0],\
+          [-0.342772043964791, 0.32317127974206317, -1.3184599282339045, -0.9066461347123194, -1.32182111821633, 3.5273453253785036, 0.0],\
+          [-1.1476877802361145, -0.3172329305030266, 0.7576410057568856, -1.3571365902173707, -2.6323875770767504, 2.109568969322213, 0.0],\
+          [-0.7601296277880292, -1.6528577941914346, 1.1637214811895018, -2.7921499654865096, 2.3360360328300236, 1.9170155932734587, 0.0],\
+          [-0.30282087908194955, 1.158792433208708, 0.5818125361881141, -1.1714247790177041, -2.606253919155665, 2.8541282406680093, 0.0]]
 
-    # for q in qq:
-    for _ in range(iter):
-        q = np.zeros(7)
-        for j in range(6):
-            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
-        # print(q)
+    for q in qq:
+    # for _ in range(iter):
+    #     q = np.zeros(7)
+    #     for j in range(6):
+    #         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
         target_pos, target_ori = robot.fk_dh(q)
 
         if pos_num == 'all':
@@ -517,23 +610,19 @@ def secondary_compare(dataset, iter, threshold, pos_num):
         e = d.datetime.now()
         outter_task = e - s
 
-        result, nearby, ne_stat, ne_n = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
+        result, nearby, ne_stat, ne_n = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0], optimization_method='L-BFGS-B')
         # result, ne_n, nearby = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
         ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         ne_pos, ne_ori = robot.fk_dh(result[1:8])
         ne_diff = np.linalg.norm(ne_pos-np.array(target_pos))
 
-        result, nearori, no_stat, no_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
+        result, nearori, no_stat, no_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0], optimization_method='L-BFGS-B')
         # no_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
         no_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
         joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
-        i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
-        i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
-
-        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
-        i_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
+        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0], optimization_method='L-BFGS-B')
+        i_oridiff = np.linalg.norm(ik_simulator.fk([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])-np.array(target_pos))
         i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
 
         if ne_diff < threshold:
@@ -580,6 +669,130 @@ def secondary_compare(dataset, iter, threshold, pos_num):
     message['num_n'] = np.mean(num_n)
     message['num_no'] = np.mean(num_no)
     message['num_i'] = np.mean(num_i)
+
+    # np.save(filename, message)
+    messenger(message)
+
+def accelerate(dataset, iter, threshold):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+    robot = Robot()
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    property = index.Property(dimension=3, fill_factor=0.9)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=property)
+
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_30'):
+            dsf = 'rtree_30/'
+            rang = 0.05
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+            rang = 0.03
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
+            rang = 0.02
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        rang = 0.001
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        rang = 0.0005
+        dsf = 'full/'
+
+    filename = RESULT_FOLDER+dsf+'accelerate_'+str(iter)
+    print(dataset+'_'+str(iter)+'_'+str(threshold))
+
+    time_q = []
+
+    time_n = []
+    oridiff_n = []
+    diff_n = []
+    num_n = []
+
+    time_i = []
+    oridiff_i = []
+    diff_i = []
+    num_i = []
+
+    time_r = []
+    oridiff_r = []
+    diff_r = []
+    num_r = []
+
+    origin = ik_simulator.fk([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    q = np.zeros(7)
+    for j in range(6):
+        q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+
+    for _ in range(iter):
+        # print(q)
+        target_pos, target_ori = robot.fk_dh(q)
+
+        s = d.datetime.now()
+        pos_info = list(idx.nearest(target_pos.tolist(), objects='raw'))
+        e = d.datetime.now()
+        query = e - s
+
+        joint = pos_info[0][1]
+
+        result, nearby, ne_stat, ne_n = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
+        # result, ne_n, nearby = chain.inverse_kinematics(target_pos, target_ori, orientation_mode='Z', initial_position=[0, *joint, 0])
+        ne_oridiff = np.linalg.norm(ik_simulator.fk(joint)-np.array(target_pos))
+        ne_pos, ne_ori = robot.fk_dh(result[1:8])
+        ne_diff = np.linalg.norm(ne_pos-np.array(target_pos))
+
+        joint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        result, ikpy, i_stat, i_n = chain.inverse_kinematics(target_pos, initial_position=[0, *joint, 0])
+        i_oridiff = np.linalg.norm(origin-np.array(target_pos))
+        i_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
+
+        for j in range(6):
+            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+
+        result, rand, r_stat, r_n = chain.inverse_kinematics(target_pos, initial_position=[0, *q, 0])
+        r_oridiff = np.linalg.norm(ik_simulator.fk(q)-np.array(target_pos))
+        r_diff = np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos))
+
+        if ne_diff < threshold:
+            time_q.append(query)
+            time_n.append(nearby)
+            oridiff_n.append(ne_oridiff)
+            diff_n.append(ne_diff)
+            num_n.append(ne_n)
+
+        if i_diff < threshold:
+            time_i.append(ikpy)
+            oridiff_i.append(i_oridiff)
+            diff_i.append(i_diff)
+            num_i.append(i_n)
+
+        if r_diff < threshold:
+            time_r.append(rand)
+            oridiff_r.append(r_oridiff)
+            diff_r.append(r_diff)
+            num_r.append(r_n)
+
+    idx.close()
+
+    message = {}
+    message['nearby'] = len(time_n)
+    message['ikpy'] = len(time_i)
+    message['rand'] = len(time_r)
+    message['time_q'] = np.mean(time_q)
+    message['time_n'] = np.mean(time_n)
+    message['time_i'] = np.mean(time_i)
+    message['time_r'] = np.mean(time_r)
+    message['oridiff_n'] = np.mean(oridiff_n)
+    message['oridiff_i'] = np.mean(oridiff_i)
+    message['oridiff_r'] = np.mean(oridiff_r)
+    message['diff_n'] = np.mean(diff_n)
+    message['diff_i'] = np.mean(diff_i)
+    message['diff_r'] = np.mean(diff_r)
+    message['num_n'] = np.mean(num_n)
+    message['num_i'] = np.mean(num_i)
+    message['num_r'] = np.mean(num_r)
 
     np.save(filename, message)
     messenger(message)
@@ -708,15 +921,20 @@ if __name__ == '__main__':
 
 
     # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
-    # for dsf in ds:
-    #     query_time(dsf, 10000)
+    # for dsf in ds[:3]:
+    #     # query_time(dsf, 10000)
+    #     bout_data(100, dsf)
 
-    secondary_compare(dataset, 1000, 1e-4, 'all')
-    secondary_compare(dataset, 1000, 1e-4, 500)
-    secondary_compare(dataset, 1000, 1e-4, 300)
-    secondary_compare(dataset, 1000, 1e-4, 50)
 
-    # bout_data(1000, dataset)
+    secondary_compare(dataset, 100, 1e-4, 'all')
+    # secondary_compare(dataset, 1000, 1e-4, 500)
+    # secondary_compare(dataset, 1000, 1e-4, 300)
+    # secondary_compare(dataset, 1000, 1e-4, 50)
+
+    # accelerate(dataset, 10000, 1e-4)
+
+    # bout_data(10, dataset)
+    # ik_speed(100, dataset)
     # query_time(dataset, 10000)
 
     # current_ik_speed(100)
@@ -734,7 +952,7 @@ if __name__ == '__main__':
     #         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
     #     print(q.tolist())
 
-    # message = np.load(RESULT_FOLDER+dataset+'/'+'compare_1000_00001'+'.npy', allow_pickle=True)
+    # message = np.load(RESULT_FOLDER+dataset+'/'+'secondary_10000_00001'+'.npy', allow_pickle=True)
     # message = np.load(RESULT_FOLDER+'10000iteration_dis'+'.npy', allow_pickle=True)
     # messenger(message.item())
 
