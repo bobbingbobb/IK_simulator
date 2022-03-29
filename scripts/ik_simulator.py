@@ -185,6 +185,7 @@ class IKSimulator:
         # self.iktable = IKTable('full_jointonly')
         self.robot = Robot()
         self.algo = algo
+        self.likeliness = 0.2
 
         from ikpy.chain import Chain
         import ikpy.utils.plot as plot_utils
@@ -239,7 +240,6 @@ class IKSimulator:
         return nearby_postures
 
     def posture_comparison_all_joint_sorted(self, target_space):
-        thres = 0.5
         nearby_postures = []
         def sorting(sort_target, q):
             if len(sort_target) == 1:
@@ -253,7 +253,7 @@ class IKSimulator:
                 if i+r == len(sort_ind):
                     result.append([sort_ind[i]])
                     return result
-                while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < thres:#pure posture
+                while target_space[sort_ind[i+r]][1][q] - target_space[sort_ind[i]][1][q] < self.likeliness:#pure posture
                     r += 1
                     if not i+r < len(sort_ind):
                         break
@@ -279,7 +279,6 @@ class IKSimulator:
 
     #index
     def posture_comparison_all_joint_sorted_pure(self, target_space):
-        thres = 0.5
         nearby_postures = []
         def sorting(sort_target, q):
             if len(sort_target) == 1:
@@ -293,7 +292,7 @@ class IKSimulator:
                 if i+r == len(sort_ind):
                     result.append([sort_ind[i]])
                     return result
-                while target_space[sort_ind[i+r]][q] - target_space[sort_ind[i]][q] < thres:#pure posture
+                while target_space[sort_ind[i+r]][q] - target_space[sort_ind[i]][q] < self.likeliness:#pure posture
                     r += 1
                     if not i+r < len(sort_ind):
                         break
@@ -318,12 +317,11 @@ class IKSimulator:
         return nearby_postures
 
     def posture_comparison_all_joint(self, target_space):
-        thres = 0.5
         nearby_postures = []
         for pos in target_space:
             for type in nearby_postures:
                 for j_pos, j_type in zip(pos[1], type[0][1]):
-                    if abs(j_pos-j_type) >= thres:
+                    if abs(j_pos-j_type) >= self.likeliness:
                         break
                 else:
                     type.append(pos)
@@ -337,7 +335,7 @@ class IKSimulator:
         #     # print(nearby_postures)
         #     for i_type, v_type in enumerate(nearby_postures):
         #         for j_pos, j_type in zip(v_pos[1], target_space[v_type[0]][1]):
-        #             if abs(j_pos-j_type) >= thres:
+        #             if abs(j_pos-j_type) >= self.likeliness:
         #                 break
         #         else:
         #             nearby_postures[i_type].append(i_pos)
