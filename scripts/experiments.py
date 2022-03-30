@@ -151,7 +151,7 @@ def bout_data(iter, dataset):
             diff = np.linalg.norm(tmp_pos[6]-target_pos)
             if diff < 1e-4:
                 success += 1
-                dev.append(diff)
+                dev.append(np.linalg.norm(posture[0][6] - target_pos))
                 ee_dev.append(np.dot(tmp_ori, posture[2]))
                 if len(ik_simulator.posture_comparison([posture, [tmp_pos, result[1:8], tmp_ori]])) < 2:
                     unique += 1
