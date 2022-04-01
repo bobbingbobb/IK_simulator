@@ -17,6 +17,65 @@ from mpl_toolkits.mplot3d import Axes3D
 from ikpy.chain import Chain
 import ikpy.utils.plot as plot_utils
 
+def drawing_highdof():
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    time = [33.14, 42.66, 48.50, 53.27]
+    iter = [36.51, 52.41, 60.2, 65.8]
+    rname = ['7 dof', '14 dof', '21 dof', '28 dof']
+    label = ['IK time', 'iteration']
+
+    width = 0.12
+    plt.bar([i*0.3 for i in range(4)], time, width = 0.1, align='center', color='royalblue')
+    plt.bar([i*0.3+width for i in range(4)], iter, width = 0.1, align='center', color='lightsteelblue')
+
+    plt.xticks([l*0.3 + width/2 for l in range(4)], rname)
+    plt.xlabel("kinematically redundant robot")
+    plt.ylabel("percentage")
+    lg = plt.legend(label, bbox_to_anchor=(1.0, 1.25), loc='upper right')
+    plt.title('improvement')
+    plt.savefig(RESULT_FOLDER+'high_dof.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    plt.show()
+
+def drawing_improve():
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    #[near, total, iteration]
+    #accelerate
+    # r3 = [25.99, 25.21, 27.34]
+    # r2 = [30.26, 28.81, 33.55]
+    # r1 = [32.88, 29.39, 36.20]
+
+    #secondary: adjacent
+    # r3 = [69.3, 67.24, 69.64]
+    # r2 = [69.75, 68.54, 70.66]
+    # r1 = [71, 63.3, 71.29]
+
+    #secondary: near 50
+    r3 = [72.1, 71.32, 70.74]
+    r2 = [72.95, 71.71, 72.49]
+    r1 = [74.1, 72.1, 73.63]
+
+    rr = np.array([r3, r2, r1]).T
+    rname = ['rtree_30', 'rtree_20', 'rtree_10']
+    label = ['IK time', 'total time', 'iteration']
+
+    color = ['royalblue', 'cornflowerblue', 'lightsteelblue']
+    width = 0.12
+    for i, (rrr, ccc) in enumerate(zip(rr, color)):
+        plt.bar([0+width*i, 0.5+width*i, 1+width*i],
+                rrr, width = 0.1,  align='center', color=ccc,)
+    plt.xticks([l*0.5 + width for l in range(3)], rname)
+    plt.xlabel("look-up table")
+    plt.ylabel("percentage")
+    lg = plt.legend(label, bbox_to_anchor=(1.0, 1.25), loc='upper right')
+    plt.title('improvement')
+    # plt.savefig(RESULT_FOLDER+'accelerate_improvement.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    # plt.savefig(RESULT_FOLDER+'secondary_adjacent.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    # plt.savefig(RESULT_FOLDER+'secondary_near50.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    plt.show()
 
 def ik_speed(iter, dataset):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
@@ -50,6 +109,7 @@ def ik_speed(iter, dataset):
         iteration = []
         otime = []
         oiteration = []
+        dev = []
         # for q in qq:
         for i in range(iter):
             joints = []
@@ -58,7 +118,10 @@ def ik_speed(iter, dataset):
                 q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
             target_pos, target_ori = robot.fk_dh(q)
 
-            joint = list(idx.nearest(target_pos.tolist(), objects='raw'))[0][1]
+            pos_info = list(idx.nearest(target_pos.tolist(), objects='raw'))
+            joint = pos_info[0][1]
+
+            dev.append(np.linalg.norm(pos_info[0][0][6] - target_pos))
 
             result, nearby, nstat, nnum = chain.inverse_kinematics(target_pos, initial_position=[0.0, *joint, 0.0], optimization_method=opm)
             if np.linalg.norm(ik_simulator.fk(result[1:8])-np.array(target_pos)) < threshold:
@@ -81,6 +144,8 @@ def ik_speed(iter, dataset):
         mes[opm+'_niter'] = np.mean(niteration)
         mes[opm+'_iter'] = np.mean(iteration)
         mes[opm+'_oiter'] = np.mean(oiteration)
+        mes[opm+'dev'] = np.mean(dev)
+        mes[opm+'worst'] = max(dev)
 
     np.save(filename, mes)
     messenger(mes)
@@ -223,101 +288,114 @@ def ik_speed_draw(iter):
     for j in range(6):
         q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
 
-    for dis in range(50):
-        dis /= 5000
+    for dis in range(1000, 1250):
+        dis /= 1000
         print(dis)
+        joint = np.zeros(7)
         for _ in range(iter):
-            stat = 1
-            while stat:
-                x = round(r.uniform(-0.855, 0.855), 4)
-                y = round(r.uniform(-0.855, 0.855), 4)
-                z = round(r.uniform(-0.36, 1.19), 4)
-                otarget = [x, y, z]
-                joint, _, _, stat = chain.inverse_kinematics(otarget)
+            # stat = 1
+            # while stat:
+            #     x = round(r.uniform(-0.855, 0.855), 4)
+            #     y = round(r.uniform(-0.855, 0.855), 4)
+            #     z = round(r.uniform(-0.36, 1.19), 4)
+            #     otarget = [x, y, z]
+            #     joint, _, _, stat = chain.inverse_kinematics(otarget)
             # print(pos_alignment(chain.forward_kinematics(tmp_joint)[:3,3].tolist()), target)
             # print(pos_alignment(robot.fk_dh(tmp_joint[1:8])[0].tolist()), target)
+            for j in range(6):
+                joint[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+            otarget, _ = robot.fk_dh(joint)
 
             rp = np.array([r.uniform(-1, 1) for _ in range(3)])
             rp *= (dis/np.linalg.norm(rp))
             target = otarget + rp
-            tmp_joint, ntime, nstat, ni = chain.inverse_kinematics(target, initial_position=joint)
+            tmp_joint, ntime, nstat, ni = chain.inverse_kinematics(target, initial_position=[0.0, *joint, 0.0])
 
-            if not nstat:
+            if np.linalg.norm(robot.fk_dh(tmp_joint[1:8])[0]-target) < 1e-4:
+                # print('n', end='')
                 dev.append(dis)
                 time.append(ni)
-    np.save(RESULT_FOLDER+'distribution_range_iter_4', [time, dev])
-
-    #     s = d.datetime.now()
-    #     tmp_joint, ni, ntime, nstat = chain.inverse_kinematics(target, initial_position=[0]*10)[1:8]
-    #     # tmp_joint = chain.inverse_kinematics(target, initial_position=[0, *q, 0, 0])[1:8]
-    #     e = d.datetime.now()
-    #
-    #     fk, _ = robot.fk_dh(tmp_joint)
-    #     deviation = np.linalg.norm(np.array(target) - np.array([round(p, 4) for p in fk]))
-    #     print(target, fk)
-    #     print(deviation)
-    #     if not target == [round(p, 4) for p in fk]:
-    #         dev.append(deviation)
-    #         n += 1
-    #     time.append(e-s)
-    #
-    # mes = {}
-    # mes['deviation'] = np.mean(dev)
-    # mes['failed'] = n
-    # mes['worst'] = max(dev)
-    # mes['avg. time'] = np.mean(np.array(time))
-    #
-    # print(mes)
-    # print(np.mean(np.array(time)))
+    np.save(RESULT_FOLDER+'distribution_range_iter_8', [time, dev])
 
 def draw_line():
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    data = np.load(RESULT_FOLDER+'distribution_range_iter_4.npy', allow_pickle=True)
-    print(len(data[1]))
+    # data = np.load(RESULT_FOLDER+'distribution_range_iter_2.npy', allow_pickle=True)
+    # print(len(data[1]))
     i = 0
     iter = []
     dev = []
 
-    for dis in range(50):
-        dis /= 5000
-        tmp = []
-        while round(data[1][i],4) == dis:
-            tmp.append(data[0][i])
-            i += 1
-            if i == len(data[0]):
-                break
-        dev.append(dis)
-        iter.append(np.mean(tmp))
-        print(len(tmp))
-
-    # ra = 0.0
-    # i_dis = np.argsort(data[1])
-    # while i < len(i_dis):
-    #     tmp_i = []
-    #     tmp_d = []
-    #     ra += 0.005
-    #     while data[1][i_dis[i]] < ra:
-    #         tmp_i.append(data[0][i_dis[i]])
-    #         tmp_d.append(data[1][i_dis[i]])
+    #8: 1000,1250/1000
+    #7: 700,1000/1000
+    #6: 200,700/1000
+    #5: 200/1000
+    #4: 50/5000
+    #3: 20/100
+    #2: 100/1000
+    num = [[0, 100, 1000], [0, 10, 100], [0, 50, 5000], [0, 200, 1000], [200, 700, 1000], [700, 1000, 1000], [1000, 1250, 1000]]
+    # for n in range(len(num)):
+    for n in [3]:
+        data = np.load(RESULT_FOLDER+'distribution_range_iter_'+str(n+2)+'.npy', allow_pickle=True)
+        i = 0
+        for dis in range(num[n][0], num[n][1]):
+            dis /= num[n][2]
+            tmp = []
+            while round(data[1][i],4) == dis:
+                # print(i)
+                tmp.append(data[0][i])
+                i += 1
+                if i == len(data[0]):
+                    break
+            dev.append(dis)
+            iter.append(np.mean(tmp))
+            # print(len(tmp))
+    #3
+    # data = np.load(RESULT_FOLDER+'distribution_range_iter_5.npy', allow_pickle=True)
+    # print(data)
+    # i = 0
+    # for dis in range(190):
+    #     dis /= 1000
+    #     tmp = []
+    #     while round(data[1][i],4) == dis:
+    #         # print(i)
+    #         tmp.append(data[0][i])
     #         i += 1
-    #         if i == len(i_dis):
+    #         if i == len(data[0]):
     #             break
-    #     iter.append(np.mean(tmp_i))
-    #     dev.append(np.mean(tmp_d))
+    #     dev.append(dis)
+    #     iter.append(np.mean(tmp))
+    #     # print(len(tmp))
 
-    # print(iter)
-    # print(dev)
-    #
-    plt.scatter(iter, dev)
-    # z = np.polyfit(iter, dev, 1)
-    # p = np.poly1d(z)
-    # plt.plot(iter,p(iter),"r--")
-    plt.xlabel("iter (num)")
-    plt.ylabel("dev (m)")
+    #1
+    data = np.load(RESULT_FOLDER+'distribution_range_iter_1.npy', allow_pickle=True)
+    i = 0
+    ra = 0.0
+    i_dis = np.argsort(data[1])
+    while i < len(i_dis):
+        tmp_i = []
+        tmp_d = []
+        ra += 0.005
+        while data[1][i_dis[i]] < ra:
+            tmp_i.append(data[0][i_dis[i]])
+            tmp_d.append(data[1][i_dis[i]])
+            i += 1
+            if i == len(i_dis):
+                break
+        iter.append(np.mean(tmp_i))
+        dev.append(np.mean(tmp_d))
+
+    info = np.array([dev, iter]).T
+    info = np.sort(info, axis=0).T
+    print(len(info[0]))
+
+    # plt.scatter(dev, iter)
+    plt.plot(info[0][:-40], info[1][:-40])
+    plt.xlabel("potential movements (m)")
+    plt.ylabel("number of iterations")
     plt.title('distance vs iteration')
-    plt.savefig(RESULT_FOLDER+'dist_iter_4.png')
+    # plt.savefig(RESULT_FOLDER+'dist_iter_all_line.png')
     plt.show()
 
 def draw(dataset, name):
@@ -814,13 +892,17 @@ def accelerate(dataset, iter, threshold):
 def high_dof(iter):
 
     chain7 = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    chain10 = Chain.from_urdf_file('r10.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, False])
     chain14 = Chain.from_urdf_file('r14.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
     chain21 = Chain.from_urdf_file('r21.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+    chain28 = Chain.from_urdf_file('r28.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+    chain35 = Chain.from_urdf_file('r35.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
     chain42 = Chain.from_urdf_file('r42.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
-    chain_63 = Chain.from_urdf_file('r63.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
+    chain63 = Chain.from_urdf_file('r63.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
     # chain84 = Chain.from_urdf_file('r84.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False])
 
-    chain = [chain7, chain14, chain21, chain42, chain_63]
+    # chain = [chain7, chain14, chain21, chain42, chain63]
+    chain = [chain10, chain28, chain35]
 
     ax = [plot.figure().add_subplot(111, projection='3d') for _ in range(len(chain))]
 
@@ -920,7 +1002,7 @@ def high_dof(iter):
         message[str(len(c)-2)+'num_n'] = np.array(num_n).T[i][np.array(stat_n).T[i]].mean()
         message[str(len(c)-2)+'num_i'] = np.array(num_i).T[i][np.array(stat_i).T[i]].mean()
 
-    np.save(RESULT_FOLDER+'e4high_dof_'+str(iter), messenge)
+    np.save(RESULT_FOLDER+'e4high_dof_add'+str(iter), message)
     messenger(message)
 
 if __name__ == '__main__':
@@ -951,13 +1033,15 @@ if __name__ == '__main__':
     # bout_data(1000, dataset)
     # query_time(dataset, 10000)
 
-    # ik_speed_draw(100)
     # ik_iteration(10000)
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
     # high_dof(1000)
     # secondary_compare(dataset, 1000, 1e-4)
+    ik_speed_draw(100)
     # draw_line()
+    # drawing_improve()
+    # drawing_highdof()
 
     # robot = Robot()
     # q = np.zeros(7)

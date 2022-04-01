@@ -473,7 +473,7 @@ res = [-0.855, 0.855, -0.855, 0.855, -0.36, 1.19]
 # idx = index.Index(RAW_DATA_FOLDER+'dense_350', properties=property)
 # res = [0.2, 0.25, 0.45, 0.5, 0.3, 0.35]
 
-print(idx.get_size())
+# print(idx.get_size())
 # print(idx.bounds)
 # print(list(idx.nearest([0.0, 0.0, 0.0], 2, objects='raw')))
 idx.close()
