@@ -804,7 +804,7 @@ def secondary_hard(dataset, iter, threshold, pos_num):
         rang = 0.0005
         dsf = 'full/'
 
-    filename = RESULT_FOLDER+dsf+'sec_hard_'+str(iter)+'_'+str(pos_num)
+    filename = RESULT_FOLDER+dsf+'sec_hardv3_'+str(iter)+'_'+str(pos_num)
     print(dataset+'_'+str(iter)+'_'+str(threshold))
 
     time_q = []
@@ -838,7 +838,7 @@ def secondary_hard(dataset, iter, threshold, pos_num):
         for j in range(6):
             q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
         target_pos, target_ori = robot.fk_dh(q)
-        if target_pos[1] < -0.2:
+        if target_pos[1] < -0.2 or target_pos[2] > 0.7 or target_pos[2] < 0.0:
             continue
 
         if pos_num == 'all':
@@ -872,7 +872,7 @@ def secondary_hard(dataset, iter, threshold, pos_num):
         s = d.datetime.now()
         ori_tmp = 0
         for i, post in enumerate(nearby_postures):
-            if post[0][3][1] <= 0.2:
+            if post[0][3][1] <= 0.2 or post[0][3][0] <= -0.3 or np.linalg.norm(post[0][1][2]-post[0][3][2]) > 0.03:
                 continue
             likeliness = np.dot(post[2], target_ori)
             if likeliness > ori_tmp:
@@ -944,7 +944,7 @@ def secondary_hard(dataset, iter, threshold, pos_num):
     message['num_no'] = np.mean(num_no)
     message['num_i'] = np.mean(num_i)
 
-    # np.save(filename, message)
+    np.save(filename, message)
     messenger(message)
 
 
