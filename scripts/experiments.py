@@ -181,6 +181,8 @@ def bout_data(iter, dataset):
         rang = 0.0005
         dsf = 'full/'
 
+    range = 0.05
+
     filename = RESULT_FOLDER+dsf+'post_num_'+str(iter)
 
     dev = []
@@ -245,7 +247,7 @@ def ik_iteration(iter):
     robot = Robot()
     iteration = []
     deviation = []
-    dev = [0.05, 0.02, 0.01, 0.005, 0.003, 0.001, 0.0001, 0.0]
+    dev = [0.05, 0.02, 0.01, 0.005, 0.003, 0.001, 0.0002, 0.0001, 0.0]
     origin = robot.fk_dh([0]*7)[0]
 
     for _ in range(iter):
@@ -256,19 +258,22 @@ def ik_iteration(iter):
             z = round(r.uniform(-0.36, 1.19), 4)
             target = [x, y, z]
             diff = np.linalg.norm(np.array(origin) - np.array(target))
-            # if diff < 0.05:
-            #     continue
-            tmp_joint, time, stat, joint_list = chain.inverse_kinematics(target)
-        # print(len(joint_list))
+            tmp_joint, time, _, nit, joint_list = chain.inverse_kinematics(target)
+            if np.linalg.norm(robot.fk_dh(tmp_joint[1:-1])[0] - np.array(target)) < 0.0001:
+                stat = 0
+        # print(target)
+        # print(joint_list[-1])
+        # print(tmp_joint[1:-1])
         deviation.append(diff)
         i = 0
         it = []
+        it.append(len(joint_list))
         for dis in dev:
-            tmp = 0
             while i < len(joint_list) and np.linalg.norm(robot.fk_dh(joint_list[i])[0] - np.array(target)) > dis:
-                tmp += 1
+                # if dis == 0.0:
+                #     print(np.linalg.norm(robot.fk_dh(joint_list[i])[0] - np.array(target)))
                 i += 1
-            it.append(tmp)
+            it.append(len(joint_list[i:]))
         iteration.append(it)
 
     # np.save(RESULT_FOLDER+str(iter)+'iteration_dis', [dev, iteration])
@@ -338,8 +343,8 @@ def drawing_line():
     #3: 20/100
     #2: 100/1000
     num = [[2, 0, 100, 1000], [3, 0, 10, 100], [4, 0, 50, 5000], [5, 0, 200, 1000], [6, 200, 700, 1000], [7, 700, 1000, 1000], [8, 1000, 1250, 1000]]
-    # for n in range(len(num)):
-    for n in num[:3]:
+    for n in num[3:]:
+    # for n in num[:3]:
         data = np.load(RESULT_FOLDER+'distribution_range_iter_'+str(n[0])+'.npy', allow_pickle=True)
         i = 0
         for dis in range(n[1], n[2]):
@@ -402,11 +407,11 @@ def drawing_line():
     plt.plot(info[0][:100], info[1][:100])
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
-    plt.xlabel("potential moving distance (m)", size=14)
+    plt.xlabel("moving distance (m)", size=14)
     plt.ylabel("number of iterations", size=14)
     # plt.title('distance vs iteration')
     # plt.savefig(RESULT_FOLDER+'dist_iter_all_line.png')
-    plt.savefig(RESULT_FOLDER+'dist_iter_all_line_near.png')
+    # plt.savefig(RESULT_FOLDER+'dist_iter_all_line_near.png')
     plt.show()
 
 def draw(dataset, name):
@@ -694,11 +699,12 @@ def secondary_compare(dataset, iter, threshold, pos_num):
 
         s = d.datetime.now()
         nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
+        # nearby_postures = ik_simulator.posture_comparison(pos_info)
         e = d.datetime.now()
         classify = e - s
 
         post_num.append(len(nearby_postures))
-        # print(len(nearby_postures))
+        print(len(pos_info), len(nearby_postures))
 
         s = d.datetime.now()
         ori_tmp = 0
@@ -947,6 +953,129 @@ def secondary_hard(dataset, iter, threshold, pos_num):
     np.save(filename, message)
     messenger(message)
 
+def table_num(dataset, iter, threshold, pos_num):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    # print(chain)
+    robot = Robot()
+    ik_simulator = IKSimulator(algo='ikpy', dataset=dataset)
+    property = index.Property(dimension=3, fill_factor=0.9)
+    idx = index.Index(os.path.join(RAW_DATA_FOLDER, dataset), properties=property)
+
+    if dataset.startswith('rtree'):
+        res = [-0.855, -0.855, -0.36, 0.855, 0.855, 1.19]
+        if dataset.startswith('rtree_30'):
+            dsf = 'rtree_30/'
+        elif dataset.startswith('rtree_20'):
+            dsf = 'rtree_20/'
+        elif dataset.startswith('rtree_10'):
+            dsf = 'rtree_10/'
+    elif dataset.startswith('dense'):
+        res = [0.2, 0.45, 0.3, 0.25, 0.5, 0.35]
+        dsf = 'dense/'
+    elif dataset.startswith('full'):
+        res = [0.2, 0.4, 0.3, 0.215, 0.415, 0.315]
+        dsf = 'full/'
+
+    filename = RESULT_FOLDER+dsf+'table_num_'+str(iter)+'_'+str(pos_num)
+    print(dataset+'_'+str(iter)+'_'+str(threshold))
+
+    query_num = []
+    post_num = []
+    ra = []
+
+    methods = ['L-BFGS-B', 'BFGS', 'SLSQP', 'CG']
+    opm = methods[0]
+
+    message = {}
+
+    rang = 0.01
+    while True:
+        qn = []
+        pn = []
+        for _ in range(iter):
+            q = np.zeros(7)
+            for j in range(6):
+                q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+            target_pos, target_ori = robot.fk_dh(q)
+            if target_pos[1] < -0.2 or target_pos[2] > 0.7 or target_pos[2] < 0.0:
+                continue
+
+            if pos_num == 'all':
+                tar_coord = [t+offset for offset in (-rang, rang) for t in target_pos]
+                s = d.datetime.now()
+                pos_info = list(idx.intersection(tar_coord, objects='raw'))
+                e = d.datetime.now()
+
+                if len(pos_info) < 20:
+                    s = d.datetime.now()
+                    pos_info = list(idx.nearest(target_pos.tolist(), 50, objects='raw'))
+                    e = d.datetime.now()
+
+                query = e - s
+            else:
+                s = d.datetime.now()
+                pos_info = list(idx.nearest(target_pos.tolist(), pos_num, objects='raw'))
+                e = d.datetime.now()
+                query = e - s
+
+            qn.append(len(pos_info))
+
+            s = d.datetime.now()
+            nearby_postures = [pos_info[inds[0]] for inds in ik_simulator.posture_comparison_all_joint_sorted(pos_info)]#index
+            e = d.datetime.now()
+            classify = e - s
+
+            pn.append(len(nearby_postures))
+
+        ra.append(rang)
+        query_num.append(np.mean(qn))
+        post_num.append(np.mean(pn))
+
+        prop = post_num[-1] / query_num[-1]
+        if prop > 0.5:
+            message['half'] = rang
+        elif prop < 0.2:
+            break
+        rang += 0.005
+
+    idx.close()
+    message['rang'] = ra
+    message['query_num'] = query_num
+    message['post_num'] = post_num
+
+
+    np.save(filename, message)
+    # messenger(message)
+
+def draw_num(dataset):
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    data = np.load(RESULT_FOLDER+dataset+'/table_num_1000_all.npy', allow_pickle=True)
+    # print(len(data[1])
+    # data['query_num']
+    # data['post_num']
+
+    #30 10, 200, 5
+    #20
+    #10
+
+    # ra = [i/1000 for i in range(10, 200, 5)]#rtree_30
+    ra = data.tolist()['rang']
+    ra = [r*100 for r in ra]
+    qn = data.tolist()['query_num']
+    pn = data.tolist()['post_num']
+    # print([p/q for p,q in zip(pn,qn)])
+
+    plt.plot(ra, qn)
+    plt.plot(ra, pn)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xlabel("range (cm)", size=14)
+    plt.ylabel("number of results", size=14)
+    plt.title(dataset)
+    # plt.savefig(RESULT_FOLDER+'draw_num_'+dataset+'.png')
+    plt.show()
 
 def accelerate(dataset, iter, threshold):
     chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
@@ -1192,20 +1321,22 @@ if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
 
-    # dataset = 'rtree_30'
+    dataset = 'rtree_30'
     # dataset = 'rtree_20'
-    dataset = 'rtree_10'
+    # dataset = 'rtree_10'
     # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
+    draw_num(dataset)
+    # table_num(dataset, 1000, 1e-4, 'all')
 
     # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
     # for dsf in ds[:3]:
     #     # query_time(dsf, 10000)
-    #     bout_data(1000, dsf)
+    #     # bout_data(1000, dsf)
+    #     table_num(dsf, 1000, 1e-4, 'all')
 
-
-    secondary_hard(dataset, 1000, 1e-4, 'all')
+    # secondary_hard(dataset, 1000, 1e-4, 'all')
 
     # secondary_compare(dataset, 100, 1e-4, 'all')
     # secondary_compare(dataset, 1000, 1e-4, 500)
@@ -1222,7 +1353,6 @@ if __name__ == '__main__':
     # posture_num(1)
     # draw('rtree_20', 'inter_300_post')
     # high_dof(1000)
-    # secondary_compare(dataset, 1000, 1e-4)
     # ik_speed_draw(100)
     # drawing_line()
     # drawing_improve()
