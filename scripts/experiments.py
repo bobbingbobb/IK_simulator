@@ -34,9 +34,10 @@ def drawing_highdof():
     plt.yticks(fontsize=14)
     plt.xlabel("kinematically redundant robot", size=14)
     plt.ylabel("improvement (%)", size=14)
-    lg = plt.legend(label, bbox_to_anchor=(1.05, 1.0), loc='upper left', fontsize=12)
+    # lg = plt.legend(label, bbox_to_anchor=(1.05, 1.0), loc='upper left', fontsize=12)
+    lg = plt.legend(label, bbox_to_anchor=(1.0, 1.25), loc='upper right', fontsize=12)
     # plt.title('improvement')
-    # plt.savefig(RESULT_FOLDER+'high_dof.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    plt.savefig(RESULT_FOLDER+'high_dof_u.png', bbox_extra_artists=(lg,), bbox_inches='tight')
     plt.show()
 
 def drawing_improve():
@@ -73,11 +74,11 @@ def drawing_improve():
     plt.xlabel("look-up table", size=14)
     plt.ylabel("improvement (%)", size=14)
     # plt.title('improvement')
-    # lg = plt.legend(label, bbox_to_anchor=(1.0, 1.25), loc='upper right', fontsize=12)
+    lg = plt.legend(label, bbox_to_anchor=(1.0, 1.25), loc='upper right', fontsize=12)
     # plt.savefig(RESULT_FOLDER+'secondary_adjacent.png', bbox_extra_artists=(lg,), bbox_inches='tight')
     # plt.savefig(RESULT_FOLDER+'secondary_near50.png', bbox_extra_artists=(lg,), bbox_inches='tight')
-    lg = plt.legend(label, bbox_to_anchor=(1.05, 1.0), loc='upper left', fontsize=12)
-    # plt.savefig(RESULT_FOLDER+'accelerate_improvement.png', bbox_extra_artists=(lg,), bbox_inches='tight')
+    # lg = plt.legend(label, bbox_to_anchor=(1.05, 1.0), loc='upper left', fontsize=12)
+    # plt.savefig(RESULT_FOLDER+'accelerate_improvement_u.png', bbox_extra_artists=(lg,), bbox_inches='tight')
     plt.show()
 
 def ik_speed(iter, dataset):
@@ -181,7 +182,7 @@ def bout_data(iter, dataset):
         rang = 0.0005
         dsf = 'full/'
 
-    range = 0.05
+    # rang = 0.05
 
     filename = RESULT_FOLDER+dsf+'post_num_'+str(iter)
 
@@ -1060,20 +1061,24 @@ def draw_num(dataset):
     #20
     #10
 
-    # ra = [i/1000 for i in range(10, 200, 5)]#rtree_30
-    ra = data.tolist()['rang']
+    ra = [i/1000 for i in range(10, 200, 5)]#rtree_30
+    # ra = data.tolist()['rang']
     ra = [r*100 for r in ra]
     qn = data.tolist()['query_num']
     pn = data.tolist()['post_num']
+    print(ra[8:12])
+    print(qn[8:12])
+    print(pn[8:12])
     # print([p/q for p,q in zip(pn,qn)])
 
-    plt.plot(ra, qn)
-    plt.plot(ra, pn)
+    plt.plot(ra[:], qn[:])
+    plt.plot(ra[:], pn[:])
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
     plt.xlabel("range (cm)", size=14)
     plt.ylabel("number of results", size=14)
     plt.title(dataset)
+    plt.tight_layout()
     # plt.savefig(RESULT_FOLDER+'draw_num_'+dataset+'.png')
     plt.show()
 
@@ -1327,7 +1332,7 @@ if __name__ == '__main__':
     # dataset = 'dense'
     # dataset = 'full_jointonly_8'
 
-    draw_num(dataset)
+    # draw_num(dataset)
     # table_num(dataset, 1000, 1e-4, 'all')
 
     # ds = ['rtree_30', 'rtree_20', 'rtree_10', 'dense', 'full_jointonly_8']
@@ -1346,7 +1351,7 @@ if __name__ == '__main__':
     # accelerate(dataset, 10000, 1e-4)
 
     # ik_speed(10000, dataset)
-    # bout_data(1000, dataset)
+    # bout_data(10, dataset)
     # query_time(dataset, 10000)
 
     # ik_iteration(10000)
@@ -1355,7 +1360,7 @@ if __name__ == '__main__':
     # high_dof(1000)
     # ik_speed_draw(100)
     # drawing_line()
-    # drawing_improve()
+    drawing_improve()
     # drawing_highdof()
 
     # robot = Robot()
