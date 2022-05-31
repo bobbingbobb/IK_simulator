@@ -1,20 +1,27 @@
 # IK Simulator
 ik simulator
 
+## packages
+scipy 1.7.1
+ikpy 3.2.2
+
 ## File Structure
 ```
-├─ data  
-│  ├─ raw_data  
-│  └─ table  
+├─ data
+│  ├─ raw_data  (put them in ssd for faster query)
+│  └─ result  
 ├─ scripts  
 │  ├─ ik_simulator  
+│  ├─ data_gen  
+│  ├─ runner  
+│  ├─ experiments  
 │  └─ others...  
 ├─ webots  
 │  └─ ...  
 ```
 
 ## raw data
-h5py
+h5py (abandoned)
 ```
 franka_data
 ├─ end_posture[8,8,9]
@@ -26,6 +33,14 @@ franka_data
 │  └─ 7joints position[,7]  
 #  ├─ ee_vector[]
 #  │  └─  ee_vector ('[0.0 0.0 0.0]')
+```
+
+rtree
+```
+position [1,3]
+   ├─ 7joints position [3,7]  
+   ├─ joints [1,7]
+   ├─ ee_vector [1,3]
 ```
 
 ## Classes
@@ -83,7 +98,7 @@ class IKSimulator
 ik_simulator
 - class IKSimulator: how to interpolate
 - class IKSimulator: if there exists the position, what to do ? (simply print out?)
-- class IKSimulator: kd tree
+- class IKSimulator: rtree
 
 franka_cal
 - dimension_portion: interpolation test (approximation?)
