@@ -1322,6 +1322,68 @@ def high_dof(iter):
     np.save(RESULT_FOLDER+'e4high_dof_add'+str(iter), message)
     messenger(message)
 
+def first_iter(iter):
+    chain = Chain.from_urdf_file('panda_arm_hand_fixed.urdf', base_elements=['panda_link0'], active_links_mask=[False, True, True, True, True, True, True, True, False])
+    robot = Robot()
+    o_pos = robot.fk_dh([0.0]*7)[0]
+    dev_prop = []
+    it_prop = [{}, {}, {}]
+    for it in it_prop:
+        for i in range(9, -1, -1):
+            it[i/10.0] = 0
+
+    for _ in range(iter):
+        q = np.zeros(7)
+        for j in range(6):
+            q[j] = r.uniform(robot.joints[j].min, robot.joints[j].max)
+        target = robot.fk_dh(q)[0]
+        o_diff = np.linalg.norm(target - o_pos)
+
+        joint_list = chain.inverse_kinematics(target, initial_position=[0.0]*9)[4]
+
+        tmp = []
+        for j in joint_list:
+            tmp.append(1-(np.linalg.norm(robot.fk_dh(j)[0] - np.array(target)) / o_diff))
+        if not len(tmp) == 5:
+            continue
+
+        dev_prop.append([o_diff, tmp])
+        for i in range(len(it_prop)):
+            for k, _ in it_prop[i].items():
+                if tmp[i*2] > k:
+                    it_prop[i][k] += 1
+                    break
+            else:
+                print('??')
+
+    np.save(RESULT_FOLDER+str(iter)+'_first_iter', [dev_prop, it_prop])
+
+    message = {}
+    dev_t = np.array([d[1] for d in dev_prop]).T
+    print(dev_t.shape)
+    for i in range(len(dev_t)):
+        message[str(i+1)] = np.mean(dev_t[i])
+        # message[str(i+1)+'_std'] = np.std(dev_t[i])
+    for i in range(len(it_prop)):
+        for k, v in it_prop[i].items():
+            message[str(i*2+1)+'_'+str(k)] = v
+
+    messenger(message)
+
+    from matplotlib import pyplot as plt
+    for dev in dev_prop:
+        x = [dev[0] for _ in range(5)]
+        plt.plot(x, dev[1], linestyle = 'None', marker='.')
+
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xlabel("original length", size=14)
+    plt.ylabel("percentage", size=14)
+    # plt.title('distance vs iteration')
+    # plt.savefig(RESULT_FOLDER+'dist_iter_all_line.png')
+    # plt.savefig(RESULT_FOLDER+'dist_iter_all_line_near.png')
+    plt.show()
+
 if __name__ == '__main__':
     print('start')
     start = d.datetime.now()
@@ -1360,8 +1422,9 @@ if __name__ == '__main__':
     # high_dof(1000)
     # ik_speed_draw(100)
     # drawing_line()
-    drawing_improve()
+    # drawing_improve()
     # drawing_highdof()
+    first_iter(10000)
 
     # robot = Robot()
     # q = np.zeros(7)

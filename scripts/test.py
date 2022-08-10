@@ -523,3 +523,7 @@ time = []
 #
 # with open('r84.urdf', 'w') as file:
 #     file.write(text)
+
+k = {}
+k['i' for i in range(3)] = [0 for _ in range(3)]
+print(k)
